@@ -1,5 +1,5 @@
 import { IonContent, IonPage, IonItem, IonLabel, IonIcon } from '@ionic/react';
-import { sunny, cloudyNight, moon } from 'ionicons/icons';
+import { sunny, partlySunny, moon } from 'ionicons/icons';
 import ExploreContainer from '../components/ExploreContainer';
 import './Home.css';
 import { ReactElement } from 'react';
@@ -11,15 +11,13 @@ const Home: React.FC = () => {
       height: '40px',
     };
 
-    const currentHour: number = Number(
-      new Date().toLocaleTimeString('pt-PT').split(':')[0],
-    );
+    const currentHour: number = new Date().getHours();
 
     const icon =
       currentHour >= 6 && currentHour <= 12 ? (
         <IonIcon aria-hidden="true" icon={sunny} style={iconStyle} />
       ) : currentHour > 12 && currentHour < 20 ? (
-        <IonIcon aria-hidden="true" icon={cloudyNight} style={iconStyle} />
+        <IonIcon aria-hidden="true" icon={partlySunny} style={iconStyle} />
       ) : (
         <IonIcon aria-hidden="true" icon={moon} style={iconStyle} />
       );
