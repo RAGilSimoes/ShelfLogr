@@ -10,11 +10,12 @@ import {
   setupIonicReact,
 } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
-import { home, search, addCircle, person } from 'ionicons/icons';
+import { home, search, addCircle, chatbubbles, person } from 'ionicons/icons';
 import Home from './pages/Home';
 import Search from './pages/Search';
 import Add from './pages/Add';
 import Profile from './pages/Profile';
+import ChatBot from './pages/ChatBot';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -62,6 +63,9 @@ const App: React.FC = () => (
           <Route path="/add">
             <Add />
           </Route>
+          <Route path="/chatbot">
+            <ChatBot />
+          </Route>
           <Route exact path="/profile">
             <Profile />
           </Route>
@@ -81,6 +85,10 @@ const App: React.FC = () => (
           <IonTabButton tab="add" href="/add">
             <IonIcon aria-hidden="true" icon={addCircle} />
             <IonLabel>Add</IonLabel>
+          </IonTabButton>
+          <IonTabButton tab="chatbot" href="/chatbot">
+            <IonIcon aria-hidden="true" icon={chatbubbles} />
+            <IonLabel>ChatBot</IonLabel>
           </IonTabButton>
           <IonTabButton tab="profile" href="/profile">
             <IonIcon aria-hidden="true" icon={person} />
