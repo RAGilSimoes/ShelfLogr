@@ -1,0 +1,7 @@
+{
+  "name": "ShelfLogr",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "react-vite"
+}
