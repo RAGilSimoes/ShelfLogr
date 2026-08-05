@@ -4,6 +4,7 @@ import {
   IonPage,
   IonTitle,
   IonToolbar,
+  IonSearchbar,
 } from '@ionic/react';
 import ExploreContainer from '../components/ExploreContainer';
 import './Search.css';
@@ -13,15 +14,14 @@ const Search: React.FC = () => {
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Search</IonTitle>
+          <IonSearchbar
+            animated={true}
+            placeholder="Search"
+            showClearButton="focus"
+          ></IonSearchbar>
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
-        <IonHeader collapse="condense">
-          <IonToolbar>
-            <IonTitle size="large">Search</IonTitle>
-          </IonToolbar>
-        </IonHeader>
         <ExploreContainer name="Search page" />
       </IonContent>
     </IonPage>
