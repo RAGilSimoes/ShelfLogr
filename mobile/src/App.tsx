@@ -10,7 +10,7 @@ import {
   setupIonicReact,
 } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
-import { ellipse, square, triangle } from 'ionicons/icons';
+import { home, search, addCircle, person } from 'ionicons/icons';
 import Home from './pages/Home';
 import Search from './pages/Search';
 import Add from './pages/Add';
@@ -71,19 +71,19 @@ const App: React.FC = () => (
         </IonRouterOutlet>
         <IonTabBar slot="bottom">
           <IonTabButton tab="home" href="/home">
-            <IonIcon aria-hidden="true" icon={triangle} />
+            <IonIcon aria-hidden="true" icon={home} />
             <IonLabel>Home</IonLabel>
           </IonTabButton>
           <IonTabButton tab="search" href="/search">
-            <IonIcon aria-hidden="true" icon={ellipse} />
+            <IonIcon aria-hidden="true" icon={search} />
             <IonLabel>Search</IonLabel>
           </IonTabButton>
           <IonTabButton tab="add" href="/add">
-            <IonIcon aria-hidden="true" icon={square} />
+            <IonIcon aria-hidden="true" icon={addCircle} />
             <IonLabel>Add</IonLabel>
           </IonTabButton>
           <IonTabButton tab="profile" href="/profile">
-            <IonIcon aria-hidden="true" icon={square} />
+            <IonIcon aria-hidden="true" icon={person} />
             <IonLabel>Profile</IonLabel>
           </IonTabButton>
         </IonTabBar>
