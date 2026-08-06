@@ -8,6 +8,8 @@ import {
   IonTabs,
 } from '@ionic/react';
 
+import { useRouteMatch } from 'react-router-dom';
+
 import { home, search, addCircle, chatbubbles, person } from 'ionicons/icons';
 import Home from '../pages/Home';
 import Search from '../pages/Search';
@@ -16,46 +18,49 @@ import Profile from '../pages/Profile';
 import ChatBot from '../pages/ChatBot';
 
 const Tabs: React.FC = () => {
+  const match = useRouteMatch();
+  const path = match.url;
+
   return (
     <IonTabs>
       <IonRouterOutlet>
-        <Route exact path="/app/home">
+        <Route exact path={path + '/home'}>
           <Home />
         </Route>
-        <Route exact path="/app/search">
+        <Route exact path={path + '/search'}>
           <Search />
         </Route>
-        <Route path="/app/add">
+        <Route path={path + '/add'}>
           <Add />
         </Route>
-        <Route path="/app/chatbot">
+        <Route path={path + '/chatbot'}>
           <ChatBot />
         </Route>
-        <Route exact path="/app/profile">
+        <Route exact path={path + '/profile'}>
           <Profile />
         </Route>
-        <Route exact path="/app">
-          <Redirect to="/app/home" />
+        <Route exact path={path}>
+          <Redirect to={path + '/home'} />
         </Route>
       </IonRouterOutlet>
       <IonTabBar slot="bottom">
-        <IonTabButton tab="home" href="/app/home">
+        <IonTabButton tab="home" href={path + '/home'}>
           <IonIcon aria-hidden="true" icon={home} />
           <IonLabel>Home</IonLabel>
         </IonTabButton>
-        <IonTabButton tab="search" href="/app/search">
+        <IonTabButton tab="search" href={path + '/search'}>
           <IonIcon aria-hidden="true" icon={search} />
           <IonLabel>Search</IonLabel>
         </IonTabButton>
-        <IonTabButton tab="add" href="/app/add">
+        <IonTabButton tab="add" href={path + '/add'}>
           <IonIcon aria-hidden="true" icon={addCircle} />
           <IonLabel>Add</IonLabel>
         </IonTabButton>
-        <IonTabButton tab="chatbot" href="/app/chatbot">
+        <IonTabButton tab="chatbot" href={path + '/chatbot'}>
           <IonIcon aria-hidden="true" icon={chatbubbles} />
           <IonLabel>ChatBot</IonLabel>
         </IonTabButton>
-        <IonTabButton tab="profile" href="/app/profile">
+        <IonTabButton tab="profile" href={path + '/profile'}>
           <IonIcon aria-hidden="true" icon={person} />
           <IonLabel>Profile</IonLabel>
         </IonTabButton>
