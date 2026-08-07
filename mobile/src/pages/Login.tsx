@@ -104,6 +104,8 @@ const Login: React.FC = () => {
       if (status == 200) {
         const token = response.data.token;
         setToken(token);
+        setShowError(false);
+        setErrorMessage('');
         history.push('/app/home');
       }
     } catch (error) {
@@ -124,7 +126,7 @@ const Login: React.FC = () => {
       <IonContent fullscreen>
         <form onSubmit={submitForm}>
           <IonGrid style={{ display: 'flex', flexDirection: 'column' }}>
-            <IonImg src="../public/ShelfLogr_logo.png"></IonImg>
+            <IonImg src="/ShelfLogr_logo.png"></IonImg>
             <IonItem>
               <IonInput
                 className={`${isValidEmail && 'ion-valid'} ${isValidEmail === false && 'ion-invalid'} ${isTouched && 'ion-touched'}`}

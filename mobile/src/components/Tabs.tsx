@@ -17,15 +17,55 @@ import Add from '../pages/Add';
 import Profile from '../pages/Profile';
 import ChatBot from '../pages/ChatBot';
 
+import { ReactElement, useEffect, useState } from 'react';
+import { jwtDecode } from 'jwt-decode';
+
+import { setToken, checkToken, removeToken } from '../services/auth.service';
+
+import { useHistory, useLocation } from 'react-router-dom';
+
 const Tabs: React.FC = () => {
+  const history = useHistory();
   const match = useRouteMatch();
   const path = match.url;
+  const [userName, setUserName] = useState('');
+
+  useEffect(() => {
+    const verifyToken = async () => {
+      const token = await checkToken();
+
+      if (token) {
+        try {
+          const decodedData: any = jwtDecode(token);
+
+          const expireDate = decodedData.exp * 1000;
+          const currentDate = Date.now();
+
+          if (currentDate > expireDate) {
+            throw new Error('Expired Token');
+          }
+          setUserName(decodedData.name);
+        } catch (error) {
+          removeToken();
+          history.replace('/login', {
+            message: 'Session expired. Please login again',
+          });
+        }
+      } else {
+        history.replace('/login', {
+          message: 'Session expired. Please login again',
+        });
+      }
+    };
+
+    verifyToken();
+  }, [location.pathname]);
 
   return (
     <IonTabs>
       <IonRouterOutlet>
         <Route exact path={path + '/home'}>
-          <Home />
+          <Home userName={userName} />
         </Route>
         <Route exact path={path + '/search'}>
           <Search />
