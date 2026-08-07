@@ -9,21 +9,42 @@ import {
   IonButton,
   IonInput,
   IonInputPasswordToggle,
+  IonToast,
 } from '@ionic/react';
 import { sunny, cloudyNight, moon, logIn } from 'ionicons/icons';
 import ExploreContainer from '../components/ExploreContainer';
 import './Login.css';
 import { ReactElement, useEffect, useState } from 'react';
 
+import axios from 'axios';
+
+import { useHistory, useLocation } from 'react-router-dom';
+
 import api from '../services/api.service';
 
+import { setToken, checkToken, removeToken } from '../services/auth.service';
+
 const Login: React.FC = () => {
+  const history = useHistory();
+  const location = useLocation<{ message?: string }>();
+
+  const [showError, setShowError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const [isTouched, setIsTouched] = useState(false);
   const [isValidEmail, setIsValidEmail] = useState<boolean>(false);
   const [isValidPassword, setIsValidPassword] = useState<boolean>(false);
 
   const [inputEmail, setInputEmail] = useState<string>('');
   const [inputPassword, setInputPassword] = useState<string>('');
+
+  useEffect(() => {
+    if (location.state?.message) {
+      setErrorMessage(location.state.message);
+      setShowError(true);
+
+      history.replace('/login', {});
+    }
+  }, [location.state]);
 
   const validateEmail = (email: string) => {
     return email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
@@ -70,12 +91,31 @@ const Login: React.FC = () => {
   const submitForm = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    try {
-      const response = await api.get('/');
+    const body = {
+      email: inputEmail,
+      password: inputPassword,
+    };
 
-      console.log(response);
+    try {
+      const response = await api.post('/login', body);
+
+      const status = response.status;
+
+      if (status == 200) {
+        const token = response.data.token;
+        setToken(token);
+        history.push('/app/home');
+      }
     } catch (error) {
-      console.log('erro');
+      setShowError(true);
+
+      if (axios.isAxiosError(error)) {
+        const mensagemDoServidor =
+          error.response?.data?.error || 'Server communication error.';
+        setErrorMessage(mensagemDoServidor);
+      } else {
+        setErrorMessage('Unexpected error occurred.');
+      }
     }
   };
 
@@ -125,6 +165,17 @@ const Login: React.FC = () => {
             </IonButton>
           </IonGrid>
         </form>
+        <IonToast
+          trigger="open-toast"
+          message={errorMessage}
+          duration={5000}
+          isOpen={showError}
+          onDidDismiss={() => {
+            setShowError(false);
+            setErrorMessage('');
+          }}
+          className="custom-toast"
+        ></IonToast>
       </IonContent>
     </IonPage>
   );
