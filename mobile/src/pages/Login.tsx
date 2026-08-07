@@ -67,7 +67,7 @@ const Login: React.FC = () => {
 
   const isValidForm = isValidEmail && isValidPassword;
 
-  const submitForm = async (event: Event) => {
+  const submitForm = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     try {
