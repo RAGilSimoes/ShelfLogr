@@ -24,8 +24,12 @@ import { setToken, checkToken, removeToken } from '../services/auth.service';
 
 import { useHistory, useLocation } from 'react-router-dom';
 
+import axios from 'axios';
+import api from '../services/api.service';
+
 const Tabs: React.FC = () => {
   const history = useHistory();
+  const location = useLocation();
   const match = useRouteMatch();
   const path = match.url;
   const [userName, setUserName] = useState('');
@@ -45,6 +49,10 @@ const Tabs: React.FC = () => {
             throw new Error('Expired Token');
           }
           setUserName(decodedData.name);
+
+          const response = await api.get('/refresh-token');
+
+          setToken(response.data.token);
         } catch (error) {
           removeToken();
           history.replace('/login', {

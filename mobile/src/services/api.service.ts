@@ -14,8 +14,13 @@ const api: AxiosInstance = axios.create({
   timeout: 5000,
 });
 
-api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-  config.headers.set('Authorization', `Bearer ${checkToken()}`);
+api.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
+  const token = await checkToken();
+
+  if (token) {
+    config.headers.set('Authorization', `Bearer ${token}`);
+  }
+
   return config;
 });
 

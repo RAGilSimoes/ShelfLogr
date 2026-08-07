@@ -6,7 +6,12 @@ import bcrypt from 'bcrypt';
 
 import { pool } from './db.js';
 
-import { generateToken, verifyToken } from './services/jwt.service.js';
+import {
+  generateToken,
+  verifyToken,
+  decodeToken,
+} from './services/jwt.service.js';
+import type { JwtPayload } from 'jsonwebtoken';
 
 dotenv.config();
 
@@ -26,6 +31,33 @@ app.get('/', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Database query failed:', error);
     res.status(500).json({ error: 'Failed to connect to the database.' });
+  }
+});
+
+app.get('/refresh-token', async (req: Request, res: Response) => {
+  try {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader) {
+      return res.status(401).json({ error: 'Token not given' });
+    }
+
+    const token = authHeader?.split(' ')[1]!;
+
+    const decodedToken: any = decodeToken(token);
+
+    if (decodedToken) {
+      const { id, email, name } = decodedToken;
+
+      const newToken = generateToken(id, email, name);
+
+      res.status(200).json({ message: 'Sucess', token: newToken });
+    } else {
+      res.status(401).json({ error: 'Invalid or Corrupted Token' });
+    }
+  } catch (error) {
+    console.error('Erro ao fazer refresh do token:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
