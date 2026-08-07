@@ -10,6 +10,8 @@ import {
   IonInput,
   IonInputPasswordToggle,
   IonToast,
+  IonText,
+  IonRouterLink,
 } from '@ionic/react';
 import { sunny, cloudyNight, moon, logIn } from 'ionicons/icons';
 import ExploreContainer from '../components/ExploreContainer';
@@ -124,9 +126,9 @@ const Login: React.FC = () => {
   return (
     <IonPage>
       <IonContent fullscreen>
-        <form onSubmit={submitForm}>
-          <IonGrid style={{ display: 'flex', flexDirection: 'column' }}>
-            <IonImg src="/ShelfLogr_logo.png"></IonImg>
+        <IonGrid className="grid">
+          <IonImg src="/ShelfLogr_logo.png" className="logo"></IonImg>
+          <form onSubmit={submitForm} className="login-form">
             <IonItem>
               <IonInput
                 className={`${isValidEmail && 'ion-valid'} ${isValidEmail === false && 'ion-invalid'} ${isTouched && 'ion-touched'}`}
@@ -161,12 +163,26 @@ const Login: React.FC = () => {
                 <IonInputPasswordToggle slot="end" />
               </IonInput>
             </IonItem>
-            <IonButton disabled={!isValidForm} type="submit">
-              Login
-              <IonIcon slot="end" icon={logIn}></IonIcon>
-            </IonButton>
-          </IonGrid>
-        </form>
+            <div className="action-group">
+              <IonButton disabled={!isValidForm} type="submit" expand="block">
+                Login
+                <IonIcon slot="end" icon={logIn}></IonIcon>
+              </IonButton>
+
+              <div className="ion-text-center">
+                <IonText color="medium">
+                  <p>
+                    Don't have an account?{' '}
+                    <IonRouterLink routerLink="/register" color="primary">
+                      Register Here
+                    </IonRouterLink>
+                  </p>
+                </IonText>
+              </div>
+            </div>
+          </form>
+        </IonGrid>
+
         <IonToast
           trigger="open-toast"
           message={errorMessage}
