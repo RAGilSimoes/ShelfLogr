@@ -1,5 +1,10 @@
 import { Redirect, Route } from 'react-router-dom';
-import { IonApp, IonRouterOutlet, setupIonicReact } from '@ionic/react';
+import {
+  IonApp,
+  IonRouterOutlet,
+  setupIonicReact,
+  IonSpinner,
+} from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
 
 import Login from './pages/Login';
@@ -36,27 +41,117 @@ import '@ionic/react/css/palettes/dark.system.css';
 /* Theme variables */
 import './theme/variables.css';
 
+import { ReactElement, useEffect, useState } from 'react';
+import { jwtDecode } from 'jwt-decode';
+
+import { setToken, checkToken, removeToken } from './services/auth.service';
+import api from './services/api.service';
+
+import { useHistory, useLocation } from 'react-router-dom';
+
 setupIonicReact();
 
-const App: React.FC = () => (
-  <IonApp>
-    <IonReactRouter>
-      <IonRouterOutlet>
-        <Route exact path="/login">
-          <Login />
-        </Route>
-        <Route exact path="/register">
-          <Register />
-        </Route>
-        <Route path="/app">
-          <Tabs />
-        </Route>
-        <Route exact path="/">
-          <Redirect to="/login" />
-        </Route>
-      </IonRouterOutlet>
-    </IonReactRouter>
-  </IonApp>
-);
+const AppRouter: React.FC = () => {
+  const history = useHistory();
+  const location = useLocation();
+  const [userName, setUserName] = useState('');
+
+  const [isLoading, setIsLoading] = useState(true);
+
+  const gracePeriod = 86400000; // 1 day
+
+  useEffect(() => {
+    const verifyToken = async () => {
+      setIsLoading(true);
+      const token = await checkToken();
+      const publicPaths = ['/login', '/register'];
+      const isPublicPath = publicPaths.includes(location.pathname);
+
+      if (token) {
+        try {
+          const decodedData: any = jwtDecode(token);
+          const expireDate = decodedData.exp * 1000;
+          const currentDate = Date.now();
+
+          if (currentDate - expireDate >= gracePeriod) {
+            throw new Error('Expired Token');
+          } else if (
+            currentDate > expireDate &&
+            currentDate - expireDate < gracePeriod
+          ) {
+            const response = await api.get('/refresh-token');
+            setToken(response.data.token);
+          }
+
+          setUserName(decodedData.name);
+
+          if (isPublicPath) {
+            history.replace('/app/home');
+          }
+        } catch (error) {
+          removeToken();
+          history.replace('/login', {
+            message: 'Session expired. Please login again',
+          });
+        } finally {
+          setIsLoading(false);
+        }
+      } else {
+        if (!isPublicPath) {
+          history.replace('/login', {
+            message: 'Please login to continue',
+          });
+        }
+        setIsLoading(false);
+      }
+    };
+
+    verifyToken();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100vh',
+          width: '100vw',
+          backgroundColor: 'var(--ion-background-color)',
+        }}
+      >
+        <IonSpinner name="lines" color="primary" />
+      </div>
+    );
+  }
+
+  return (
+    <IonRouterOutlet>
+      <Route exact path="/login">
+        <Login />
+      </Route>
+      <Route exact path="/register">
+        <Register />
+      </Route>
+      <Route path="/app">
+        <Tabs userName={userName} />
+      </Route>
+      <Route exact path="/">
+        <Redirect to="/login" />
+      </Route>
+    </IonRouterOutlet>
+  );
+};
+
+const App: React.FC = () => {
+  return (
+    <IonApp>
+      <IonReactRouter>
+        <AppRouter />
+      </IonReactRouter>
+    </IonApp>
+  );
+};
 
 export default App;
