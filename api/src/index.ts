@@ -92,6 +92,45 @@ app.post('/login', async (req: Request, res: Response) => {
   }
 });
 
+app.post('/register', async (req: Request, res: Response) => {
+  try {
+    const { email, username, password } = req.body;
+
+    const { rows: emailResult } = await pool.query(
+      'SELECT * FROM "user" WHERE email = $1',
+      [email],
+    );
+
+    if (emailResult.length !== 0) {
+      return res.status(409).json({ error: 'Email already in use.' });
+    }
+
+    const { rows: usernameResult } = await pool.query(
+      'SELECT * FROM "user" WHERE name = $1',
+      [username],
+    );
+
+    if (usernameResult.length !== 0) {
+      return res.status(409).json({ error: 'Username already in use.' });
+    }
+
+    const saltRounds = 10;
+
+    const encryptedPassword = await bcrypt.hash(password, saltRounds);
+    const { rows: insertResult } = await pool.query(
+      'INSERT INTO "user"(name, email, password) VALUES ($1, $2, $3) RETURNING id',
+      [username, email, encryptedPassword],
+    );
+
+    const token = generateToken(insertResult[0]!.id, email, username);
+
+    return res.status(200).json({ message: 'Success', token });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal error processing registration' });
+  }
+});
+
 app.get('/get-categories', async (req: Request, res: Response) => {
   try {
     const { rows } = await pool.query('SELECT * FROM categories;');

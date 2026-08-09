@@ -36,27 +36,88 @@ import '@ionic/react/css/palettes/dark.system.css';
 /* Theme variables */
 import './theme/variables.css';
 
+import { ReactElement, useEffect, useState } from 'react';
+import { jwtDecode } from 'jwt-decode';
+
+import { setToken, checkToken, removeToken } from './services/auth.service';
+import api from './services/api.service';
+
+import { useHistory, useLocation } from 'react-router-dom';
+
 setupIonicReact();
 
-const App: React.FC = () => (
-  <IonApp>
-    <IonReactRouter>
-      <IonRouterOutlet>
-        <Route exact path="/login">
-          <Login />
-        </Route>
-        <Route exact path="/register">
-          <Register />
-        </Route>
-        <Route path="/app">
-          <Tabs />
-        </Route>
-        <Route exact path="/">
-          <Redirect to="/login" />
-        </Route>
-      </IonRouterOutlet>
-    </IonReactRouter>
-  </IonApp>
-);
+const AppRouter: React.FC = () => {
+  const history = useHistory();
+  const location = useLocation();
+  const [userName, setUserName] = useState('');
+
+  useEffect(() => {
+    const verifyToken = async () => {
+      const token = await checkToken();
+      const publicPaths = ['/login', '/register'];
+      const isPublicPath = publicPaths.includes(location.pathname);
+
+      if (token) {
+        try {
+          const decodedData: any = jwtDecode(token);
+          const expireDate = decodedData.exp * 1000;
+          const currentDate = Date.now();
+
+          if (currentDate > expireDate) {
+            throw new Error('Expired Token');
+          }
+
+          setUserName(decodedData.name);
+          const response = await api.get('/refresh-token');
+          setToken(response.data.token);
+
+          if (isPublicPath) {
+            history.replace('/app/home');
+          }
+        } catch (error) {
+          removeToken();
+          history.replace('/login', {
+            message: 'Session expired. Please login again',
+          });
+        }
+      } else {
+        if (!isPublicPath) {
+          history.replace('/login', {
+            message: 'Please login to continue',
+          });
+        }
+      }
+    };
+
+    verifyToken();
+  }, [location.pathname]);
+
+  return (
+    <IonRouterOutlet>
+      <Route exact path="/login">
+        <Login />
+      </Route>
+      <Route exact path="/register">
+        <Register />
+      </Route>
+      <Route path="/app">
+        <Tabs userName={userName} />
+      </Route>
+      <Route exact path="/">
+        <Redirect to="/login" />
+      </Route>
+    </IonRouterOutlet>
+  );
+};
+
+const App: React.FC = () => {
+  return (
+    <IonApp>
+      <IonReactRouter>
+        <AppRouter />
+      </IonReactRouter>
+    </IonApp>
+  );
+};
 
 export default App;

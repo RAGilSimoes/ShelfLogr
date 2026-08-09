@@ -13,10 +13,8 @@ import {
   IonText,
   IonRouterLink,
 } from '@ionic/react';
-import { sunny, cloudyNight, moon, logIn } from 'ionicons/icons';
-import ExploreContainer from '../components/ExploreContainer';
-import './Login.css';
-import { ReactElement, useEffect, useState } from 'react';
+import { logIn } from 'ionicons/icons';
+import { useEffect, useState } from 'react';
 
 import axios from 'axios';
 
@@ -24,7 +22,9 @@ import { useHistory, useLocation } from 'react-router-dom';
 
 import api from '../services/api.service';
 
-import { setToken, checkToken, removeToken } from '../services/auth.service';
+import { setToken } from '../services/auth.service';
+
+import styles from './Login.module.css';
 
 const Login: React.FC = () => {
   const history = useHistory();
@@ -93,6 +93,10 @@ const Login: React.FC = () => {
   const submitForm = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
+    if (!isValidForm) {
+      return;
+    }
+
     const body = {
       email: inputEmail,
       password: inputPassword,
@@ -114,9 +118,9 @@ const Login: React.FC = () => {
       setShowError(true);
 
       if (axios.isAxiosError(error)) {
-        const mensagemDoServidor =
+        const serverMessage =
           error.response?.data?.error || 'Server communication error.';
-        setErrorMessage(mensagemDoServidor);
+        setErrorMessage(serverMessage);
       } else {
         setErrorMessage('Unexpected error occurred.');
       }
@@ -126,18 +130,20 @@ const Login: React.FC = () => {
   return (
     <IonPage>
       <IonContent fullscreen>
-        <IonGrid className="grid">
-          <IonImg src="/ShelfLogr_logo.png" className="logo"></IonImg>
-          <form onSubmit={submitForm} className="login-form">
+        <IonGrid className={styles.grid}>
+          <IonImg src="/ShelfLogr_logo.png" className={styles.logo}></IonImg>
+          <form onSubmit={submitForm} className={styles.loginForm}>
             <IonItem>
               <IonInput
-                className={`${isValidEmail && 'ion-valid'} ${isValidEmail === false && 'ion-invalid'} ${isTouched && 'ion-touched'}`}
+                className={
+                  `${isValidEmail && 'ion-valid'} ${isValidEmail === false && 'ion-invalid'} ${isTouched && 'ion-touched'}` &&
+                  styles.input
+                }
                 label="Email"
                 name="email"
                 type="email"
                 placeholder="email@domain.com"
                 labelPlacement="stacked"
-                fill="solid"
                 errorText="Invalid email"
                 onIonInput={(event) => validate(event)}
                 onIonBlur={() => markTouched()}
@@ -148,13 +154,16 @@ const Login: React.FC = () => {
 
             <IonItem>
               <IonInput
-                className={`${isValidPassword && 'ion-valid'} ${isValidPassword === false && 'ion-invalid'} ${isTouched && 'ion-touched'}`}
+                className={
+                  `${isValidPassword && 'ion-valid'} ${isValidPassword === false && 'ion-invalid'} ${isTouched && 'ion-touched'}` &&
+                  styles.input
+                }
                 label="Password"
                 name="password"
                 type="password"
                 labelPlacement="stacked"
-                fill="outline"
                 placeholder="●●●●●●●●"
+                errorText="Invalid password"
                 onIonInput={(event) => validate(event)}
                 onIonBlur={() => markTouched()}
                 value={inputPassword}
@@ -192,7 +201,7 @@ const Login: React.FC = () => {
             setShowError(false);
             setErrorMessage('');
           }}
-          className="custom-toast"
+          className={styles.customToast}
         ></IonToast>
       </IonContent>
     </IonPage>
