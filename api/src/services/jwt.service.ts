@@ -1,4 +1,4 @@
-import jwt from 'jsonwebtoken';
+import jwt, { type VerifyOptions } from 'jsonwebtoken';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -11,9 +11,9 @@ export const generateToken = (userId: number, email: string, name: string) => {
   return jwt.sign(payload, SECRET, { expiresIn: '24h' });
 };
 
-export const verifyToken = (token: string) => {
+export const verifyToken = (token: string, options?: VerifyOptions) => {
   try {
-    return jwt.verify(token, SECRET);
+    return jwt.verify(token, SECRET, options);
   } catch (error) {
     return null;
   }
