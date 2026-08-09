@@ -48,6 +48,7 @@ import { setToken, checkToken, removeToken } from './services/auth.service';
 import api from './services/api.service';
 
 import { useHistory, useLocation } from 'react-router-dom';
+import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 
 setupIonicReact();
 
@@ -61,6 +62,11 @@ const AppRouter: React.FC = () => {
   const gracePeriod = 86400000; // 1 day
 
   useEffect(() => {
+    const initApp = async () => {
+      await BarcodeScanner.installGoogleBarcodeScannerModule();
+    };
+    initApp();
+
     const verifyToken = async () => {
       setIsLoading(true);
       const token = await checkToken();
