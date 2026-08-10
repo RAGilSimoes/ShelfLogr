@@ -75,7 +75,7 @@ const AppRouter: React.FC = () => {
 
       if (token) {
         try {
-          const decodedData: any = jwtDecode(token);
+          const decodedData: any = await jwtDecode(token);
           const expireDate = decodedData.exp * 1000;
           const currentDate = Date.now();
 
