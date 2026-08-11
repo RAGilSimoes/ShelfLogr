@@ -12,6 +12,8 @@ import {
   IonToast,
   IonText,
   IonRouterLink,
+  IonFooter,
+  IonToolbar,
 } from '@ionic/react';
 import { logIn } from 'ionicons/icons';
 import { useEffect, useState } from 'react';
@@ -135,7 +137,6 @@ const Register: React.FC = () => {
       const status = response.status;
 
       if (status == 200) {
-        console.log('estou aqui');
         const token = response.data.token;
         setToken(token);
         setShowError(false);
@@ -163,7 +164,9 @@ const Register: React.FC = () => {
           <form onSubmit={submitForm} className={styles.registerForm}>
             <IonItem>
               <IonInput
-                className={`${isValidEmail ? 'ion-valid' : 'ion-invalid'} ${isTouched ? 'ion-touched' : ''} ${styles.input}`}
+                className={`${isValidEmail ? 'ion-valid' : 'ion-invalid'} ${
+                  isTouched ? 'ion-touched' : ''
+                } ${styles.input}`}
                 label="Email"
                 name="email"
                 type="email"
@@ -179,7 +182,9 @@ const Register: React.FC = () => {
 
             <IonItem>
               <IonInput
-                className={`${isValidUsername ? 'ion-valid' : 'ion-invalid'} ${isTouched ? 'ion-touched' : ''} ${styles.input}`}
+                className={`${isValidUsername ? 'ion-valid' : 'ion-invalid'} ${
+                  isTouched ? 'ion-touched' : ''
+                } ${styles.input}`}
                 label="Username"
                 name="username"
                 type="text"
@@ -195,7 +200,9 @@ const Register: React.FC = () => {
 
             <IonItem>
               <IonInput
-                className={`${isValidPassword ? 'ion-valid' : 'ion-invalid'} ${isTouched ? 'ion-touched' : ''} ${styles.input}`}
+                className={`${isValidPassword ? 'ion-valid' : 'ion-invalid'} ${
+                  isTouched ? 'ion-touched' : ''
+                } ${styles.input}`}
                 label="Password"
                 name="password"
                 type="password"
@@ -212,7 +219,9 @@ const Register: React.FC = () => {
             </IonItem>
             <IonItem>
               <IonInput
-                className={`${isValidVerifyPassword ? 'ion-valid' : 'ion-invalid'} ${isTouched ? 'ion-touched' : ''} ${styles.input}`}
+                className={`${
+                  isValidVerifyPassword ? 'ion-valid' : 'ion-invalid'
+                } ${isTouched ? 'ion-touched' : ''} ${styles.input}`}
                 label="Confirm Password"
                 name="verifyPassword"
                 type="password"
@@ -259,6 +268,18 @@ const Register: React.FC = () => {
           className={styles.customToast}
         ></IonToast>
       </IonContent>
+      <IonFooter className="ion-no-border" translucent={true} collapse="fade">
+        <IonToolbar>
+          <div className="ion-text-center" style={{ fontSize: '0.75rem' }}>
+            <IonText color="medium">v0.0.1</IonText>
+            {' - '}
+            <IonText color="medium">
+              Developed by{' '}
+              <a href="https://ragilsimoes.github.io/">Ricardo André Simões</a>
+            </IonText>
+          </div>
+        </IonToolbar>
+      </IonFooter>
     </IonPage>
   );
 };
