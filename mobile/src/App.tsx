@@ -1,14 +1,10 @@
 import { Redirect, Route } from 'react-router-dom';
-import {
-  IonApp,
-  IonRouterOutlet,
-  setupIonicReact,
-  IonSpinner,
-} from '@ionic/react';
+import { IonApp, IonRouterOutlet, setupIonicReact } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
 
 import Login from './pages/Login';
 import Tabs from './components/Tabs';
+import LoadSpinner from './components/LoadSpinner';
 import Register from './pages/Register';
 
 /* Core CSS required for Ionic components to work properly */
@@ -115,38 +111,27 @@ const AppRouter: React.FC = () => {
     verifyToken();
   }, []);
 
-  if (isLoading) {
-    return (
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: '100vh',
-          width: '100vw',
-          backgroundColor: 'var(--ion-background-color)',
-        }}
-      >
-        <IonSpinner name="lines" color="primary" />
-      </div>
-    );
-  }
-
   return (
-    <IonRouterOutlet>
-      <Route exact path="/login">
-        <Login />
-      </Route>
-      <Route exact path="/register">
-        <Register />
-      </Route>
-      <Route path="/app">
-        <Tabs userName={userName} />
-      </Route>
-      <Route exact path="/">
-        <Redirect to="/login" />
-      </Route>
-    </IonRouterOutlet>
+    <>
+      {isLoading ? (
+        <LoadSpinner />
+      ) : (
+        <IonRouterOutlet>
+          <Route exact path="/login">
+            <Login />
+          </Route>
+          <Route exact path="/register">
+            <Register />
+          </Route>
+          <Route path="/app">
+            <Tabs userName={userName} />
+          </Route>
+          <Route exact path="/">
+            <Redirect to="/login" />
+          </Route>
+        </IonRouterOutlet>
+      )}
+    </>
   );
 };
 

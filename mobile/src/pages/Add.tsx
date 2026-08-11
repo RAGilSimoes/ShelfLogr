@@ -14,6 +14,7 @@ import {
   IonCardSubtitle,
   IonCardTitle,
   useIonViewWillLeave,
+  IonIcon,
 } from '@ionic/react';
 import ExploreContainer from '../components/ExploreContainer';
 
@@ -26,10 +27,23 @@ import { useEffect, useState } from 'react';
 
 import styles from './Add.module.css';
 
+import api from '../services/api.service';
+
+import axios from 'axios';
+
+import LoadSpinner from '../components/LoadSpinner';
+import BookInfo from '../components/BookInfo';
+
+import { book, bookmark } from 'ionicons/icons';
+
+import { bookInfo, bookCover } from '@shelflogr/shared';
+
 const Add: React.FC = () => {
-  const [ISBNCode, setISBNCode] = useState<string>('');
-  const [cameraError, setCameraError] = useState<string>('');
-  const [displayCameraError, setDisplayCameraError] = useState<boolean>(false);
+  const [bookInfo, setBookInfo] = useState<bookInfo | undefined>(undefined);
+  const [errorMessage, setErrorMessage] = useState<string>('');
+  const [displayErrorMessage, setDisplayErrorMessage] =
+    useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const checkPermissions = async () => {
     const { camera } = await BarcodeScanner.checkPermissions();
@@ -54,9 +68,8 @@ const Add: React.FC = () => {
   };
 
   const lerBarcode = async () => {
-    setCameraError('');
-    setDisplayCameraError(false);
-    setISBNCode('');
+    setErrorMessage('');
+    setDisplayErrorMessage(false);
 
     let cameraPermission = await checkPermissions();
 
@@ -67,24 +80,41 @@ const Add: React.FC = () => {
     if (cameraPermission === 'granted') {
       try {
         const barcodes = await scan();
+        setIsLoading(true);
         if (barcodes.length > 0 && barcodes[0].valueType === 'ISBN') {
-          setISBNCode(barcodes[0].displayValue);
+          const isbn = barcodes[0].displayValue;
+
+          const response = await api.get(`/get-book-info/${isbn}`);
+
+          if (response.status === 200) {
+            const responseBookInfo: bookInfo = response.data;
+            responseBookInfo.modified = true;
+            setBookInfo(responseBookInfo);
+            setIsLoading(false);
+          }
         } else {
-          setCameraError("Barcode doesn't match a book");
-          setDisplayCameraError(true);
+          setErrorMessage("Barcode doesn't match a book");
+          setDisplayErrorMessage(true);
         }
       } catch (error) {
+        if (axios.isAxiosError(error)) {
+          setDisplayErrorMessage(true);
+          const serverMessage =
+            error.response?.data?.error || 'Server communication error.';
+          setErrorMessage(serverMessage);
+        }
       } finally {
         BarcodeScanner.stopScan();
+        setIsLoading(false);
       }
     } else {
-      setCameraError('You need to grant permission to use the camera.');
-      setDisplayCameraError(true);
+      setErrorMessage('You need to grant permission to use the camera.');
+      setDisplayErrorMessage(true);
     }
   };
 
   useIonViewWillLeave(() => {
-    setISBNCode('');
+    setBookInfo(undefined);
   });
 
   return (
@@ -92,41 +122,40 @@ const Add: React.FC = () => {
       <IonContent className="ion-padding">
         <IonToast
           trigger="open-toast"
-          message={cameraError}
+          message={errorMessage}
           duration={5000}
-          isOpen={displayCameraError}
+          isOpen={displayErrorMessage}
           onDidDismiss={() => {
-            setDisplayCameraError(false);
-            setCameraError('');
+            setDisplayErrorMessage(false);
+            setErrorMessage('');
           }}
           className={styles.customToast}
           position="top"
         ></IonToast>
-        <IonGrid
-          className={`${styles.grid} ${
-            ISBNCode === '' ? styles.centerContent : ''
-          }`}
-        >
-          {ISBNCode && (
-            <IonCard>
-              <img
-                alt="Silhouette of mountains"
-                src="https://ionicframework.com/docs/img/demos/card-media.png"
-              />
-              <IonCardHeader>
-                <IonCardTitle>Card Title</IonCardTitle>
-                <IonCardSubtitle>Card Subtitle</IonCardSubtitle>
-              </IonCardHeader>
+        {isLoading ? (
+          <LoadSpinner />
+        ) : (
+          <IonGrid
+            className={`${styles.grid} ${
+              bookInfo === undefined ? styles.centerContent : ''
+            }`}
+          >
+            {bookInfo?.modified && (
+              <>
+                <BookInfo bookInfo={bookInfo} />
+                <IonButton>
+                  Add to Reading List <IonIcon slot="end" icon={book}></IonIcon>
+                </IonButton>
+                <IonButton>
+                  Add to Wish List
+                  <IonIcon slot="end" icon={bookmark}></IonIcon>
+                </IonButton>
+              </>
+            )}
 
-              <IonCardContent>
-                Here's a small text description for the card content. Nothing
-                more, nothing less.
-              </IonCardContent>
-            </IonCard>
-          )}
-
-          <IonButton onClick={lerBarcode}>Scan Barcode</IonButton>
-        </IonGrid>
+            <IonButton onClick={lerBarcode}>Scan Barcode</IonButton>
+          </IonGrid>
+        )}
       </IonContent>
     </IonPage>
   );

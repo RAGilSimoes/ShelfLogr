@@ -14,6 +14,8 @@ import {
 import type { JwtPayload } from 'jsonwebtoken';
 
 import { verifyAuthorization } from './middlewares/auth.middleware.js';
+import type { bookInfo, bookCover } from '@shelflogr/shared';
+import { formatGoogleBook } from './utils/book.mapper.js';
 
 dotenv.config();
 
@@ -126,6 +128,69 @@ app.post('/register', async (req: Request, res: Response) => {
       .json({ error: 'Internal error processing registration' });
   }
 });
+
+app.get(
+  '/get-book-info/:isbn',
+  verifyAuthorization(false),
+  async (req: Request, res: Response) => {
+    try {
+      const isbn = req.params.isbn;
+
+      const response = await fetch(
+        `https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}&key=${process.env.BOOKS_API_KEY}`,
+      );
+
+      const data = await response.json();
+
+      if (!data.items || data.items.length === 0) {
+        return res.status(404).json({ error: 'Book Not Found' });
+      }
+
+      const rawGoogleData = data.items[0].volumeInfo;
+
+      const cleanBookInfo: bookInfo = formatGoogleBook(rawGoogleData);
+
+      const mockData = {
+        title: 'The Google story',
+        authors: ['David A. Vise', 'Mark Malseed'],
+        publisher: 'Random House Digital, Inc.',
+        publishedDate: '2005-11-15',
+        description:
+          '"Here is the story behind one of the most remarkable Internet successes of our time. Based on scrupulous research and extraordinary accessto Google, ',
+        pageCount: 207,
+        mainCategory: 'Business & Economics / Entrepreneurship',
+        categories: [
+          'Browsers (Computer programs)',
+          'Browsers (Computer programs)',
+          'Browsers (Computer programs)',
+          'Browsers (Computer programs)',
+          'Browsers (Computer programs)',
+          'Browsers (Computer programs)',
+        ],
+        imageLinks: {
+          smallThumbnail:
+            'https://books.google.com/books?id=zyTCAlFPjgYC&printsec=frontcover&img=1&zoom=5&edge=curl&source=gbs_api',
+          thumbnail:
+            'https://books.google.com/books?id=zyTCAlFPjgYC&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api',
+          small:
+            'https://books.google.com/books?id=zyTCAlFPjgYC&printsec=frontcover&img=1&zoom=2&edge=curl&source=gbs_api',
+          medium:
+            'https://books.google.com/books?id=zyTCAlFPjgYC&printsec=frontcover&img=1&zoom=3&edge=curl&source=gbs_api',
+          large:
+            'https://books.google.com/books?id=zyTCAlFPjgYC&printsec=frontcover&img=1&zoom=4&edge=curl&source=gbs_api',
+          extraLarge:
+            'https://books.google.com/books?id=zyTCAlFPjgYC&printsec=frontcover&img=1&zoom=6&edge=curl&source=gbs_api',
+        },
+        language: 'en',
+      };
+
+      return res.status(200).json(mockData);
+    } catch (error) {
+      console.error('Error getting Book Information:', error);
+      return res.status(500).json({ error: 'Error getting book information.' });
+    }
+  },
+);
 
 app.get('/get-categories', async (req: Request, res: Response) => {
   try {
