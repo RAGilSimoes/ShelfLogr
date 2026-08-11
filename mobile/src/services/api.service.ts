@@ -27,7 +27,11 @@ api.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
 api.interceptors.response.use(
   (response: AxiosResponse) => response,
   async (error) => {
-    if (error.response.status === 401 && !error.config._retry) {
+    if (
+      error.response?.status === 401 &&
+      error.response?.data?.error === 'Invalid Token' &&
+      !error.config._retry
+    ) {
       const request = error.config;
       error.config._retry = true;
 

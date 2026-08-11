@@ -13,6 +13,8 @@ import {
 } from './services/jwt.service.js';
 import type { JwtPayload } from 'jsonwebtoken';
 
+import { verifyAuthorization } from './middlewares/auth.middleware.js';
+
 dotenv.config();
 
 const app = express();
@@ -36,36 +38,22 @@ app.get('/', async (req: Request, res: Response) => {
   }
 });
 
-app.get('/refresh-token', async (req: Request, res: Response) => {
-  try {
-    const authHeader = req.headers.authorization;
+app.get(
+  '/refresh-token',
+  verifyAuthorization(false),
+  async (req: Request, res: Response) => {
+    try {
+      const { id, email, name } = req.token;
 
-    if (!authHeader) {
-      return res.status(401).json({ error: 'Token not given' });
+      const newToken = generateToken(id, email, name);
+
+      return res.status(200).json({ message: 'Sucess', token: newToken });
+    } catch (error) {
+      console.error('Erro ao fazer refresh do token:', error);
+      return res.status(500).json({ error: 'Internal Server Error' });
     }
-
-    const token = authHeader?.split(' ')[1]!;
-
-    const verifyOptions = {
-      ignoreExpiration: true,
-    };
-
-    const verifiedToken: any = verifyToken(token, verifyOptions);
-
-    if (verifiedToken == null) {
-      return res.status(401).json({ error: 'Invalid Token' });
-    }
-
-    const { id, email, name } = verifiedToken;
-
-    const newToken = generateToken(id, email, name);
-
-    return res.status(200).json({ message: 'Sucess', token: newToken });
-  } catch (error) {
-    console.error('Erro ao fazer refresh do token:', error);
-    return res.status(500).json({ error: 'Internal Server Error' });
-  }
-});
+  },
+);
 
 app.post('/login', async (req: Request, res: Response) => {
   try {
