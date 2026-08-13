@@ -114,7 +114,7 @@ const AppRouter: React.FC = () => {
   return (
     <>
       {isLoading ? (
-        <LoadSpinner />
+        <LoadSpinner message={'Getting everyting ready...'} />
       ) : (
         <IonRouterOutlet>
           <Route exact path="/login">

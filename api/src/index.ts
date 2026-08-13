@@ -15,7 +15,10 @@ import type { JwtPayload } from 'jsonwebtoken';
 
 import { verifyAuthorization } from './middlewares/auth.middleware.js';
 import type { bookInfo, bookCover } from '@shelflogr/shared';
-import { formatGoogleBook } from './utils/book.mapper.js';
+import {
+  fetchGoogleBook,
+  fetchOpenLibraryBook,
+} from './utils/bookInfoGetter.js';
 
 dotenv.config();
 
@@ -134,57 +137,35 @@ app.get(
   verifyAuthorization(false),
   async (req: Request, res: Response) => {
     try {
-      const isbn = req.params.isbn;
+      const isbn: string = req.params.isbn as string;
 
-      const response = await fetch(
-        `https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}&key=${process.env.BOOKS_API_KEY}`,
-      );
+      let googleResponse = await fetchGoogleBook(isbn);
 
-      const data = await response.json();
+      if (!googleResponse) {
+        const fallbackBook = await fetchOpenLibraryBook(isbn);
 
-      if (!data.items || data.items.length === 0) {
-        return res.status(404).json({ error: 'Book Not Found' });
+        if (!fallbackBook) {
+          return res.status(404).json({ error: 'Book Not Found.' });
+        }
+
+        return res.status(200).json(fallbackBook);
+      } else if (googleResponse?.emptyFields.length !== 0) {
+        const fallbackBook = await fetchOpenLibraryBook(isbn);
+
+        if (fallbackBook) {
+          for (const item of googleResponse.emptyFields) {
+            const key = item as keyof bookInfo;
+
+            if (fallbackBook[key]) {
+              (googleResponse.cleanBookInfo as any)[key] = fallbackBook[
+                key
+              ] as any;
+            }
+          }
+        }
       }
 
-      const rawGoogleData = data.items[0].volumeInfo;
-
-      const cleanBookInfo: bookInfo = formatGoogleBook(rawGoogleData);
-
-      const mockData = {
-        title: 'The Google story',
-        authors: ['David A. Vise', 'Mark Malseed'],
-        publisher: 'Random House Digital, Inc.',
-        publishedDate: '2005-11-15',
-        description:
-          '"Here is the story behind one of the most remarkable Internet successes of our time. Based on scrupulous research and extraordinary accessto Google, ',
-        pageCount: 207,
-        mainCategory: 'Business & Economics / Entrepreneurship',
-        categories: [
-          'Browsers (Computer programs)',
-          'Browsers (Computer programs)',
-          'Browsers (Computer programs)',
-          'Browsers (Computer programs)',
-          'Browsers (Computer programs)',
-          'Browsers (Computer programs)',
-        ],
-        imageLinks: {
-          smallThumbnail:
-            'https://books.google.com/books?id=zyTCAlFPjgYC&printsec=frontcover&img=1&zoom=5&edge=curl&source=gbs_api',
-          thumbnail:
-            'https://books.google.com/books?id=zyTCAlFPjgYC&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api',
-          small:
-            'https://books.google.com/books?id=zyTCAlFPjgYC&printsec=frontcover&img=1&zoom=2&edge=curl&source=gbs_api',
-          medium:
-            'https://books.google.com/books?id=zyTCAlFPjgYC&printsec=frontcover&img=1&zoom=3&edge=curl&source=gbs_api',
-          large:
-            'https://books.google.com/books?id=zyTCAlFPjgYC&printsec=frontcover&img=1&zoom=4&edge=curl&source=gbs_api',
-          extraLarge:
-            'https://books.google.com/books?id=zyTCAlFPjgYC&printsec=frontcover&img=1&zoom=6&edge=curl&source=gbs_api',
-        },
-        language: 'en',
-      };
-
-      return res.status(200).json(mockData);
+      return res.status(200).json(googleResponse.cleanBookInfo);
     } catch (error) {
       console.error('Error getting Book Information:', error);
       return res.status(500).json({ error: 'Error getting book information.' });

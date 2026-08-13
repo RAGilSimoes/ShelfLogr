@@ -88,7 +88,6 @@ const Add: React.FC = () => {
 
           if (response.status === 200) {
             const responseBookInfo: bookInfo = response.data;
-            responseBookInfo.modified = true;
             setBookInfo(responseBookInfo);
             setIsLoading(false);
           }
@@ -133,7 +132,7 @@ const Add: React.FC = () => {
           position="top"
         ></IonToast>
         {isLoading ? (
-          <LoadSpinner />
+          <LoadSpinner message={`Getting book info...`} />
         ) : (
           <IonGrid
             className={`${styles.grid} ${

@@ -12,6 +12,8 @@ import {
 
 import { bookInfo, bookCover } from '@shelflogr/shared';
 
+import styles from './BookInfo.module.css';
+
 const BookInfo: React.FC<{ bookInfo: bookInfo }> = ({ bookInfo }) => {
   return (
     <IonCard>
@@ -20,28 +22,26 @@ const BookInfo: React.FC<{ bookInfo: bookInfo }> = ({ bookInfo }) => {
           <IonCol size="4">
             <img
               alt="Book Cover"
-              src={bookInfo.imageLinks.thumbnail}
-              style={{ width: '100%', borderRadius: '4px' }}
+              src={
+                bookInfo.imageLinks.thumbnail
+                  ? bookInfo.imageLinks.thumbnail
+                  : '/missing-book-cover.jpg'
+              }
+              className={styles.bookCover}
             />
           </IonCol>
 
           <IonCol size="8">
             <IonCardHeader className="ion-no-padding">
-              <IonCardTitle style={{ fontSize: '1.2rem', lineHeight: '1.2' }}>
+              <IonCardTitle className={styles.title}>
                 {bookInfo.title}
               </IonCardTitle>
-              <IonCardSubtitle style={{ marginTop: '4px' }}>
+              <IonCardSubtitle className={styles.authors}>
                 {bookInfo.authors?.join(', ')}
               </IonCardSubtitle>
             </IonCardHeader>
 
-            <div
-              style={{
-                marginTop: '8px',
-                fontSize: '0.85rem',
-                color: 'var(--ion-color-step-600)',
-              }}
-            >
+            <div className={styles.metadataInfo}>
               <p>
                 <strong>Publisher:</strong> {bookInfo.publisher}
               </p>
@@ -52,70 +52,61 @@ const BookInfo: React.FC<{ bookInfo: bookInfo }> = ({ bookInfo }) => {
           </IonCol>
         </IonRow>
 
-        <hr
-          style={{
-            borderTop: '1px solid black',
-            margin: '12px 0px 0 0px',
-          }}
-        />
+        <hr className={styles.hr} />
 
         <IonRow>
           <IonCol size="12">
             <IonCardContent
-              className="ion-no-padding"
-              style={{
-                padding: '12px 16px',
-                maxHeight: '35vh',
-                overflowY: 'auto',
-              }}
+              className={`ion-no-padding ${styles.secondaryInfo}`}
             >
-              <h3 style={{ fontWeight: 'bold', marginBottom: '8px' }}>
-                Sinopse
-              </h3>
-              <p style={{ textAlign: 'justify', fontSize: '0.9rem' }}>
-                {bookInfo.description}
+              <h3 className={styles.sinopse}>Sinopse</h3>
+              <p className={styles.description}>
+                {bookInfo.description
+                  ? bookInfo.description
+                  : 'No description found.'}
               </p>
 
-              <div style={{ marginTop: '16px' }}>
-                <p style={{ marginBottom: '8px' }}>
+              <div className={styles.categories}>
+                <p className={styles.mainCategory}>
                   <strong>Main Category:</strong>
                 </p>
-                <IonChip color="primary">{bookInfo.mainCategory}</IonChip>
+                <IonChip color="primary">
+                  {bookInfo.mainCategory
+                    ? bookInfo.mainCategory
+                    : 'No Main Category found.'}
+                </IonChip>
 
-                <p style={{ marginTop: '12px', marginBottom: '8px' }}>
-                  <strong>Secondary Categories:</strong>
-                </p>
+                {bookInfo.categories && bookInfo.categories.length !== 0 && (
+                  <>
+                    <p className={styles.secondaryCategoriesTitle}>
+                      <strong>Secondary Categories:</strong>
+                    </p>
 
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                  {bookInfo.categories.map((category, index) => {
-                    return (
-                      <IonChip
-                        key={index}
-                        color="secondary"
-                        style={{ margin: '0px' }}
-                      >
-                        {category}
-                      </IonChip>
-                    );
-                  })}
-                </div>
+                    <div className={styles.secondaryCategoriesDiv}>
+                      {bookInfo.categories.map((category, index) => {
+                        return (
+                          <IonChip
+                            key={index}
+                            color="secondary"
+                            className={styles.secondaryCategoriesChip}
+                          >
+                            {category}
+                          </IonChip>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
               </div>
 
-              <div
-                style={{
-                  marginTop: 'auto',
-                  fontSize: '0.8rem',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  borderTop: '1px solid var(--ion-color-step-100)',
-                  paddingTop: '8px',
-                }}
-              >
+              <div className={styles.footerInfo}>
                 <span>
-                  <strong>Pages:</strong> {bookInfo.pageCount}
+                  <strong>Pages:</strong>{' '}
+                  {bookInfo.pageCount ? bookInfo.pageCount : 'N/A'}
                 </span>
                 <span>
-                  <strong>Language:</strong> {bookInfo.language?.toUpperCase()}
+                  <strong>Language:</strong>{' '}
+                  {bookInfo.language ? bookInfo.language.toUpperCase() : 'N/A'}
                 </span>
               </div>
             </IonCardContent>

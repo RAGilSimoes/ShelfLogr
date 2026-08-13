@@ -1,17 +1,11 @@
 import { IonSpinner } from '@ionic/react';
 
-const LoadSpinner: React.FC = () => {
+import styles from './LoadSpinner.module.css';
+
+const LoadSpinner: React.FC<{ message: string }> = ({ message }) => {
   return (
-    <div
-      style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100vh',
-        width: '100vw',
-        backgroundColor: 'var(--ion-background-color)',
-      }}
-    >
+    <div className={styles.spinnerDiv}>
+      <strong>{message}</strong>
       <IonSpinner name="lines" color="primary" />
     </div>
   );

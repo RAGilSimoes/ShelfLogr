@@ -11,7 +11,7 @@ import { checkToken, removeToken, setToken } from './auth.service';
 
 const api: AxiosInstance = axios.create({
   baseURL: import.meta.env.VITE_BACKEND_URL,
-  timeout: 5000,
+  timeout: 15000,
 });
 
 api.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {

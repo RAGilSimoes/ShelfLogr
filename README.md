@@ -22,7 +22,7 @@ Login and Register implemented. Currently working on the scanning book barcode a
 ## Roadmap
 
 - [x] Login and Register
-- [ ] Scan barcode and fetches information
+- [x] Scan barcode and fetches information
 - [ ] Add Book to one of the lists after scanning barcode
 - [ ] Display a book suggestion from the ones the user is reading on the home page
 - [ ] Display book suggestions by topic on the home page
