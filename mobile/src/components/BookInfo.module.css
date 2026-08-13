@@ -1,3 +1,7 @@
+.card {
+  border: 1px solid black;
+}
+
 .bookCover {
   width: 100%;
   border-radius: 4px;
@@ -31,7 +35,6 @@
 }
 
 .sinopse {
-  font-weight: bold;
   margin-bottom: 8px;
 }
 
