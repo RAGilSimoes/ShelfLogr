@@ -6,23 +6,57 @@ export const formatGoogleBook = (
 ): bookInfo => {
   function cleanCategories() {
     if (googleVolumeInfo.mainCategory) {
-      const mainCategory = googleVolumeInfo.mainCategory.split(' / ');
+      let categoriesSet = new Set<string>();
 
-      if (mainCategory.length > 1) {
-        googleVolumeInfo.mainCategory = mainCategory[0];
+      const splitMainCategory = googleVolumeInfo.mainCategory.split(' / ');
 
-        googleVolumeInfo.categories = googleVolumeInfo.categories || [];
-        googleVolumeInfo.categories.push(...mainCategory.slice(1));
+      googleVolumeInfo.mainCategory = splitMainCategory[0];
+
+      const secondaryCategories = splitMainCategory.slice(1);
+
+      for (const category of secondaryCategories) {
+        categoriesSet.add(category);
       }
-    } else if (
-      googleVolumeInfo.categories &&
-      googleVolumeInfo.categories.length >= 1
-    ) {
-      googleVolumeInfo.mainCategory = googleVolumeInfo.categories[0];
 
-      googleVolumeInfo.categories = googleVolumeInfo.categories.slice(1);
+      for (const line of googleVolumeInfo.categories) {
+        const splitLine = line.split(' / ');
+
+        for (const index of splitLine) {
+          categoriesSet.add(index);
+        }
+      }
+      categoriesSet.delete(splitMainCategory[0]);
+      googleVolumeInfo.categories = Array(...categoriesSet);
     } else {
-      googleVolumeInfo.mainCategory = '';
+      let categoriesArray = [];
+      for (const line of googleVolumeInfo.categories) {
+        const splitLine = line.split(' / ');
+
+        for (const index of splitLine) {
+          categoriesArray.push(index);
+        }
+      }
+
+      let wordCount: any = {};
+
+      for (const category of categoriesArray) {
+        if (category in wordCount) {
+          wordCount[category] += 1;
+        } else {
+          wordCount[category] = 1;
+        }
+      }
+
+      const entries = Object.entries(wordCount);
+      const sortedEntries = entries.sort((a: any, b: any) => b[1] - a[1]);
+
+      if (sortedEntries.length > 0) {
+        googleVolumeInfo.mainCategory = sortedEntries[0]![0];
+
+        googleVolumeInfo.categories = sortedEntries
+          .slice(1)
+          .map((entry) => entry[0]);
+      }
     }
   }
 
@@ -75,6 +109,8 @@ export const formatOpenLibraryBook = (
   cleanAuthors();
   cleanCategories();
 
+  const maxSecondaryCategoriesIndex = 6;
+
   return {
     isbn: isbn,
     title: openLibraryVolumeInfo.title || '',
@@ -95,7 +131,7 @@ export const formatOpenLibraryBook = (
         : '',
     categories:
       openLibraryVolumeInfo.subjects?.length > 1
-        ? openLibraryVolumeInfo.subjects.slice(1)
+        ? openLibraryVolumeInfo.subjects.slice(1, maxSecondaryCategoriesIndex)
         : [],
 
     cover: openLibraryVolumeInfo.cover?.medium || '',
