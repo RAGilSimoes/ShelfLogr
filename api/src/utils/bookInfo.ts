@@ -8,9 +8,18 @@ export async function fetchDatabaseBook(
   isbn: string,
 ): Promise<bookInfo | null> {
   try {
-    const { rows } = await pool.query('SELECT * FROM "book" where isbn = $1', [
-      isbn,
-    ]);
+    const { rows } = await pool.query(
+      `SELECT 
+        b.*, 
+        COALESCE((ARRAY_AGG(c.name) FILTER (WHERE bc.main = true))[1], '') as "mainCategory",
+        COALESCE(ARRAY_AGG(c.name) FILTER (WHERE bc.main = false), '{}') as categories
+    FROM "book" b
+    LEFT JOIN book_category bc ON b.id = bc.book_id
+    LEFT JOIN categories c ON bc.category_id = c.id
+    WHERE b.isbn = $1
+    GROUP BY b.id;`,
+      [isbn],
+    );
 
     if (rows.length > 0) {
       const livro: bookInfo = rows[0];
@@ -93,20 +102,70 @@ export async function fetchOpenLibraryBook(
 }
 
 export async function addBookToDB(info: Partial<bookInfo>) {
+  const client = await pool.connect();
   try {
-    const { rows: bookID } = await pool.query(
-      'INSERT INTO "book"(isbn, title, cover, publisher, description, "publishedDate", "pageCount", language, authors) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) returning id',
-      [
-        info.isbn,
-        info.title,
-        info.cover,
-        info.publisher,
-        info.description,
-        info.publishedDate,
-        info.pageCount,
-        info.language,
-        info.authors,
-      ],
-    );
-  } catch (error) {}
+    await client.query('BEGIN');
+    const insertBookText =
+      'INSERT INTO "book"(isbn, title, cover, publisher, description, "publishedDate", "pageCount", language, authors) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) returning id';
+    const insertBookResult = await client.query(insertBookText, [
+      info.isbn,
+      info.title,
+      info.cover,
+      info.publisher,
+      info.description,
+      info.publishedDate,
+      info.pageCount,
+      info.language,
+      info.authors,
+    ]);
+
+    const bookID = insertBookResult.rows[0].id;
+
+    const mainCategory = info.mainCategory;
+    const categories = info.categories;
+
+    const insertMainCategory =
+      'INSERT INTO categories (name) VALUES ($1) ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name RETURNING id';
+    const insertMainCategoryResult = await client.query(insertMainCategory, [
+      mainCategory,
+    ]);
+
+    const mainCategoryID = insertMainCategoryResult.rows[0].id;
+
+    const categoriesIDs = [];
+
+    const insertSecondaryCategory =
+      'INSERT INTO categories (name) VALUES ($1) ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name RETURNING id';
+
+    for (const secondaryCategory of categories!) {
+      const insertSecondaryCategoryResult = await client.query(
+        insertSecondaryCategory,
+        [secondaryCategory],
+      );
+
+      const secondaryCategoryID = insertSecondaryCategoryResult.rows[0].id;
+
+      categoriesIDs.push(secondaryCategoryID);
+    }
+
+    const insertMainCategoryBookRelation =
+      'INSERT INTO book_category(book_id, category_id, main) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING';
+
+    await client.query(insertMainCategoryBookRelation, [
+      bookID,
+      mainCategoryID,
+      true,
+    ]);
+
+    for (const id of categoriesIDs) {
+      await client.query(insertMainCategoryBookRelation, [bookID, id, false]);
+    }
+
+    await client.query('COMMIT');
+  } catch (e) {
+    await client.query('ROLLBACK');
+    throw e;
+  } finally {
+    client.release();
+  }
 }
