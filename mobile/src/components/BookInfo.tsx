@@ -70,9 +70,15 @@ const BookInfo: React.FC<{ bookInfo: bookInfo; detailed: boolean }> = ({
                     <strong>Sinopse:</strong>
                   </h3>
                   <p className={styles.description}>
-                    {bookInfo.description
-                      ? bookInfo.description
-                      : 'No description found.'}
+                    {bookInfo.description ? (
+                      <div
+                        dangerouslySetInnerHTML={{
+                          __html: bookInfo.description,
+                        }}
+                      />
+                    ) : (
+                      'No description found.'
+                    )}
                   </p>
 
                   <div className={styles.categories}>

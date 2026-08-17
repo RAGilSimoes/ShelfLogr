@@ -39,6 +39,8 @@ import { book, bookmark } from 'ionicons/icons';
 
 import { bookInfo } from '@shelflogr/shared';
 
+import DOMPurify from 'dompurify';
+
 const Add: React.FC = () => {
   const [bookInfo, setBookInfo] = useState<bookInfo | undefined>(undefined);
   const [errorMessage, setErrorMessage] = useState<string>('');
@@ -124,6 +126,14 @@ const Add: React.FC = () => {
       const response = await api.get(`/get-book-info/${isbn}`);
 
       if (response.status === 200) {
+        if (
+          response.data.description &&
+          response.data.description.length !== 0
+        ) {
+          response.data.description = DOMPurify.sanitize(
+            response.data.description,
+          );
+        }
         const responseBookInfo: bookInfo = response.data;
         setBookInfo(responseBookInfo);
         setIsLoading(false);
