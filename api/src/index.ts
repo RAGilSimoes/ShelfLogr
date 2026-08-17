@@ -14,11 +14,13 @@ import {
 import type { JwtPayload } from 'jsonwebtoken';
 
 import { verifyAuthorization } from './middlewares/auth.middleware.js';
-import type { bookInfo, bookCover } from '@shelflogr/shared';
+import type { bookInfo } from '@shelflogr/shared';
 import {
   fetchGoogleBook,
   fetchOpenLibraryBook,
-} from './utils/bookInfoGetter.js';
+  fetchDatabaseBook,
+  addBookToDB,
+} from './utils/bookInfo.js';
 
 dotenv.config();
 
@@ -139,6 +141,14 @@ app.get(
     try {
       const isbn: string = req.params.isbn as string;
 
+      const bookInfoDatabase = await fetchDatabaseBook(isbn);
+
+      let addToDB = bookInfoDatabase ? false : true;
+
+      if (bookInfoDatabase) {
+        return res.status(200).json(bookInfoDatabase);
+      }
+
       let googleResponse = await fetchGoogleBook(isbn);
 
       if (!googleResponse) {
@@ -146,6 +156,8 @@ app.get(
 
         if (!fallbackBook) {
           return res.status(404).json({ error: 'Book Not Found.' });
+        } else if (addToDB) {
+          await addBookToDB(fallbackBook);
         }
 
         return res.status(200).json(fallbackBook);
@@ -164,7 +176,9 @@ app.get(
           }
         }
       }
-
+      if (addBookToDB) {
+        await addBookToDB(googleResponse.cleanBookInfo);
+      }
       return res.status(200).json(googleResponse.cleanBookInfo);
     } catch (error) {
       console.error('Error getting Book Information:', error);

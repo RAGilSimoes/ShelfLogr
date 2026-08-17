@@ -1,6 +1,9 @@
-import type { bookInfo, bookCover } from '@shelflogr/shared';
+import type { bookInfo } from '@shelflogr/shared';
 
-export const formatGoogleBook = (googleVolumeInfo: any): bookInfo => {
+export const formatGoogleBook = (
+  googleVolumeInfo: any,
+  isbn: string,
+): bookInfo => {
   function cleanCategories() {
     if (googleVolumeInfo.mainCategory) {
       const mainCategory = googleVolumeInfo.mainCategory.split(' / ');
@@ -26,6 +29,7 @@ export const formatGoogleBook = (googleVolumeInfo: any): bookInfo => {
   cleanCategories();
 
   return {
+    isbn: isbn,
     title: googleVolumeInfo.title || '',
 
     authors: googleVolumeInfo.authors || [''],
@@ -37,22 +41,17 @@ export const formatGoogleBook = (googleVolumeInfo: any): bookInfo => {
 
     mainCategory: googleVolumeInfo.mainCategory,
     categories: googleVolumeInfo.categories || [],
-
-    imageLinks: {
-      smallThumbnail: googleVolumeInfo.imageLinks?.smallThumbnail || '',
-      thumbnail: googleVolumeInfo.imageLinks?.thumbnail || '',
-      small: googleVolumeInfo.imageLinks?.small || '',
-      medium: googleVolumeInfo.imageLinks?.medium || '',
-      large: googleVolumeInfo.imageLinks?.large || '',
-      extraLarge: googleVolumeInfo.imageLinks?.extraLarge || '',
-    },
+    cover: googleVolumeInfo.imageLinks?.thumbnail || '',
 
     language: googleVolumeInfo.language || '',
     modified: true,
   };
 };
 
-export const formatOpenLibraryBook = (openLibraryVolumeInfo: any): bookInfo => {
+export const formatOpenLibraryBook = (
+  openLibraryVolumeInfo: any,
+  isbn: string,
+): bookInfo => {
   function cleanAuthors() {
     let authors = [];
     if (openLibraryVolumeInfo.authors) {
@@ -77,6 +76,7 @@ export const formatOpenLibraryBook = (openLibraryVolumeInfo: any): bookInfo => {
   cleanCategories();
 
   return {
+    isbn: isbn,
     title: openLibraryVolumeInfo.title || '',
 
     authors:
@@ -98,14 +98,7 @@ export const formatOpenLibraryBook = (openLibraryVolumeInfo: any): bookInfo => {
         ? openLibraryVolumeInfo.subjects.slice(1)
         : [],
 
-    imageLinks: {
-      smallThumbnail: openLibraryVolumeInfo.cover?.small || '',
-      thumbnail: openLibraryVolumeInfo.cover?.medium || '',
-      small: openLibraryVolumeInfo.cover?.small || '',
-      medium: openLibraryVolumeInfo.cover?.medium || '',
-      large: openLibraryVolumeInfo.cover?.large || '',
-      extraLarge: openLibraryVolumeInfo.cover?.large || '',
-    },
+    cover: openLibraryVolumeInfo.cover?.medium || '',
 
     language: openLibraryVolumeInfo.language || '',
     modified: true,

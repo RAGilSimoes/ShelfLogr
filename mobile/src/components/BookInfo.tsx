@@ -10,7 +10,7 @@ import {
   IonChip,
 } from '@ionic/react';
 
-import { bookInfo, bookCover } from '@shelflogr/shared';
+import { bookInfo } from '@shelflogr/shared';
 
 import styles from './BookInfo.module.css';
 
@@ -25,11 +25,7 @@ const BookInfo: React.FC<{ bookInfo: bookInfo; detailed: boolean }> = ({
           <IonCol size="4">
             <img
               alt="Book Cover"
-              src={
-                bookInfo.imageLinks.thumbnail
-                  ? bookInfo.imageLinks.thumbnail
-                  : '/missing-book-cover.jpg'
-              }
+              src={bookInfo.cover ? bookInfo.cover : '/missing-book-cover.jpg'}
               className={styles.bookCover}
             />
           </IonCol>
@@ -37,19 +33,25 @@ const BookInfo: React.FC<{ bookInfo: bookInfo; detailed: boolean }> = ({
           <IonCol size="8">
             <IonCardHeader className="ion-no-padding">
               <IonCardTitle className={styles.title}>
-                {bookInfo.title}
+                {bookInfo.title ? bookInfo.title : 'No title found'}
               </IonCardTitle>
               <IonCardSubtitle className={styles.authors}>
-                {bookInfo.authors?.join(', ')}
+                {bookInfo.authors
+                  ? bookInfo.authors?.join(', ')
+                  : 'No authors found'}
               </IonCardSubtitle>
             </IonCardHeader>
 
             <div className={styles.metadataInfo}>
               <p>
-                <strong>Publisher:</strong> {bookInfo.publisher}
+                <strong>Publisher:</strong>{' '}
+                {bookInfo.publisher ? bookInfo.publisher : 'No publisher found'}
               </p>
               <p>
-                <strong>Date:</strong> {bookInfo.publishedDate}
+                <strong>Date:</strong>{' '}
+                {bookInfo.publishedDate
+                  ? bookInfo.publishedDate
+                  : 'No published date found'}
               </p>
             </div>
           </IonCol>

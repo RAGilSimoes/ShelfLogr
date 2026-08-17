@@ -37,7 +37,7 @@ import BookInfo from '../components/BookInfo';
 
 import { book, bookmark } from 'ionicons/icons';
 
-import { bookInfo, bookCover } from '@shelflogr/shared';
+import { bookInfo } from '@shelflogr/shared';
 
 const Add: React.FC = () => {
   const [bookInfo, setBookInfo] = useState<bookInfo | undefined>(undefined);
@@ -207,7 +207,7 @@ const Add: React.FC = () => {
                 bookInfo === undefined ? styles.centerContent : ''
               }`}
             >
-              {bookInfo?.modified && (
+              {bookInfo && (
                 <>
                   <BookInfo bookInfo={bookInfo} detailed={true} />
                   <IonButton>

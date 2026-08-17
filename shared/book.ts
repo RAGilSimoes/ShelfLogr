@@ -1,13 +1,5 @@
-export interface bookCover {
-  smallThumbnail: string;
-  thumbnail: string;
-  small: string;
-  medium: string;
-  large: string;
-  extraLarge: string;
-}
-
 export interface bookInfo {
+  isbn: string;
   title: string;
   authors: Array<string>;
   publisher: string;
@@ -16,7 +8,7 @@ export interface bookInfo {
   pageCount: number;
   mainCategory: string;
   categories: Array<string>;
-  imageLinks: bookCover;
+  cover: string;
   language: string;
   modified: boolean;
 }

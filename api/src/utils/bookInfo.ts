@@ -1,6 +1,29 @@
-import type { bookInfo, bookCover } from '@shelflogr/shared';
+import type { bookInfo } from '@shelflogr/shared';
 
 import { formatGoogleBook, formatOpenLibraryBook } from './book.mapper.js';
+
+import { pool } from '../db.js';
+
+export async function fetchDatabaseBook(
+  isbn: string,
+): Promise<bookInfo | null> {
+  try {
+    const { rows } = await pool.query('SELECT * FROM "book" where isbn = $1', [
+      isbn,
+    ]);
+
+    if (rows.length > 0) {
+      const livro: bookInfo = rows[0];
+
+      return livro;
+    } else {
+      return null;
+    }
+  } catch (error) {
+    console.error('Database query failed:', error);
+    return null;
+  }
+}
 
 export async function fetchGoogleBook(isbn: string): Promise<{
   cleanBookInfo: bookInfo;
@@ -30,7 +53,7 @@ export async function fetchGoogleBook(isbn: string): Promise<{
 
   const rawGoogleData = bookData.volumeInfo;
 
-  const cleanBookInfo: bookInfo = formatGoogleBook(rawGoogleData);
+  const cleanBookInfo: bookInfo = formatGoogleBook(rawGoogleData, isbn);
 
   const emptyFields = [];
 
@@ -64,7 +87,26 @@ export async function fetchOpenLibraryBook(
 
   const bookData = data[`ISBN:${isbn}`];
 
-  const cleanBookInfo: bookInfo = formatOpenLibraryBook(bookData);
+  const cleanBookInfo: bookInfo = formatOpenLibraryBook(bookData, isbn);
 
   return cleanBookInfo;
+}
+
+export async function addBookToDB(info: Partial<bookInfo>) {
+  try {
+    const { rows: bookID } = await pool.query(
+      'INSERT INTO "book"(isbn, title, cover, publisher, description, "publishedDate", "pageCount", language, authors) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) returning id',
+      [
+        info.isbn,
+        info.title,
+        info.cover,
+        info.publisher,
+        info.description,
+        info.publishedDate,
+        info.pageCount,
+        info.language,
+        info.authors,
+      ],
+    );
+  } catch (error) {}
 }
