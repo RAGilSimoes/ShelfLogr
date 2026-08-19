@@ -14,10 +14,10 @@ import { bookInfo } from '@shelflogr/shared';
 
 import styles from './BookInfo.module.css';
 
-const BookInfo: React.FC<{ bookInfo: bookInfo; detailed: boolean }> = ({
-  bookInfo,
-  detailed,
-}) => {
+const BookInfo: React.FC<{
+  bookInfo: bookInfo;
+  detailed: boolean;
+}> = ({ bookInfo, detailed }) => {
   return (
     <IonCard className={styles.card}>
       <IonGrid>

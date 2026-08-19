@@ -1,4 +1,5 @@
 export interface bookInfo {
+  id?: string;
   isbn: string;
   title: string;
   authors: Array<string>;

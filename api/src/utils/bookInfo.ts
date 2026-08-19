@@ -6,9 +6,10 @@ import { pool } from '../db.js';
 
 export async function fetchDatabaseBook(
   isbn: string,
-): Promise<bookInfo | null> {
+  userID: string,
+): Promise<{ book: bookInfo; currentStatus?: string | null } | null> {
   try {
-    const { rows } = await pool.query(
+    const { rows: bookExists } = await pool.query(
       `SELECT 
         b.*, 
         COALESCE((ARRAY_AGG(c.name) FILTER (WHERE bc.main = true))[1], '') as "mainCategory",
@@ -21,10 +22,22 @@ export async function fetchDatabaseBook(
       [isbn],
     );
 
-    if (rows.length > 0) {
-      const livro: bookInfo = rows[0];
+    if (bookExists.length > 0) {
+      const book: bookInfo = bookExists[0];
 
-      return livro;
+      const bookID = book.id;
+
+      const { rows: status } = await pool.query(
+        'SELECT status FROM user_books WHERE user_id = $1 AND book_id = $2',
+        [userID, bookID],
+      );
+
+      if (status.length > 0) {
+        const currentStatus = status[0].status;
+        return { book, currentStatus };
+      }
+
+      return { book };
     } else {
       return null;
     }
@@ -106,7 +119,7 @@ export async function addBookToDB(info: Partial<bookInfo>) {
   try {
     await client.query('BEGIN');
     const insertBookText =
-      'INSERT INTO "book"(isbn, title, cover, publisher, description, "publishedDate", "pageCount", language, authors) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) returning id';
+      'INSERT INTO "book"(isbn, title, cover, publisher, description, "publishedDate", "pageCount", language, authors) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT (isbn) DO UPDATE SET isbn = EXCLUDED.isbn RETURNING id';
     const insertBookResult = await client.query(insertBookText, [
       info.isbn,
       info.title,

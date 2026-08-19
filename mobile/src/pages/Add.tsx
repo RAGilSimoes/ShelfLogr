@@ -35,7 +35,12 @@ import axios from 'axios';
 import LoadSpinner from '../components/LoadSpinner';
 import BookInfo from '../components/BookInfo';
 
-import { book, bookmark } from 'ionicons/icons';
+import {
+  book,
+  bookmark,
+  checkmarkCircleOutline,
+  barcodeOutline,
+} from 'ionicons/icons';
 
 import { bookInfo } from '@shelflogr/shared';
 
@@ -43,6 +48,7 @@ import DOMPurify from 'dompurify';
 
 const Add: React.FC = () => {
   const [bookInfo, setBookInfo] = useState<bookInfo | undefined>(undefined);
+  const [bookStatus, setBookStatus] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [displayErrorMessage, setDisplayErrorMessage] =
     useState<boolean>(false);
@@ -73,7 +79,7 @@ const Add: React.FC = () => {
     return barcodes;
   };
 
-  const lerBarcode = async () => {
+  const readBarcode = async () => {
     setErrorMessage('');
     setDisplayErrorMessage(false);
     setTempIsbn(0);
@@ -118,6 +124,7 @@ const Add: React.FC = () => {
 
   useIonViewWillLeave(() => {
     setBookInfo(undefined);
+    setBookStatus(null);
   });
 
   const fetchBookInfo = async (isbn: number) => {
@@ -127,14 +134,19 @@ const Add: React.FC = () => {
 
       if (response.status === 200) {
         if (
-          response.data.description &&
-          response.data.description.length !== 0
+          response.data.book.description &&
+          response.data.book.description.length !== 0
         ) {
-          response.data.description = DOMPurify.sanitize(
-            response.data.description,
+          response.data.book.description = DOMPurify.sanitize(
+            response.data.book.description,
           );
         }
-        const responseBookInfo: bookInfo = response.data;
+        const responseBookInfo: bookInfo = response.data.book;
+        if (response.data.currentStatus) {
+          setBookStatus(response.data.currentStatus);
+        } else {
+          setBookStatus('');
+        }
         setBookInfo(responseBookInfo);
         setIsLoading(false);
       }
@@ -150,6 +162,10 @@ const Add: React.FC = () => {
       setIsAlertOpen(false);
     }
   };
+
+  const showAddToListsButton = bookInfo && bookStatus === '';
+  const showAlreadyHasBook =
+    bookInfo && bookStatus !== '' && bookStatus !== null;
 
   return (
     <IonPage>
@@ -217,20 +233,66 @@ const Add: React.FC = () => {
                 bookInfo === undefined ? styles.centerContent : ''
               }`}
             >
-              {bookInfo && (
+              {bookInfo && <BookInfo bookInfo={bookInfo} detailed={true} />}
+              {(showAddToListsButton && (
                 <>
-                  <BookInfo bookInfo={bookInfo} detailed={true} />
-                  <IonButton>
+                  <IonButton
+                    expand="block"
+                    shape="round"
+                    size="default"
+                    onClick={readBarcode}
+                    className="ion-margin-top"
+                    color="primary"
+                  >
                     Add to Reading List{' '}
                     <IonIcon slot="end" icon={book}></IonIcon>
                   </IonButton>
-                  <IonButton>
+                  <IonButton
+                    expand="block"
+                    shape="round"
+                    size="default"
+                    onClick={readBarcode}
+                    className="ion-margin-top"
+                    color="tertiary"
+                  >
                     Add to Wish List
                     <IonIcon slot="end" icon={bookmark}></IonIcon>
                   </IonButton>
                 </>
-              )}
-              <IonButton onClick={lerBarcode}>Scan Barcode</IonButton>
+              )) ||
+                (showAlreadyHasBook && (
+                  <>
+                    <IonCard color="success">
+                      <IonCardHeader className={styles.successHeader}>
+                        <IonCardSubtitle className={styles.successTitle}>
+                          <IonIcon icon={checkmarkCircleOutline} />
+                          You already added this book!
+                        </IonCardSubtitle>
+                        <IonCardTitle>
+                          It's in your{' '}
+                          <strong>
+                            {bookStatus === 'reading'
+                              ? 'Reading List'
+                              : 'Wish List'}
+                          </strong>
+                          .
+                        </IonCardTitle>
+                      </IonCardHeader>
+                    </IonCard>
+                  </>
+                ))}
+              <IonButton
+                expand="block"
+                shape="round"
+                size={showAddToListsButton === true ? 'default' : 'large'}
+                fill={showAddToListsButton === true ? 'outline' : 'solid'}
+                color={showAddToListsButton === true ? 'medium' : 'primary'}
+                onClick={readBarcode}
+                className="ion-margin-top"
+              >
+                <IonIcon slot="start" icon={barcodeOutline}></IonIcon>
+                Scan Barcode
+              </IonButton>
             </IonGrid>
           </>
         )}

@@ -141,7 +141,9 @@ app.get(
     try {
       const isbn: string = req.params.isbn as string;
 
-      const bookInfoDatabase = await fetchDatabaseBook(isbn);
+      const { id } = req.token;
+
+      const bookInfoDatabase = await fetchDatabaseBook(isbn, id);
 
       let addToDB = bookInfoDatabase ? false : true;
 
