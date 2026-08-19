@@ -12,6 +12,8 @@ import {
   IonToast,
   IonText,
   IonRouterLink,
+  IonFooter,
+  IonToolbar,
 } from '@ionic/react';
 import { logIn } from 'ionicons/icons';
 import { useEffect, useState } from 'react';
@@ -129,16 +131,15 @@ const Login: React.FC = () => {
 
   return (
     <IonPage>
-      <IonContent fullscreen>
+      <IonContent fullscreen scrollY={false}>
         <IonGrid className={styles.grid}>
           <IonImg src="/ShelfLogr_logo.png" className={styles.logo}></IonImg>
           <form onSubmit={submitForm} className={styles.loginForm}>
             <IonItem>
               <IonInput
-                className={
-                  `${isValidEmail && 'ion-valid'} ${isValidEmail === false && 'ion-invalid'} ${isTouched && 'ion-touched'}` &&
-                  styles.input
-                }
+                className={`${isValidEmail ? 'ion-valid' : 'ion-invalid'} ${
+                  isTouched ? 'ion-touched' : ''
+                } ${styles.input}`}
                 label="Email"
                 name="email"
                 type="email"
@@ -154,10 +155,9 @@ const Login: React.FC = () => {
 
             <IonItem>
               <IonInput
-                className={
-                  `${isValidPassword && 'ion-valid'} ${isValidPassword === false && 'ion-invalid'} ${isTouched && 'ion-touched'}` &&
-                  styles.input
-                }
+                className={`${isValidPassword ? 'ion-valid' : 'ion-invalid'} ${
+                  isTouched ? 'ion-touched' : ''
+                } ${styles.input}`}
                 label="Password"
                 name="password"
                 type="password"
@@ -173,7 +173,12 @@ const Login: React.FC = () => {
               </IonInput>
             </IonItem>
             <div className="action-group">
-              <IonButton disabled={!isValidForm} type="submit" expand="block">
+              <IonButton
+                disabled={!isValidForm}
+                type="submit"
+                expand="block"
+                onClick={(e) => submitForm(e as any)}
+              >
                 Login
                 <IonIcon slot="end" icon={logIn}></IonIcon>
               </IonButton>
@@ -204,6 +209,18 @@ const Login: React.FC = () => {
           className={styles.customToast}
         ></IonToast>
       </IonContent>
+      <IonFooter className="ion-no-border" translucent={true} collapse="fade">
+        <IonToolbar>
+          <div className="ion-text-center" style={{ fontSize: '0.75rem' }}>
+            <IonText color="medium">v0.0.1</IonText>
+            {' - '}
+            <IonText color="medium">
+              Developed by{' '}
+              <a href="https://ragilsimoes.github.io/">Ricardo André Simões</a>
+            </IonText>
+          </div>
+        </IonToolbar>
+      </IonFooter>
     </IonPage>
   );
 };

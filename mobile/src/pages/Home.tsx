@@ -1,4 +1,12 @@
-import { IonContent, IonPage, IonItem, IonLabel, IonIcon } from '@ionic/react';
+import {
+  IonContent,
+  IonPage,
+  IonItem,
+  IonLabel,
+  IonIcon,
+  IonHeader,
+  IonToolbar,
+} from '@ionic/react';
 import { sunny, partlySunny, moon } from 'ionicons/icons';
 import ExploreContainer from '../components/ExploreContainer';
 import './Home.css';
@@ -28,30 +36,35 @@ const Home: React.FC<{ userName: string }> = ({ userName }) => {
 
   return (
     <IonPage>
-      <IonContent fullscreen>
-        <IonItem
-          style={{
-            justifySelf: 'center',
-            width: '75%',
-            marginTop: '15px',
-            height: 'fit-content',
-            padding: '5px 0px',
-          }}
-        >
-          {getTimeIcon()}
-          <IonLabel
+      <IonHeader className="ion-no-border">
+        <IonToolbar>
+          <div
             style={{
-              margin: 0,
               display: 'flex',
-              flexDirection: 'column',
+              justifyContent: 'center',
               alignItems: 'center',
-              width: 'min-content',
+              gap: '15px',
+              padding: '10px 0',
             }}
           >
-            <IonLabel style={{ width: 'fit-content' }}>Welcome Back</IonLabel>
-            <IonLabel style={{ width: 'fit-content' }}>{userName}</IonLabel>
-          </IonLabel>
-        </IonItem>
+            {getTimeIcon()}
+
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+              }}
+            >
+              <span style={{ fontSize: '14px' }}>Welcome Back</span>
+              <strong style={{ fontSize: '16px', fontWeight: '500' }}>
+                {userName}
+              </strong>
+            </div>
+          </div>
+        </IonToolbar>
+      </IonHeader>
+      <IonContent fullscreen>
         <ExploreContainer name="Home page" />
       </IonContent>
     </IonPage>

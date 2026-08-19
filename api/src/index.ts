@@ -13,6 +13,15 @@ import {
 } from './services/jwt.service.js';
 import type { JwtPayload } from 'jsonwebtoken';
 
+import { verifyAuthorization } from './middlewares/auth.middleware.js';
+import type { bookInfo } from '@shelflogr/shared';
+import {
+  fetchGoogleBook,
+  fetchOpenLibraryBook,
+  fetchDatabaseBook,
+  addBookToDB,
+} from './utils/bookInfo.js';
+
 dotenv.config();
 
 const app = express();
@@ -36,36 +45,22 @@ app.get('/', async (req: Request, res: Response) => {
   }
 });
 
-app.get('/refresh-token', async (req: Request, res: Response) => {
-  try {
-    const authHeader = req.headers.authorization;
+app.get(
+  '/refresh-token',
+  verifyAuthorization(false),
+  async (req: Request, res: Response) => {
+    try {
+      const { id, email, name } = req.token;
 
-    if (!authHeader) {
-      return res.status(401).json({ error: 'Token not given' });
+      const newToken = generateToken(id, email, name);
+
+      return res.status(200).json({ message: 'Sucess', token: newToken });
+    } catch (error) {
+      console.error('Erro ao fazer refresh do token:', error);
+      return res.status(500).json({ error: 'Internal Server Error' });
     }
-
-    const token = authHeader?.split(' ')[1]!;
-
-    const verifyOptions = {
-      ignoreExpiration: true,
-    };
-
-    const verifiedToken: any = verifyToken(token, verifyOptions);
-
-    if (verifiedToken == null) {
-      return res.status(401).json({ error: 'Invalid Token' });
-    }
-
-    const { id, email, name } = verifiedToken;
-
-    const newToken = generateToken(id, email, name);
-
-    return res.status(200).json({ message: 'Sucess', token: newToken });
-  } catch (error) {
-    console.error('Erro ao fazer refresh do token:', error);
-    return res.status(500).json({ error: 'Internal Server Error' });
-  }
-});
+  },
+);
 
 app.post('/login', async (req: Request, res: Response) => {
   try {
@@ -138,6 +133,136 @@ app.post('/register', async (req: Request, res: Response) => {
       .json({ error: 'Internal error processing registration' });
   }
 });
+
+app.get(
+  '/get-book-info/:isbn',
+  verifyAuthorization(false),
+  async (req: Request, res: Response) => {
+    try {
+      const isbn: string = req.params.isbn as string;
+
+      const { id } = req.token;
+
+      const bookInfoDatabase = await fetchDatabaseBook(isbn, id);
+
+      let addToDB = bookInfoDatabase ? false : true;
+
+      if (bookInfoDatabase) {
+        return res.status(200).json(bookInfoDatabase);
+      }
+
+      let googleResponse = await fetchGoogleBook(isbn);
+
+      if (!googleResponse) {
+        const fallbackBook = await fetchOpenLibraryBook(isbn);
+
+        if (!fallbackBook) {
+          return res.status(404).json({ error: 'Book Not Found.' });
+        } else if (addToDB) {
+          await addBookToDB(fallbackBook);
+        }
+
+        return res.status(200).json(fallbackBook);
+      } else if (googleResponse?.emptyFields.length !== 0) {
+        const fallbackBook = await fetchOpenLibraryBook(isbn);
+
+        if (fallbackBook) {
+          for (const item of googleResponse.emptyFields) {
+            const key = item as keyof bookInfo;
+
+            if (fallbackBook[key]) {
+              (googleResponse.cleanBookInfo as any)[key] = fallbackBook[
+                key
+              ] as any;
+            }
+          }
+        }
+      }
+      if (addToDB) {
+        await addBookToDB(googleResponse.cleanBookInfo);
+      }
+      return res.status(200).json(googleResponse.cleanBookInfo);
+    } catch (error) {
+      console.error('Error getting Book Information:', error);
+      return res.status(500).json({ error: 'Error getting book information.' });
+    }
+  },
+);
+
+app.post(
+  '/add-book-to-list',
+  verifyAuthorization(false),
+  async (req: Request, res: Response) => {
+    if (!req.body || !req.body.book) {
+      return res.status(400).json({ error: 'Invalid request data' });
+    }
+    const client = await pool.connect();
+    try {
+      const { id } = req.token;
+      const { book, list } = req.body;
+
+      const bookID = book.id;
+
+      const userID = id;
+
+      await client.query('BEGIN');
+      const insertBookUserRelation =
+        'INSERT INTO "user_books"(user_id, book_id, status) VALUES($1,$2,$3) ON CONFLICT (user_id, book_id) DO UPDATE SET status = EXCLUDED.status';
+
+      await client.query(insertBookUserRelation, [userID, bookID, list]);
+
+      const getCategoryID = 'SELECT id FROM categories WHERE name=$1';
+
+      const insertUserCategoryRelation =
+        'INSERT INTO "user_category"(user_id, category_id) VALUES($1,$2) ON CONFLICT DO NOTHING';
+
+      if (book.mainCategory) {
+        const { rows: mainCategory } = await client.query(getCategoryID, [
+          book.mainCategory,
+        ]);
+
+        if (mainCategory.length > 0) {
+          const mainCategoryID = mainCategory[0].id;
+          await client.query(insertUserCategoryRelation, [
+            userID,
+            mainCategoryID,
+          ]);
+        }
+      }
+
+      if (book.categories && book.categories.length !== 0) {
+        for (const category of book.categories) {
+          const { rows: categoryResponse } = await client.query(getCategoryID, [
+            category,
+          ]);
+
+          if (categoryResponse.length > 0) {
+            const categoryID = categoryResponse[0].id;
+            await client.query(insertUserCategoryRelation, [
+              userID,
+              categoryID,
+            ]);
+          }
+        }
+      }
+
+      await client.query('COMMIT');
+      return res.status(200).json({
+        message: 'Book added successfully',
+      });
+    } catch (error) {
+      console.log(error);
+      await client.query('ROLLBACK');
+      const targetList =
+        req.body?.list === 'reading' ? 'Reading List' : 'Wish List';
+      return res.status(500).json({
+        error: `Error adding book to ${targetList}.`,
+      });
+    } finally {
+      client.release();
+    }
+  },
+);
 
 app.get('/get-categories', async (req: Request, res: Response) => {
   try {

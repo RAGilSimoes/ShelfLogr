@@ -1,0 +1,9 @@
+{
+  "name": "shelflogr-monorepo",
+  "private": true,
+  "workspaces": [
+    "api",
+    "mobile",
+    "shared"
+  ]
+}

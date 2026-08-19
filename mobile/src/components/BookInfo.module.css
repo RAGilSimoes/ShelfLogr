@@ -1,0 +1,76 @@
+.card {
+  border: 1px solid black;
+}
+
+.bookCover {
+  width: 100%;
+  border-radius: 4px;
+  border: 1px solid black;
+}
+
+.title {
+  font-size: 1.2rem;
+  line-height: 1.2;
+}
+
+.authors {
+  margin-top: 4px;
+}
+
+.metadataInfo {
+  margin-top: 8px;
+  font-size: 0.85rem;
+  color: var(--ion-color-step-600);
+}
+
+.hr {
+  border-top: 1px solid black;
+  margin: 12px 0px 0 0px;
+}
+
+.secondaryInfo {
+  padding: 12px 16px;
+  max-height: 35vh;
+  overflow-y: auto;
+}
+
+.sinopse {
+  margin-bottom: 8px;
+}
+
+.description {
+  text-align: justify;
+  font-size: 0.9rem;
+}
+
+.categories {
+  margin-top: 16px;
+}
+
+.mainCategory {
+  margin-bottom: 8px;
+}
+
+.secondaryCategoriesTitle {
+  margin-top: 12px;
+  margin-bottom: 8px;
+}
+
+.secondaryCategoriesDiv {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.secondaryCategoriesChip {
+  margin: 0px;
+}
+
+.footerInfo {
+  margin-top: auto;
+  font-size: 0.8rem;
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid var(--ion-color-step-100);
+  padding-top: 8px;
+}

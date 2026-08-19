@@ -11,7 +11,7 @@ import { checkToken, removeToken, setToken } from './auth.service';
 
 const api: AxiosInstance = axios.create({
   baseURL: import.meta.env.VITE_BACKEND_URL,
-  timeout: 5000,
+  timeout: 15000,
 });
 
 api.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
@@ -27,7 +27,11 @@ api.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
 api.interceptors.response.use(
   (response: AxiosResponse) => response,
   async (error) => {
-    if (error.response.status === 401 && !error.config._retry) {
+    if (
+      error.response?.status === 401 &&
+      error.response?.data?.error === 'Invalid Token' &&
+      !error.config._retry
+    ) {
       const request = error.config;
       error.config._retry = true;
 
@@ -35,14 +39,14 @@ api.interceptors.response.use(
         const result = await axios.get(
           `${import.meta.env.VITE_BACKEND_URL}/refresh-token`,
           {
-            headers: { Authorization: request.headers['Authorization'] },
+            headers: { Authorization: request.headers.get('Authorization') },
           },
         );
 
         if (result.status === 200) {
           const token = result.data.token;
           setToken(token);
-          request.headers['Authorization'] = `Bearer ${token}`;
+          request.headers.set('Authorization', `Bearer ${token}`);
 
           return api(request);
         }

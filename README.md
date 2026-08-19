@@ -1,14 +1,39 @@
 # 📚 ShelfLogr
 
-This project was idealized as a Mobile App to help me keep track of the books I read and the ones that I want to read. It also features an **AI agent** that gives tailored suggestions based on the already read books.
+This project was designed and built as a Mobile App to help me keep track of the books I read and the ones that I want to read. It also features an **AI agent** that gives tailored suggestions based on the already read books.
 
 To add books to your profile, simply scan the book's barcode!
+
+<div align="center">
+  <h1>Adding a Book to your Lists</h1>
+  
+  <img src="./media/addPage/addPage.png" alt="Add Page Screen" width="220" />
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="./media/addPage/bookInfo.png" alt="Fluent React Book Info" width="220" />
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="./media/addPage/addedSuccessfully.png" alt="Added book to Wish List" width="220" />
+  
+</div>
 
 ---
 
 ## 🚧 Status
 
-Created necessary folders and I'm currently working on the Login part of the app. _(Updated: 07/08/2026)_
+Login and Register implemented. User can scan a Book's barcode to fetch book's info, and receives visual feedback if already in one of their lists. If not, gives the option to add to one _(Updated: 19/08/2026)_
+
+---
+
+## Roadmap
+
+- [x] Login and Register
+- [x] Scan barcode and fetch information
+- [x] Add Book to one of the lists after scanning barcode
+- [ ] Display a book suggestion from the ones the user is reading on the home page
+- [ ] Display book suggestions by topic on the home page
+- [ ] Search for book by the title, author or category
+- [ ] Create chatbot for user interaction
+- [ ] Create profile page to see user's lists
+- [ ] Create settings page
 
 ---
 
@@ -16,9 +41,44 @@ Created necessary folders and I'm currently working on the Login part of the app
 
 The main technologies used in this project are:
 
-- **Frontend:** Ionic with React
-- **Backend:** NodeJS with Express
-- **Database:** PostgreSQL (hosted on Neon)
+![Ionic](https://img.shields.io/badge/Ionic-%233880FF.svg?style=for-the-badge&logo=Ionic&logoColor=white)
+![React](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB)
+![NodeJS](https://img.shields.io/badge/Node.js-%236DA55F.svg?style=for-the-badge&logo=nodedotjs&logoColor=white)
+![Express.js](https://img.shields.io/badge/express.js-%23404d59.svg?style=for-the-badge&logo=express&logoColor=%2361DAFB)
+![PostgreSQL](https://img.shields.io/badge/postgresql-%23316192.svg?style=for-the-badge&logo=postgresql&logoColor=white)
+![Neon.tech](https://img.shields.io/badge/neon.tech-%2300E599.svg?style=for-the-badge&logo=neon&logoColor=black)
+
+---
+
+## App Workflow
+
+**1. Authentication & Navigation:**
+The user enters the app and the system immediately checks for a valid token. If the token is invalid or more than 1 day has passed since its expiration date, the user is redirected to the login page. If the token is valid and inside the expiration window, the app navigates directly to the home page. If it is expired but still inside the Grace Period, the front-end refreshes the token in the background and grants access.
+
+**2. Book Scanning Process:**
+The user accesses the "Add Book" page, opens the scanner, and scans a barcode. The app verifies the `valueType` property; if it isn't a book barcode, an error is displayed. Otherwise, the app fetches the book information through the Google Books API, or the OpenLibrary API if the Google Books API doesn't return all the needed information, via a dedicated backend endpoint. User gets visual feedback if book is already on one of the lists, if not, shows buttons that allow the user to add the book to one of the lists.
+
+---
+
+## Challenges so far
+
+1. **Token Implementation:** Thinking how the Token process should be implemented to keep the app secured without asking for the login every time the user tries to enter the app. This was solved using the **Grace Period** method with a 1-day acceptance window, managed directly by the front-end.
+
+2. **Mobile Storage:** Still on the Token part, getting to know how storage works on the mobile device (which is different from a web app). This was smoothly solved by using the **Capacitor Package**.
+
+3. **Hardware Integration:** Getting to know how to use the camera was something new for me, but it has been pretty straightforward because of the **Capawesome Package**.
+
+4. **Working with External APIs:** Working with the Google Books API and the OpenLibrary API was a challenge, because not every information is returned on the Google Books, so had to use a plan B API, but the returned information was on a different format, so had to clean up everything to fit on the interface used.
+
+---
+
+## Decisions made
+
+1. **Front-End Security Flow:** Use the Grace Period approach for the token verification, done by the front-end because it is the one getting the already existing token, if applicable.
+
+2. **Backend Proxy for API Calls:** Create an endpoint in the API to fetch the book information, passing only the book ISBN from the front-end. This protects the Google API key and allows the backend to clean up irrelevant information returned by Google.
+
+3. **How to get the book's info:** Since the Google Books API doesn't return every info needed, OpenLibrary's API is being used as a backup plan. Everything is being cleaned to fit the interface format.
 
 ---
 
@@ -57,7 +117,12 @@ npm install
 
 You will need to set up the environment variables to connect the app to the database and the API.
 
-- **Backend:** Create a `.env` file in the `api` folder with your database credentials (e.g., `DATABASE_URL`, `PORT`).
+- **Backend:** Create a `.env` file in the `api` folder and configure the needed information
+  ```env
+  DATABASE_URL=
+  JWT_SECRET=
+  BOOKS_API_KEY=
+  ```
 - **Frontend:** Create a `.env` file in the `mobile` folder and configure the API URL
   ```env
   VITE_BACKEND_URL=`Your backend URL`

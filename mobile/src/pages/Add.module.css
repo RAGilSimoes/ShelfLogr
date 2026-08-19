@@ -1,0 +1,29 @@
+.customToast {
+  --background: red;
+  --box-shadow: 3px 3px 10px 0 rgba(0, 0, 0, 0.2);
+  --color: white;
+  text-align: center;
+  font-weight: bolder;
+}
+
+.grid {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  justify-content: center;
+}
+
+.centerContent {
+  justify-content: center;
+}
+
+.successHeader {
+  align-items: center;
+}
+
+.successTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.2rem;
+}
