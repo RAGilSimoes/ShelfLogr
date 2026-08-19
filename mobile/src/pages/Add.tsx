@@ -53,9 +53,26 @@ const Add: React.FC = () => {
   const [displayErrorMessage, setDisplayErrorMessage] =
     useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [isAlertOpen, setIsAlertOpen] = useState<boolean>(false);
+  const [isScanAlertOpen, setIsScanAlertOpen] = useState<boolean>(false);
+  const [listToAdd, setListToAdd] = useState<string>('');
+  const [isAddAlertOpen, setIsAddAlertOpen] = useState<boolean>(false);
+  const [currentJob, setCurrentJob] = useState<string>('');
+  const [successMessage, setSuccessMessage] = useState<string>('');
 
   const [tempIsbn, setTempIsbn] = useState<number>(0);
+
+  useIonViewWillLeave(() => {
+    setBookInfo(undefined);
+    setBookStatus(null);
+    setErrorMessage('');
+    setDisplayErrorMessage(false);
+    setIsLoading(false);
+    setIsScanAlertOpen(false);
+    setListToAdd('');
+    setIsAddAlertOpen(false);
+    setCurrentJob('');
+    setSuccessMessage('');
+  });
 
   const checkPermissions = async () => {
     const { camera } = await BarcodeScanner.checkPermissions();
@@ -99,7 +116,7 @@ const Add: React.FC = () => {
 
           setTempIsbn(Number(isbn));
 
-          setIsAlertOpen(true);
+          setIsScanAlertOpen(true);
         } else {
           setErrorMessage("Barcode doesn't match a book");
 
@@ -122,13 +139,9 @@ const Add: React.FC = () => {
     }
   };
 
-  useIonViewWillLeave(() => {
-    setBookInfo(undefined);
-    setBookStatus(null);
-  });
-
   const fetchBookInfo = async (isbn: number) => {
     setIsLoading(true);
+    setCurrentJob('info');
     try {
       const response = await api.get(`/get-book-info/${isbn}`);
 
@@ -144,6 +157,7 @@ const Add: React.FC = () => {
         const responseBookInfo: bookInfo = response.data.book;
         if (response.data.currentStatus) {
           setBookStatus(response.data.currentStatus);
+          setSuccessMessage('You already added this book!');
         } else {
           setBookStatus('');
         }
@@ -159,7 +173,36 @@ const Add: React.FC = () => {
       }
     } finally {
       setIsLoading(false);
-      setIsAlertOpen(false);
+      setIsScanAlertOpen(false);
+      setCurrentJob('');
+    }
+  };
+
+  const addBookToList = async () => {
+    setIsLoading(true);
+    setCurrentJob('add');
+    try {
+      const response = await api.post(`/add-book-to-list`, {
+        book: bookInfo,
+        list: listToAdd,
+      });
+
+      if (response.status === 200) {
+        const message = response.data.message;
+        setBookStatus(listToAdd);
+        setSuccessMessage(message);
+      }
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        setDisplayErrorMessage(true);
+        const serverMessage =
+          error.response?.data?.error || 'Server communication error.';
+        setErrorMessage(serverMessage);
+      }
+    } finally {
+      setIsLoading(false);
+      setIsAddAlertOpen(false);
+      setCurrentJob('');
     }
   };
 
@@ -184,48 +227,90 @@ const Add: React.FC = () => {
         ></IonToast>
 
         <IonAlert
-          isOpen={isAlertOpen}
-          header="ISBN Detected"
-          message="Confirm if the displayed ISBN matches the one from the book"
+          isOpen={isScanAlertOpen || isAddAlertOpen}
+          header={isScanAlertOpen ? 'ISBN Detected' : 'Confirm Action'}
+          message={
+            isScanAlertOpen
+              ? 'Confirm if the displayed ISBN matches the one from the book'
+              : `Are you sure you want to add this book to your ${
+                  listToAdd === 'reading' ? 'Reading List' : 'Wish List'
+                }?`
+          }
           cssClass="custom-isbn-alert"
-          inputs={[
-            {
-              type: 'number',
-              name: 'isbnField',
-              value: `${tempIsbn}`,
-              placeholder: `${tempIsbn}`,
-              cssClass: 'alert-isbn-input',
-              attributes: {
-                minLength: 13,
-                maxlength: 13,
-              },
-            },
-          ]}
-          buttons={[
-            {
-              text: 'Cancel',
-              role: 'cancel',
-              cssClass: 'alert-cancel-button',
-            },
-            {
-              text: 'Get Info',
-              role: 'confirm',
-              cssClass: 'alert-confirm-button',
-              handler: (alertData) => {
-                const finalIsbn = Number(alertData.isbnField);
-                fetchBookInfo(finalIsbn);
-              },
-            },
-          ]}
+          inputs={
+            isScanAlertOpen
+              ? [
+                  {
+                    type: 'number',
+                    name: 'isbnField',
+                    value: `${tempIsbn}`,
+                    placeholder: `${tempIsbn}`,
+                    cssClass: 'alert-isbn-input',
+                    attributes: {
+                      minLength: 13,
+                      maxlength: 13,
+                    },
+                  },
+                ]
+              : []
+          }
+          buttons={
+            isScanAlertOpen
+              ? [
+                  {
+                    text: 'Cancel',
+                    role: 'cancel',
+                    cssClass: 'alert-cancel-button',
+                  },
+                  {
+                    text: 'Get Info',
+                    role: 'confirm',
+                    cssClass: 'alert-confirm-button',
+                    handler: (alertData) => {
+                      const finalIsbn = Number(alertData.isbnField);
+                      fetchBookInfo(finalIsbn);
+                    },
+                  },
+                ]
+              : [
+                  {
+                    text: 'Cancel',
+                    role: 'cancel',
+                    cssClass: 'alert-cancel-button',
+                  },
+                  {
+                    text: 'Confirm',
+                    role: 'confirm',
+                    cssClass: 'alert-confirm-button',
+                    handler: () => {
+                      addBookToList();
+                    },
+                  },
+                ]
+          }
           onDidDismiss={() => {
-            setIsAlertOpen(false);
-            setTempIsbn(0);
+            if (isScanAlertOpen) {
+              setIsScanAlertOpen(false);
+              setTempIsbn(0);
+            } else {
+              setIsAddAlertOpen(false);
+            }
           }}
           className={styles.alert}
         ></IonAlert>
 
         {isLoading ? (
-          <LoadSpinner message={`Getting book info...`} />
+          <LoadSpinner
+            message={
+              currentJob === 'info'
+                ? `Getting book info...`
+                : currentJob === 'add'
+                ? `Adding book to ${
+                    listToAdd === 'reading' ? 'Reading List' : 'Wish List'
+                  } ...`
+                : ''
+            }
+          />
         ) : (
           <>
             <IonGrid
@@ -240,7 +325,10 @@ const Add: React.FC = () => {
                     expand="block"
                     shape="round"
                     size="default"
-                    onClick={readBarcode}
+                    onClick={() => {
+                      setListToAdd('reading');
+                      setIsAddAlertOpen(true);
+                    }}
                     className="ion-margin-top"
                     color="primary"
                   >
@@ -251,7 +339,10 @@ const Add: React.FC = () => {
                     expand="block"
                     shape="round"
                     size="default"
-                    onClick={readBarcode}
+                    onClick={() => {
+                      setListToAdd('wishlist');
+                      setIsAddAlertOpen(true);
+                    }}
                     className="ion-margin-top"
                     color="tertiary"
                   >
@@ -266,7 +357,7 @@ const Add: React.FC = () => {
                       <IonCardHeader className={styles.successHeader}>
                         <IonCardSubtitle className={styles.successTitle}>
                           <IonIcon icon={checkmarkCircleOutline} />
-                          You already added this book!
+                          {successMessage}
                         </IonCardSubtitle>
                         <IonCardTitle>
                           It's in your{' '}

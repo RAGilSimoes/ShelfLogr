@@ -39,14 +39,14 @@ api.interceptors.response.use(
         const result = await axios.get(
           `${import.meta.env.VITE_BACKEND_URL}/refresh-token`,
           {
-            headers: { Authorization: request.headers['Authorization'] },
+            headers: { Authorization: request.headers.get('Authorization') },
           },
         );
 
         if (result.status === 200) {
           const token = result.data.token;
           setToken(token);
-          request.headers['Authorization'] = `Bearer ${token}`;
+          request.headers.set('Authorization', `Bearer ${token}`);
 
           return api(request);
         }

@@ -137,41 +137,41 @@ export async function addBookToDB(info: Partial<bookInfo>) {
     const mainCategory = info.mainCategory;
     const categories = info.categories;
 
-    const insertMainCategory =
-      'INSERT INTO categories (name) VALUES ($1) ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name RETURNING id';
-    const insertMainCategoryResult = await client.query(insertMainCategory, [
-      mainCategory,
-    ]);
-
-    const mainCategoryID = insertMainCategoryResult.rows[0].id;
-
-    const categoriesIDs = [];
-
-    const insertSecondaryCategory =
-      'INSERT INTO categories (name) VALUES ($1) ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name RETURNING id';
-
-    for (const secondaryCategory of categories!) {
-      const insertSecondaryCategoryResult = await client.query(
-        insertSecondaryCategory,
-        [secondaryCategory],
-      );
-
-      const secondaryCategoryID = insertSecondaryCategoryResult.rows[0].id;
-
-      categoriesIDs.push(secondaryCategoryID);
-    }
-
-    const insertMainCategoryBookRelation =
+    const insertCategoryBookRelation =
       'INSERT INTO book_category(book_id, category_id, main) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING';
 
-    await client.query(insertMainCategoryBookRelation, [
-      bookID,
-      mainCategoryID,
-      true,
-    ]);
+    const insertCategory =
+      'INSERT INTO categories (name) VALUES ($1) ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name RETURNING id';
 
-    for (const id of categoriesIDs) {
-      await client.query(insertMainCategoryBookRelation, [bookID, id, false]);
+    if (mainCategory) {
+      const insertMainCategoryResult = await client.query(insertCategory, [
+        mainCategory,
+      ]);
+
+      const mainCategoryID = insertMainCategoryResult.rows[0].id;
+
+      await client.query(insertCategoryBookRelation, [
+        bookID,
+        mainCategoryID,
+        true,
+      ]);
+    }
+
+    if (categories) {
+      for (const secondaryCategory of categories!) {
+        const insertSecondaryCategoryResult = await client.query(
+          insertCategory,
+          [secondaryCategory],
+        );
+
+        const secondaryCategoryID = insertSecondaryCategoryResult.rows[0].id;
+
+        await client.query(insertCategoryBookRelation, [
+          bookID,
+          secondaryCategoryID,
+          false,
+        ]);
+      }
     }
 
     await client.query('COMMIT');

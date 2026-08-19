@@ -178,13 +178,88 @@ app.get(
           }
         }
       }
-      if (addBookToDB) {
+      if (addToDB) {
         await addBookToDB(googleResponse.cleanBookInfo);
       }
       return res.status(200).json(googleResponse.cleanBookInfo);
     } catch (error) {
       console.error('Error getting Book Information:', error);
       return res.status(500).json({ error: 'Error getting book information.' });
+    }
+  },
+);
+
+app.post(
+  '/add-book-to-list',
+  verifyAuthorization(false),
+  async (req: Request, res: Response) => {
+    if (!req.body || !req.body.book) {
+      return res.status(400).json({ error: 'Invalid request data' });
+    }
+    const client = await pool.connect();
+    try {
+      const { id } = req.token;
+      const { book, list } = req.body;
+
+      const bookID = book.id;
+
+      const userID = id;
+
+      await client.query('BEGIN');
+      const insertBookUserRelation =
+        'INSERT INTO "user_books"(user_id, book_id, status) VALUES($1,$2,$3) ON CONFLICT (user_id, book_id) DO UPDATE SET status = EXCLUDED.status';
+
+      await client.query(insertBookUserRelation, [userID, bookID, list]);
+
+      const getCategoryID = 'SELECT id FROM categories WHERE name=$1';
+
+      const insertUserCategoryRelation =
+        'INSERT INTO "user_category"(user_id, category_id) VALUES($1,$2) ON CONFLICT DO NOTHING';
+
+      if (book.mainCategory) {
+        const { rows: mainCategory } = await client.query(getCategoryID, [
+          book.mainCategory,
+        ]);
+
+        if (mainCategory.length > 0) {
+          const mainCategoryID = mainCategory[0].id;
+          await client.query(insertUserCategoryRelation, [
+            userID,
+            mainCategoryID,
+          ]);
+        }
+      }
+
+      if (book.categories && book.categories.length !== 0) {
+        for (const category of book.categories) {
+          const { rows: categoryResponse } = await client.query(getCategoryID, [
+            category,
+          ]);
+
+          if (categoryResponse.length > 0) {
+            const categoryID = categoryResponse[0].id;
+            await client.query(insertUserCategoryRelation, [
+              userID,
+              categoryID,
+            ]);
+          }
+        }
+      }
+
+      await client.query('COMMIT');
+      return res.status(200).json({
+        message: 'Book added successfully',
+      });
+    } catch (error) {
+      console.log(error);
+      await client.query('ROLLBACK');
+      const targetList =
+        req.body?.list === 'reading' ? 'Reading List' : 'Wish List';
+      return res.status(500).json({
+        error: `Error adding book to ${targetList}.`,
+      });
+    } finally {
+      client.release();
     }
   },
 );
