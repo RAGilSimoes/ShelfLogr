@@ -71,7 +71,7 @@ const BookInfo: React.FC<{
                   </h3>
                   <p className={styles.description}>
                     {bookInfo.description ? (
-                      <div
+                      <p
                         dangerouslySetInnerHTML={{
                           __html: bookInfo.description,
                         }}

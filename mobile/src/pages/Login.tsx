@@ -211,7 +211,7 @@ const Login: React.FC = () => {
       </IonContent>
       <IonFooter className="ion-no-border" translucent={true} collapse="fade">
         <IonToolbar>
-          <div className="ion-text-center" style={{ fontSize: '0.75rem' }}>
+          <div className={`ion-text-center ${styles.footer}`}>
             <IonText color="medium">v0.0.1</IonText>
             {' - '}
             <IonText color="medium">

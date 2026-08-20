@@ -33,3 +33,7 @@
 .input {
   max-height: fit-content;
 }
+
+.footer {
+  font-size: 0.75rem;
+}
