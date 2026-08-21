@@ -35,6 +35,11 @@ Login and Register implemented. User can scan a Book's barcode to fetch book's i
 - [ ] Create profile page to see user's lists
 - [ ] Create settings page
 
+#### Future Ideas:
+
+- Hability to see other people's accounts, have friends and see their lists
+- Contribution program, where users can add missing books that the APIs don't know that exist.
+
 ---
 
 ## 💻 Tech Stack
