@@ -6,15 +6,47 @@ import {
   IonIcon,
   IonHeader,
   IonToolbar,
+  IonToast,
+  IonGrid,
+  useIonViewWillLeave,
+  useIonViewWillEnter,
+  IonModal,
+  IonButton,
+  IonButtons,
 } from '@ionic/react';
-import { sunny, partlySunny, moon } from 'ionicons/icons';
-import ExploreContainer from '../components/ExploreContainer';
+import { sunny, partlySunny, moon, book } from 'ionicons/icons';
 
 import { ReactElement, useEffect, useState } from 'react';
 
 import styles from './Home.module.css';
 
+import api from '../services/api.service';
+
+import axios from 'axios';
+
+import BookInfo from '../components/BookInfo';
+import { bookInfo } from '@shelflogr/shared';
+
 const Home: React.FC<{ userName: string }> = ({ userName }) => {
+  const [displayErrorMessage, setDisplayErrorMessage] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  const [bookInfo, setBookInfo] = useState<bookInfo | undefined>(undefined);
+  const [bookStatus, setBookStatus] = useState<string | null>(null);
+
+  const [isShowingDetailedBook, setIsShowingDetailedBook] = useState(false);
+
+  useIonViewWillLeave(() => {
+    setBookInfo(undefined);
+    setBookStatus(null);
+    setErrorMessage('');
+    setDisplayErrorMessage(false);
+  });
+
+  useIonViewWillEnter(() => {
+    getUserBooksRecomendation();
+  });
+
   function getTimeIcon(): ReactElement {
     const currentHour: number = new Date().getHours();
 
@@ -34,6 +66,34 @@ const Home: React.FC<{ userName: string }> = ({ userName }) => {
     return icon;
   }
 
+  const getUserBooksRecomendation = async () => {
+    try {
+      const response = await api.get('/get-user-books-recomendations');
+
+      const status = response.status;
+
+      if (status == 200) {
+        if (Object.keys(response.data).length) {
+          const data = response.data;
+
+          setBookInfo(data.book);
+          setBookStatus(data.list);
+        } else {
+          console.log('não encontrou livro');
+        }
+      }
+    } catch (error) {
+      setDisplayErrorMessage(true);
+      if (axios.isAxiosError(error)) {
+        const serverMessage =
+          error.response?.data?.error || 'Server communication error.';
+        setErrorMessage(serverMessage);
+      } else {
+        setErrorMessage('Unexpected error occurred.');
+      }
+    }
+  };
+
   return (
     <IonPage>
       <IonHeader className="ion-no-border">
@@ -49,7 +109,49 @@ const Home: React.FC<{ userName: string }> = ({ userName }) => {
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
-        <ExploreContainer name="Home page" />
+        <IonToast
+          trigger="open-toast"
+          message={errorMessage}
+          duration={5000}
+          isOpen={displayErrorMessage}
+          onDidDismiss={() => {
+            setDisplayErrorMessage(false);
+            setErrorMessage('');
+          }}
+          className={styles.customToast}
+          position="top"
+        ></IonToast>
+        <IonGrid>
+          {bookInfo && (
+            <>
+              <p>{`This book is in your ${
+                bookStatus === 'reading' ? 'Reading List' : 'Wish List'
+              }!`}</p>
+              <button onClick={() => setIsShowingDetailedBook(true)}>
+                <BookInfo bookInfo={bookInfo} detailed={false} />
+              </button>
+            </>
+          )}
+        </IonGrid>
+
+        <IonModal
+          isOpen={isShowingDetailedBook}
+          showBackdrop={true}
+          backdropDismiss={true}
+        >
+          <IonHeader>
+            <IonToolbar>
+              <IonButtons slot="start">
+                <IonButton onClick={() => setIsShowingDetailedBook(false)}>
+                  Close
+                </IonButton>
+              </IonButtons>
+            </IonToolbar>
+          </IonHeader>
+          <IonContent className="fullpage" style={{ height: '100%' }}>
+            {bookInfo && <BookInfo bookInfo={bookInfo} detailed={true} />}
+          </IonContent>
+        </IonModal>
       </IonContent>
     </IonPage>
   );

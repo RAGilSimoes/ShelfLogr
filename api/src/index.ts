@@ -264,21 +264,51 @@ app.post(
   },
 );
 
-app.get('/get-categories', async (req: Request, res: Response) => {
-  try {
-    const { rows } = await pool.query('SELECT * FROM categories;');
-    let categories: { Name: string; ID: string }[] = [];
-    rows.map((category) => {
-      categories.push({ Name: category.name, ID: category.id });
-    });
-    res.json({
-      categories,
-    });
-  } catch (error) {
-    console.error('Database query failed:', error);
-    res.status(500).json({ error: 'Failed to connect to the database.' });
-  }
-});
+app.get(
+  '/get-user-books-recomendations',
+  verifyAuthorization(false),
+  async (req: Request, res: Response) => {
+    try {
+      const { id } = req.token;
+      let bookID;
+      const getBookID =
+        'SELECT "book_id" FROM user_books WHERE "user_id"=$1 AND "status"=$2 LIMIT $3';
+
+      const getBookInfo = 'SELECT * FROM book WHERE "id"=$1';
+
+      let { rows } = await pool.query(getBookID, [id, 'reading', 1]);
+
+      let list;
+
+      if (rows.length > 0) {
+        bookID = rows[0].book_id;
+
+        list = 'reading';
+      } else {
+        let { rows } = await pool.query(getBookID, [id, 'wishlist', 1]);
+
+        if (rows.length > 0) {
+          bookID = rows[0].book_id;
+          list = 'wishlist';
+        } else {
+          return res.status(200).json();
+        }
+      }
+
+      const { rows: bookInfo } = await pool.query(getBookInfo, [bookID]);
+
+      if (bookInfo.length > 0 && list !== undefined) {
+        const book = bookInfo[0];
+        return res.status(200).json({ book, list });
+      } else {
+        throw new Error();
+      }
+    } catch (error) {
+      console.error('Database query failed:', error);
+      res.status(500).json({ error: 'Error getting book recommendations.' });
+    }
+  },
+);
 
 app.get('/random', (req: Request, res: Response) => {
   res.json({ message: Math.random() * 100 });
