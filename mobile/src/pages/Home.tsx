@@ -129,7 +129,11 @@ const Home: React.FC<{ userName: string }> = ({ userName }) => {
           {bookInfo && (
             <>
               <p>{`This book is in your ${
-                bookStatus === 'reading' ? 'Reading List' : 'Wish List'
+                bookStatus === 'reading'
+                  ? 'Reading List'
+                  : bookStatus === 'completed'
+                  ? 'Completed List'
+                  : 'Wish List'
               }!`}</p>
               <div
                 onClick={() => {

@@ -233,7 +233,11 @@ const Add: React.FC = () => {
             isScanAlertOpen
               ? 'Confirm if the displayed ISBN matches the one from the book'
               : `Are you sure you want to add this book to your ${
-                  listToAdd === 'reading' ? 'Reading List' : 'Wish List'
+                  listToAdd === 'reading'
+                    ? 'Reading List'
+                    : listToAdd === 'completed'
+                    ? 'Completed List'
+                    : 'Wish List'
                 }?`
           }
           cssClass="custom-isbn-alert"
@@ -306,7 +310,11 @@ const Add: React.FC = () => {
                 ? `Getting book info...`
                 : currentJob === 'add'
                 ? `Adding book to ${
-                    listToAdd === 'reading' ? 'Reading List' : 'Wish List'
+                    listToAdd === 'reading'
+                      ? 'Reading List'
+                      : listToAdd === 'completed'
+                      ? 'Completed List'
+                      : 'Wish List'
                   } ...`
                 : ''
             }
@@ -321,6 +329,20 @@ const Add: React.FC = () => {
               {bookInfo && <BookInfo bookInfo={bookInfo} detailed={true} />}
               {(showAddToListsButton && (
                 <>
+                  <IonButton
+                    expand="block"
+                    shape="round"
+                    size="default"
+                    onClick={() => {
+                      setListToAdd('completed');
+                      setIsAddAlertOpen(true);
+                    }}
+                    className="ion-margin-top"
+                    color="primary"
+                  >
+                    Add to Completed List{' '}
+                    <IonIcon slot="end" icon={book}></IonIcon>
+                  </IonButton>
                   <IonButton
                     expand="block"
                     shape="round"
@@ -362,8 +384,11 @@ const Add: React.FC = () => {
                         <IonCardTitle>
                           It's in your{' '}
                           <strong>
+                            $
                             {bookStatus === 'reading'
                               ? 'Reading List'
+                              : bookStatus === 'completed'
+                              ? 'Completed List'
                               : 'Wish List'}
                           </strong>
                           .
