@@ -274,7 +274,15 @@ app.get(
       const getBookID =
         'SELECT "book_id" FROM user_books WHERE "user_id"=$1 AND "status"=$2 LIMIT $3';
 
-      const getBookInfo = 'SELECT * FROM book WHERE "id"=$1';
+      const getBookInfo = `SELECT 
+        b.*, 
+        COALESCE((ARRAY_AGG(c.name) FILTER (WHERE bc.main = true))[1], '') as "mainCategory",
+        COALESCE(ARRAY_AGG(c.name) FILTER (WHERE bc.main = false), '{}') as categories
+    FROM "book" b
+    LEFT JOIN book_category bc ON b.id = bc.book_id
+    LEFT JOIN categories c ON bc.category_id = c.id
+    WHERE b.id = $1
+    GROUP BY b.id;`;
 
       let { rows } = await pool.query(getBookID, [id, 'reading', 1]);
 

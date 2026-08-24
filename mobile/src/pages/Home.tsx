@@ -26,8 +26,12 @@ import axios from 'axios';
 
 import BookInfo from '../components/BookInfo';
 import { bookInfo } from '@shelflogr/shared';
+import { useHistory, useLocation, useRouteMatch } from 'react-router';
 
 const Home: React.FC<{ userName: string }> = ({ userName }) => {
+  const history = useHistory();
+  const location = useLocation();
+
   const [displayErrorMessage, setDisplayErrorMessage] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -127,31 +131,19 @@ const Home: React.FC<{ userName: string }> = ({ userName }) => {
               <p>{`This book is in your ${
                 bookStatus === 'reading' ? 'Reading List' : 'Wish List'
               }!`}</p>
-              <button onClick={() => setIsShowingDetailedBook(true)}>
+              <div
+                onClick={() => {
+                  history.push(`/app/book`, {
+                    information: bookInfo,
+                  });
+                }}
+                style={{ cursor: 'pointer' }}
+              >
                 <BookInfo bookInfo={bookInfo} detailed={false} />
-              </button>
+              </div>
             </>
           )}
         </IonGrid>
-
-        <IonModal
-          isOpen={isShowingDetailedBook}
-          showBackdrop={true}
-          backdropDismiss={true}
-        >
-          <IonHeader>
-            <IonToolbar>
-              <IonButtons slot="start">
-                <IonButton onClick={() => setIsShowingDetailedBook(false)}>
-                  Close
-                </IonButton>
-              </IonButtons>
-            </IonToolbar>
-          </IonHeader>
-          <IonContent className="fullpage" style={{ height: '100%' }}>
-            {bookInfo && <BookInfo bookInfo={bookInfo} detailed={true} />}
-          </IonContent>
-        </IonModal>
       </IonContent>
     </IonPage>
   );
