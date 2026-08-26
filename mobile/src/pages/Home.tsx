@@ -28,6 +28,8 @@ import BookInfo from '../components/BookInfo';
 import { bookInfo } from '@shelflogr/shared';
 import { useHistory, useLocation, useRouteMatch } from 'react-router';
 
+import LoadSpinner from '../components/LoadSpinner';
+
 const Home: React.FC<{ userName: string }> = ({ userName }) => {
   const history = useHistory();
   const location = useLocation();
@@ -35,16 +37,22 @@ const Home: React.FC<{ userName: string }> = ({ userName }) => {
   const [displayErrorMessage, setDisplayErrorMessage] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  const [bookInfo, setBookInfo] = useState<bookInfo | undefined>(undefined);
-  const [bookStatus, setBookStatus] = useState<string | null>(null);
+  const [bookInfo, setBookInfo] = useState<Array<bookInfo> | undefined>(
+    undefined,
+  );
 
-  const [isShowingDetailedBook, setIsShowingDetailedBook] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string>();
+
+  const [recomendationType, setRecomendationType] = useState<string>();
+
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useIonViewWillLeave(() => {
+    setStatusMessage('');
     setBookInfo(undefined);
-    setBookStatus(null);
     setErrorMessage('');
     setDisplayErrorMessage(false);
+    setIsLoading(false);
   });
 
   useIonViewWillEnter(() => {
@@ -70,7 +78,48 @@ const Home: React.FC<{ userName: string }> = ({ userName }) => {
     return icon;
   }
 
+  const interpretData = (data: {
+    type: string;
+    list?: string;
+    category?: string;
+    books: Array<bookInfo>;
+  }) => {
+    switch (data.type) {
+      case 'personal': {
+        let book = data.books[0];
+        let bookStatus = data.list!;
+
+        setStatusMessage(
+          `This book is in your ${
+            bookStatus?.charAt(0).toUpperCase() + bookStatus?.slice(1)
+          } List`,
+        );
+
+        setBookInfo([book]);
+
+        setRecomendationType(data.type);
+        break;
+      }
+
+      case 'category': {
+        console.log(data.category);
+        setRecomendationType(data.type);
+        break;
+      }
+
+      case 'trending': {
+        console.log(data.type);
+        setRecomendationType(data.type);
+        break;
+      }
+
+      default:
+        break;
+    }
+  };
+
   const getUserBooksRecomendation = async () => {
+    setIsLoading(true);
     try {
       const response = await api.get('/get-user-books-recomendations');
 
@@ -79,11 +128,9 @@ const Home: React.FC<{ userName: string }> = ({ userName }) => {
       if (status == 200) {
         if (Object.keys(response.data).length) {
           const data = response.data;
-
-          setBookInfo(data.book);
-          setBookStatus(data.list);
+          interpretData(data);
         } else {
-          console.log('não encontrou livro');
+          throw new Error();
         }
       }
     } catch (error) {
@@ -95,12 +142,14 @@ const Home: React.FC<{ userName: string }> = ({ userName }) => {
       } else {
         setErrorMessage('Unexpected error occurred.');
       }
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
     <IonPage>
-      <IonHeader className="ion-no-border">
+      <IonHeader className={`ion-no-border ${styles.header}`}>
         <IonToolbar>
           <div className={styles.welcomeDiv}>
             {getTimeIcon()}
@@ -125,29 +174,31 @@ const Home: React.FC<{ userName: string }> = ({ userName }) => {
           className={styles.customToast}
           position="top"
         ></IonToast>
-        <IonGrid>
-          {bookInfo && (
-            <>
-              <p>{`This book is in your ${
-                bookStatus === 'reading'
-                  ? 'Reading List'
-                  : bookStatus === 'completed'
-                  ? 'Completed List'
-                  : 'Wish List'
-              }!`}</p>
-              <div
-                onClick={() => {
-                  history.push(`/app/book`, {
-                    information: bookInfo,
-                  });
-                }}
-                style={{ cursor: 'pointer' }}
-              >
-                <BookInfo bookInfo={bookInfo} detailed={false} />
-              </div>
-            </>
-          )}
-        </IonGrid>
+        {isLoading ? (
+          <LoadSpinner message={'Getting Book Recomendations For You...'} />
+        ) : (
+          <IonGrid className={styles.grid}>
+            {recomendationType === 'personal' && bookInfo ? (
+              <>
+                <h3 className={styles.statusMessage}>{statusMessage}</h3>
+                <div
+                  onClick={() => {
+                    history.push(`/app/book`, {
+                      information: bookInfo[0],
+                    });
+                  }}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <BookInfo bookInfo={bookInfo[0]} detailed={false} />
+                </div>
+              </>
+            ) : (
+              <>
+                <p>Placeholder</p>
+              </>
+            )}
+          </IonGrid>
+        )}
       </IonContent>
     </IonPage>
   );

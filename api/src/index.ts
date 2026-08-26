@@ -254,9 +254,9 @@ app.post(
       console.log(error);
       await client.query('ROLLBACK');
       const targetList =
-        req.body?.list === 'reading' ? 'Reading List' : 'Wish List';
+        req.body?.list.charAt(0).toUpperCase() + req.body?.list.slice(1);
       return res.status(500).json({
-        error: `Error adding book to ${targetList}.`,
+        error: `Error adding book to ${targetList} list.`,
       });
     } finally {
       client.release();
@@ -275,42 +275,94 @@ app.get(
         'SELECT "book_id" FROM user_books WHERE "user_id"=$1 AND "status"=$2 LIMIT $3';
 
       const getBookInfo = `SELECT 
-        b.*, 
-        COALESCE((ARRAY_AGG(c.name) FILTER (WHERE bc.main = true))[1], '') as "mainCategory",
-        COALESCE(ARRAY_AGG(c.name) FILTER (WHERE bc.main = false), '{}') as categories
-    FROM "book" b
-    LEFT JOIN book_category bc ON b.id = bc.book_id
-    LEFT JOIN categories c ON bc.category_id = c.id
-    WHERE b.id = $1
-    GROUP BY b.id;`;
+            b.*, 
+            COALESCE((ARRAY_AGG(c.name) FILTER (WHERE bc.main = true))[1], '') as "mainCategory",
+            COALESCE(ARRAY_AGG(c.name) FILTER (WHERE bc.main = false), '{}') as categories
+        FROM "book" b
+        LEFT JOIN book_category bc ON b.id = bc.book_id
+        LEFT JOIN categories c ON bc.category_id = c.id
+        WHERE b.id = $1
+        GROUP BY b.id;`;
 
-      let { rows } = await pool.query(getBookID, [id, 'reading', 1]);
+      const bookStatusOptions = ['reading', 'wish', 'completed'];
+
+      // Checks if user has any book that he is reading
+      let { rows: readingBook } = await pool.query(getBookID, [
+        id,
+        bookStatusOptions[0],
+        1,
+      ]);
 
       let list;
+      let type;
+      let books: bookInfo[] = Array<bookInfo>();
+      let category;
 
-      if (rows.length > 0) {
-        bookID = rows[0].book_id;
+      if (readingBook.length > 0) {
+        bookID = readingBook[0].book_id;
 
-        list = 'reading';
-      } else {
-        let { rows } = await pool.query(getBookID, [id, 'wishlist', 1]);
-
-        if (rows.length > 0) {
-          bookID = rows[0].book_id;
-          list = 'wishlist';
-        } else {
-          return res.status(200).json();
+        list = bookStatusOptions[0];
+        type = 'personal';
+        const { rows: bookInfo } = await pool.query(getBookInfo, [bookID]);
+        if (bookInfo.length > 0) {
+          const book = bookInfo[0];
+          books.push(book);
+          return res.status(200).json({ type, list, books });
         }
       }
 
-      const { rows: bookInfo } = await pool.query(getBookInfo, [bookID]);
+      // If user doesn't have any book that is currently reading, check if he wishes to read any
+      let { rows: wishBook } = await pool.query(getBookID, [
+        id,
+        bookStatusOptions[1],
+        1,
+      ]);
 
-      if (bookInfo.length > 0 && list !== undefined) {
-        const book = bookInfo[0];
-        return res.status(200).json({ book, list });
-      } else {
-        throw new Error();
+      if (wishBook.length > 0) {
+        bookID = wishBook[0].book_id;
+        list = bookStatusOptions[1];
+        type = 'personal';
+        const { rows: bookInfo } = await pool.query(getBookInfo, [bookID]);
+        if (bookInfo.length > 0) {
+          const book = bookInfo[0];
+          books.push(book);
+          return res.status(200).json({ type, list, books });
+        }
       }
+
+      // If user doesn't have any book that is currently reading nor have any that wishes to read, check if he liked any book he completed if he already finished reading any -> checks trending for that category
+      const getTopCategoryQuery = `
+            SELECT c.name as "topCategory"
+            FROM user_books ub
+            JOIN book_category bc ON ub.book_id = bc.book_id
+            JOIN categories c ON bc.category_id = c.id
+            WHERE ub.user_id = $1 
+              AND ub.status = $2 
+              AND ub.liked = true 
+              AND bc.main = true
+            GROUP BY c.name
+            ORDER BY COUNT(c.name) DESC
+            LIMIT 1;
+          `;
+
+      let { rows: topCategoryRow } = await pool.query(getTopCategoryQuery, [
+        id,
+        bookStatusOptions[2],
+      ]);
+
+      if (topCategoryRow.length > 0) {
+        const topCategory = topCategoryRow[0].topCategory;
+        type = 'category';
+        category = topCategory;
+
+        console.log('Categoria top pelos livros lidos -> ' + topCategory);
+        return res.status(200).json({ type, category, books });
+      }
+
+      // If user doesn't have any book that is currently reading nor have any that wishes to read nor liked any book he completed nor have finished reading any -> checks trending
+      console.log('ver trending global');
+      type = 'trending';
+      return res.status(200).json({ type, books });
     } catch (error) {
       console.error('Database query failed:', error);
       res.status(500).json({ error: 'Error getting book recommendations.' });

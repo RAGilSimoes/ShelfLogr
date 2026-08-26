@@ -1,3 +1,15 @@
+.customToast {
+  --background: red;
+  --box-shadow: 3px 3px 10px 0 rgba(0, 0, 0, 0.2);
+  --color: white;
+  text-align: center;
+  font-weight: bolder;
+}
+
+.header {
+  border-bottom: 2px solid var(--ion-color-primary);
+}
+
 .iconStyle {
   width: 40px;
   height: 40px;
@@ -24,4 +36,21 @@
 .welcomeTextDynamic {
   font-size: 16px;
   font-weight: 500;
+}
+
+.grid {
+  display: flex;
+  flex-direction: column;
+  padding: 20px 16px;
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.statusMessage {
+  width: fit-content;
+  margin: 15px auto 0px;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 600;
+  font-size: 20px;
 }

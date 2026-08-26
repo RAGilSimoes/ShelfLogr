@@ -46,13 +46,17 @@ const BookInfo: React.FC<{
               <strong>Publisher:</strong>{' '}
               {bookInfo.publisher ? bookInfo.publisher : 'No publisher found'}
             </p>
-            <p>
-              <strong>Date:</strong>{' '}
-              {bookInfo.publishedDate
-                ? bookInfo.publishedDate
-                : 'No published date found'}
-            </p>
           </div>
+          <>
+            <p className={styles.mainCategory}>
+              <strong>Main Category:</strong>
+            </p>
+            <IonChip color="primary">
+              {bookInfo.mainCategory
+                ? bookInfo.mainCategory
+                : 'No Main Category found.'}
+            </IonChip>
+          </>
         </IonCol>
       </IonRow>
     </IonGrid>
@@ -78,15 +82,6 @@ const BookInfo: React.FC<{
         </div>
 
         <div className={styles.categories}>
-          <p className={styles.mainCategory}>
-            <strong>Main Category:</strong>
-          </p>
-          <IonChip color="primary">
-            {bookInfo.mainCategory
-              ? bookInfo.mainCategory
-              : 'No Main Category found.'}
-          </IonChip>
-
           {bookInfo.categories && bookInfo.categories.length !== 0 && (
             <>
               <p className={styles.secondaryCategoriesTitle}>
@@ -118,6 +113,12 @@ const BookInfo: React.FC<{
           <span>
             <strong>Language:</strong>{' '}
             {bookInfo.language ? bookInfo.language.toUpperCase() : 'N/A'}
+          </span>
+          <span>
+            <strong>Date:</strong>{' '}
+            {bookInfo.publishedDate
+              ? bookInfo.publishedDate
+              : 'No published date found'}
           </span>
         </div>
       </div>

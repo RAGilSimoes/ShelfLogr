@@ -1,14 +1,11 @@
 /* For information on how to create your own theme, please refer to:
 http://ionicframework.com/docs/theming/ */
-/* --- ESTILOS DO ALERTA DE ISBN --- */
 
-/* Arredondar os cantos do modal para um aspeto mais moderno */
 .custom-isbn-alert .alert-wrapper {
   border-radius: 16px !important;
   box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.2) !important;
 }
 
-/* Título e Mensagem */
 .custom-isbn-alert .alert-title {
   font-weight: 700;
   color: #222;
@@ -19,23 +16,20 @@ http://ionicframework.com/docs/theming/ */
   color: #666;
 }
 
-/* O Input do ISBN (A "Estrela" do Alerta) */
 .alert-isbn-input {
-  text-align: center !important; /* Centra os números */
-  font-size: 1.25rem !important; /* Aumenta a letra */
+  text-align: center !important;
+  font-size: 1.25rem !important;
   font-weight: bold !important;
-  letter-spacing: 2px !important; /* Afasta ligeiramente os números para melhor leitura */
+  letter-spacing: 2px !important;
   color: var(--ion-color-primary) !important;
   padding-top: 10px !important;
 }
 
-/* Botão Cancelar: Discreto */
 .alert-cancel-button {
   color: #999 !important;
   font-weight: 500 !important;
 }
 
-/* Botão Confirmar: Destaque total */
 .alert-confirm-button {
   color: var(--ion-color-primary) !important;
   font-weight: 800 !important;
