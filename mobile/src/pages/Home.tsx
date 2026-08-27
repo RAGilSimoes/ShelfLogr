@@ -29,6 +29,7 @@ import { bookInfo } from '@shelflogr/shared';
 import { useHistory, useLocation, useRouteMatch } from 'react-router';
 
 import LoadSpinner from '../components/LoadSpinner';
+import BookSwiper from '../components/BookSwiper';
 
 const Home: React.FC<{ userName: string }> = ({ userName }) => {
   const history = useHistory();
@@ -37,11 +38,15 @@ const Home: React.FC<{ userName: string }> = ({ userName }) => {
   const [displayErrorMessage, setDisplayErrorMessage] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  const [bookInfo, setBookInfo] = useState<Array<bookInfo> | undefined>(
+  const [activeBookInfo, setActiveBookInfo] = useState<bookInfo | undefined>(
     undefined,
   );
+  const [trendingBooksInfo, setTrendingBooksInfo] = useState<
+    Array<bookInfo> | undefined
+  >(undefined);
 
   const [statusMessage, setStatusMessage] = useState<string>();
+  const [trendingMessage, setTrendingMessage] = useState<string>();
 
   const [recomendationType, setRecomendationType] = useState<string>();
 
@@ -49,10 +54,11 @@ const Home: React.FC<{ userName: string }> = ({ userName }) => {
 
   useIonViewWillLeave(() => {
     setStatusMessage('');
-    setBookInfo(undefined);
+    setTrendingBooksInfo(undefined);
     setErrorMessage('');
     setDisplayErrorMessage(false);
     setIsLoading(false);
+    setActiveBookInfo(undefined);
   });
 
   useIonViewWillEnter(() => {
@@ -79,15 +85,15 @@ const Home: React.FC<{ userName: string }> = ({ userName }) => {
   }
 
   const interpretData = (data: {
-    activeBookInfo?: { type: string; list: string; book: bookInfo };
+    activeBook?: { type: string; list: string; book: bookInfo };
     trending: {
       type: string;
       category?: string;
       trendingBooksInfo: Array<bookInfo>;
     };
   }) => {
-    if (data.activeBookInfo) {
-      const activeInfo = data.activeBookInfo;
+    if (data.activeBook) {
+      const activeInfo = data.activeBook;
       let book = activeInfo.book;
       let bookStatus = activeInfo.list!;
 
@@ -97,9 +103,29 @@ const Home: React.FC<{ userName: string }> = ({ userName }) => {
         } List`,
       );
 
-      setBookInfo([book]);
+      setActiveBookInfo(book);
 
       setRecomendationType(activeInfo.type);
+    }
+
+    if (data.trending) {
+      const trendingInfo = data.trending;
+      switch (trendingInfo.type) {
+        case 'category': {
+          setTrendingMessage(`Because you liked ${trendingInfo.category}`);
+          setTrendingBooksInfo(trendingInfo.trendingBooksInfo);
+          break;
+        }
+
+        case 'trending': {
+          setTrendingMessage("What's on the trends this week");
+          setTrendingBooksInfo(trendingInfo.trendingBooksInfo);
+          break;
+        }
+
+        default:
+          break;
+      }
     }
   };
 
@@ -113,14 +139,13 @@ const Home: React.FC<{ userName: string }> = ({ userName }) => {
       if (status == 200) {
         if (Object.keys(response.data).length) {
           const data: {
-            activeBookInfo?: { type: string; list: string; book: bookInfo };
+            activeBook?: { type: string; list: string; book: bookInfo };
             trending: {
               type: string;
               category?: string;
               trendingBooksInfo: Array<bookInfo>;
             };
           } = response.data;
-
           interpretData(data);
         } else {
           throw new Error();
@@ -171,23 +196,25 @@ const Home: React.FC<{ userName: string }> = ({ userName }) => {
           <LoadSpinner message={'Getting Book Recomendations For You...'} />
         ) : (
           <IonGrid className={styles.grid}>
-            {recomendationType === 'personal' && bookInfo ? (
+            {recomendationType === 'personal' && activeBookInfo && (
               <>
                 <h3 className={styles.statusMessage}>{statusMessage}</h3>
                 <div
                   onClick={() => {
                     history.push(`/app/book`, {
-                      information: bookInfo[0],
+                      information: activeBookInfo,
                     });
                   }}
                   style={{ cursor: 'pointer' }}
                 >
-                  <BookInfo bookInfo={bookInfo[0]} detailed={false} />
+                  <BookInfo bookInfo={activeBookInfo} detailed={false} />
                 </div>
               </>
-            ) : (
+            )}{' '}
+            {trendingBooksInfo && (
               <>
-                <p>Placeholder</p>
+                <h3 className={styles.trendingMessage}>{trendingMessage}</h3>
+                {<BookSwiper books={trendingBooksInfo} />}
               </>
             )}
           </IonGrid>

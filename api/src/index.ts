@@ -260,9 +260,8 @@ app.get(
 
       let list;
       let type;
-      let books: bookInfo[] = Array<bookInfo>();
       let category;
-      let activeBookInfo;
+      let activeBook;
 
       if (readingBook.length > 0) {
         bookID = readingBook[0].book_id;
@@ -272,7 +271,7 @@ app.get(
         const { rows: bookInfo } = await pool.query(getBookInfo, [bookID]);
         if (bookInfo.length > 0) {
           const book = bookInfo[0];
-          activeBookInfo = { type, list, book };
+          activeBook = { type, list, book };
         }
       } else {
         // If user doesn't have any book that is currently reading, check if he wishes to read any
@@ -289,7 +288,7 @@ app.get(
           const { rows: bookInfo } = await pool.query(getBookInfo, [bookID]);
           if (bookInfo.length > 0) {
             const book = bookInfo[0];
-            activeBookInfo = { type, list, book };
+            activeBook = { type, list, book };
           }
         }
       }
@@ -335,7 +334,13 @@ app.get(
         trending = { type, trendingBooksInfo };
       }
 
-      return res.status(200).json({ activeBookInfo, trending });
+      let finalObject;
+      if (activeBook) {
+        finalObject = { activeBook, trending };
+      } else {
+        finalObject = { trending };
+      }
+      return res.status(200).json(finalObject);
     } catch (error) {
       console.error('Database query failed:', error);
       res.status(500).json({ error: 'Error getting book recommendations.' });

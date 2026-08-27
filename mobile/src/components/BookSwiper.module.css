@@ -1,0 +1,9 @@
+.trending {
+  padding-bottom: 40px;
+
+  --swiper-pagination-color: var(--ion-color-primary, #ffffff);
+
+  --swiper-pagination-bullet-inactive-color: #ffffff;
+
+  --swiper-pagination-bullet-inactive-opacity: 0.3;
+}

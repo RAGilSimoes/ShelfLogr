@@ -136,9 +136,9 @@ export async function fetchNYTTrendingBooks(id: string): Promise<any> {
 
   const hydratedBooks = await Promise.all(bookPromises);
 
-  const books = hydratedBooks.filter(
-    (book) => book !== null && typeof book !== 'string',
-  );
+  const books = hydratedBooks
+    .filter((book) => book !== null && typeof book !== 'string')
+    .map((item) => (item.book ? item.book : item));
 
   return books;
 }
