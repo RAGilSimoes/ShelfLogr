@@ -23,7 +23,7 @@ const BookSwiper: React.FC<{
       >
         {books.map((book: bookInfo, index: number) => {
           return (
-            <SwiperSlide key={index}>
+            <SwiperSlide key={index} className={styles.swiper}>
               <div
                 onClick={() => {
                   history.push(`/app/book`, {
