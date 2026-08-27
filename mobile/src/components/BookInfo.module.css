@@ -8,6 +8,10 @@
   min-height: 100%;
 }
 
+.grid {
+  flex: 0 0 auto;
+}
+
 .detailedInfo {
   flex-grow: 1;
   display: flex;

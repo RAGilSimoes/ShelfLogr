@@ -114,6 +114,49 @@ export async function fetchOpenLibraryBook(
   return cleanBookInfo;
 }
 
+export async function fetchNYTTrendingBooks(id: string): Promise<any> {
+  const list = 'combined-print-and-e-book-fiction';
+  const response = await fetch(
+    `https://api.nytimes.com/svc/books/v3/lists/current/${list}.json?api-key=${process.env.NYT_API_KEY}`,
+  );
+
+  const data = await response.json();
+
+  if (!data || Object.keys(data).length === 0 || data.status !== 'OK') {
+    return null;
+  }
+
+  const results = data.results.books.slice(0, 5);
+
+  const bookPromises = results.map((book: any) => {
+    const isbn = book.isbns[0]?.isbn13;
+    if (!isbn) return null;
+    return fetchEntireBookInfo(isbn, id);
+  });
+
+  const hydratedBooks = await Promise.all(bookPromises);
+
+  const books = hydratedBooks.filter(
+    (book) => book !== null && typeof book !== 'string',
+  );
+
+  return books;
+}
+
+export async function fetchGoogleTrendingBooks(category: string): Promise<any> {
+  const response = await fetch(
+    `https://www.googleapis.com/books/v1/volumes?q=subject:${category}&maxResults=5`,
+  );
+
+  const data = await response.json();
+
+  console.log(data);
+
+  if (!data || Object.keys(data).length === 0 || data.status !== 'OK') {
+    return null;
+  }
+}
+
 export async function addBookToDB(info: Partial<bookInfo>) {
   const client = await pool.connect();
   try {
@@ -180,5 +223,56 @@ export async function addBookToDB(info: Partial<bookInfo>) {
     throw e;
   } finally {
     client.release();
+  }
+}
+
+export async function fetchEntireBookInfo(
+  isbn: string,
+  id: string,
+): Promise<
+  | Partial<bookInfo>
+  | { book: Partial<bookInfo>; currentStatus?: string | null }
+  | string
+> {
+  try {
+    const bookInfoDatabase = await fetchDatabaseBook(isbn, id);
+
+    if (bookInfoDatabase) {
+      return bookInfoDatabase;
+    }
+
+    let googleResponse = await fetchGoogleBook(isbn);
+
+    if (!googleResponse) {
+      const fallbackBook = await fetchOpenLibraryBook(isbn);
+
+      if (!fallbackBook) {
+        return 'Book Not Found.';
+      }
+      await addBookToDB(fallbackBook);
+
+      return fallbackBook;
+    } else if (googleResponse?.emptyFields.length !== 0) {
+      const fallbackBook = await fetchOpenLibraryBook(isbn);
+
+      if (fallbackBook) {
+        for (const item of googleResponse.emptyFields) {
+          const key = item as keyof bookInfo;
+
+          if (fallbackBook[key]) {
+            (googleResponse.cleanBookInfo as any)[key] = fallbackBook[
+              key
+            ] as any;
+          }
+        }
+      }
+    }
+
+    await addBookToDB(googleResponse.cleanBookInfo);
+
+    return googleResponse.cleanBookInfo;
+  } catch (error) {
+    console.error('Error getting Book Information:', error);
+    return 'Error getting book information.';
   }
 }

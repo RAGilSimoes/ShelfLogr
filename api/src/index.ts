@@ -20,6 +20,9 @@ import {
   fetchOpenLibraryBook,
   fetchDatabaseBook,
   addBookToDB,
+  fetchNYTTrendingBooks,
+  fetchEntireBookInfo,
+  fetchGoogleTrendingBooks,
 } from './utils/bookInfo.js';
 
 dotenv.config();
@@ -138,53 +141,15 @@ app.get(
   '/get-book-info/:isbn',
   verifyAuthorization(false),
   async (req: Request, res: Response) => {
-    try {
-      const isbn: string = req.params.isbn as string;
+    const isbn: string = req.params.isbn as string;
 
-      const { id } = req.token;
+    const { id } = req.token;
+    const result = await fetchEntireBookInfo(isbn, id);
 
-      const bookInfoDatabase = await fetchDatabaseBook(isbn, id);
-
-      let addToDB = bookInfoDatabase ? false : true;
-
-      if (bookInfoDatabase) {
-        return res.status(200).json(bookInfoDatabase);
-      }
-
-      let googleResponse = await fetchGoogleBook(isbn);
-
-      if (!googleResponse) {
-        const fallbackBook = await fetchOpenLibraryBook(isbn);
-
-        if (!fallbackBook) {
-          return res.status(404).json({ error: 'Book Not Found.' });
-        } else if (addToDB) {
-          await addBookToDB(fallbackBook);
-        }
-
-        return res.status(200).json(fallbackBook);
-      } else if (googleResponse?.emptyFields.length !== 0) {
-        const fallbackBook = await fetchOpenLibraryBook(isbn);
-
-        if (fallbackBook) {
-          for (const item of googleResponse.emptyFields) {
-            const key = item as keyof bookInfo;
-
-            if (fallbackBook[key]) {
-              (googleResponse.cleanBookInfo as any)[key] = fallbackBook[
-                key
-              ] as any;
-            }
-          }
-        }
-      }
-      if (addToDB) {
-        await addBookToDB(googleResponse.cleanBookInfo);
-      }
-      return res.status(200).json(googleResponse.cleanBookInfo);
-    } catch (error) {
-      console.error('Error getting Book Information:', error);
-      return res.status(500).json({ error: 'Error getting book information.' });
+    if (typeof result === 'string') {
+      res.status(500).json({ error: result });
+    } else {
+      res.status(200).json({ result });
     }
   },
 );
@@ -297,6 +262,7 @@ app.get(
       let type;
       let books: bookInfo[] = Array<bookInfo>();
       let category;
+      let activeBookInfo;
 
       if (readingBook.length > 0) {
         bookID = readingBook[0].book_id;
@@ -306,27 +272,25 @@ app.get(
         const { rows: bookInfo } = await pool.query(getBookInfo, [bookID]);
         if (bookInfo.length > 0) {
           const book = bookInfo[0];
-          books.push(book);
-          return res.status(200).json({ type, list, books });
+          activeBookInfo = { type, list, book };
         }
-      }
+      } else {
+        // If user doesn't have any book that is currently reading, check if he wishes to read any
+        let { rows: wishBook } = await pool.query(getBookID, [
+          id,
+          bookStatusOptions[1],
+          1,
+        ]);
 
-      // If user doesn't have any book that is currently reading, check if he wishes to read any
-      let { rows: wishBook } = await pool.query(getBookID, [
-        id,
-        bookStatusOptions[1],
-        1,
-      ]);
-
-      if (wishBook.length > 0) {
-        bookID = wishBook[0].book_id;
-        list = bookStatusOptions[1];
-        type = 'personal';
-        const { rows: bookInfo } = await pool.query(getBookInfo, [bookID]);
-        if (bookInfo.length > 0) {
-          const book = bookInfo[0];
-          books.push(book);
-          return res.status(200).json({ type, list, books });
+        if (wishBook.length > 0) {
+          bookID = wishBook[0].book_id;
+          list = bookStatusOptions[1];
+          type = 'personal';
+          const { rows: bookInfo } = await pool.query(getBookInfo, [bookID]);
+          if (bookInfo.length > 0) {
+            const book = bookInfo[0];
+            activeBookInfo = { type, list, book };
+          }
         }
       }
 
@@ -350,19 +314,28 @@ app.get(
         bookStatusOptions[2],
       ]);
 
+      let trending;
+
       if (topCategoryRow.length > 0) {
         const topCategory = topCategoryRow[0].topCategory;
         type = 'category';
         category = topCategory;
 
+        trending = { type, category };
+
+        await fetchGoogleTrendingBooks(category);
+
         console.log('Categoria top pelos livros lidos -> ' + topCategory);
-        return res.status(200).json({ type, category, books });
+      } else {
+        // If user doesn't have any book that is currently reading nor have any that wishes to read nor liked any book he completed nor have finished reading any -> checks trending
+        type = 'trending';
+        const trendingBooksInfo: Array<bookInfo> = await fetchNYTTrendingBooks(
+          id,
+        );
+        trending = { type, trendingBooksInfo };
       }
 
-      // If user doesn't have any book that is currently reading nor have any that wishes to read nor liked any book he completed nor have finished reading any -> checks trending
-      console.log('ver trending global');
-      type = 'trending';
-      return res.status(200).json({ type, books });
+      return res.status(200).json({ activeBookInfo, trending });
     } catch (error) {
       console.error('Database query failed:', error);
       res.status(500).json({ error: 'Error getting book recommendations.' });

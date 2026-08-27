@@ -79,42 +79,27 @@ const Home: React.FC<{ userName: string }> = ({ userName }) => {
   }
 
   const interpretData = (data: {
-    type: string;
-    list?: string;
-    category?: string;
-    books: Array<bookInfo>;
+    activeBookInfo?: { type: string; list: string; book: bookInfo };
+    trending: {
+      type: string;
+      category?: string;
+      trendingBooksInfo: Array<bookInfo>;
+    };
   }) => {
-    switch (data.type) {
-      case 'personal': {
-        let book = data.books[0];
-        let bookStatus = data.list!;
+    if (data.activeBookInfo) {
+      const activeInfo = data.activeBookInfo;
+      let book = activeInfo.book;
+      let bookStatus = activeInfo.list!;
 
-        setStatusMessage(
-          `This book is in your ${
-            bookStatus?.charAt(0).toUpperCase() + bookStatus?.slice(1)
-          } List`,
-        );
+      setStatusMessage(
+        `This book is in your ${
+          bookStatus?.charAt(0).toUpperCase() + bookStatus?.slice(1)
+        } List`,
+      );
 
-        setBookInfo([book]);
+      setBookInfo([book]);
 
-        setRecomendationType(data.type);
-        break;
-      }
-
-      case 'category': {
-        console.log(data.category);
-        setRecomendationType(data.type);
-        break;
-      }
-
-      case 'trending': {
-        console.log(data.type);
-        setRecomendationType(data.type);
-        break;
-      }
-
-      default:
-        break;
+      setRecomendationType(activeInfo.type);
     }
   };
 
@@ -127,7 +112,15 @@ const Home: React.FC<{ userName: string }> = ({ userName }) => {
 
       if (status == 200) {
         if (Object.keys(response.data).length) {
-          const data = response.data;
+          const data: {
+            activeBookInfo?: { type: string; list: string; book: bookInfo };
+            trending: {
+              type: string;
+              category?: string;
+              trendingBooksInfo: Array<bookInfo>;
+            };
+          } = response.data;
+
           interpretData(data);
         } else {
           throw new Error();

@@ -19,7 +19,7 @@ const BookInfo: React.FC<{
   detailed: boolean;
 }> = ({ bookInfo, detailed }) => {
   const headerContent = (
-    <IonGrid>
+    <IonGrid className={styles.grid}>
       <IonRow>
         <IonCol size="4">
           <img
