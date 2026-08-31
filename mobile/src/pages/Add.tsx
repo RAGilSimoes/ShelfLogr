@@ -310,6 +310,7 @@ const Add: React.FC = () => {
                   } List ...`
                 : ''
             }
+            fullScreen={true}
           />
         ) : (
           <>

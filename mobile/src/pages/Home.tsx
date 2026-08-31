@@ -14,9 +14,9 @@ import {
   IonButton,
   IonButtons,
 } from '@ionic/react';
-import { sunny, partlySunny, moon, book } from 'ionicons/icons';
+import { sunny, partlySunny, moon, refreshCircle } from 'ionicons/icons';
 
-import { ReactElement, useEffect, useState } from 'react';
+import { ReactElement, useEffect, useState, useRef } from 'react';
 
 import styles from './Home.module.css';
 
@@ -35,6 +35,10 @@ const Home: React.FC<{ userName: string }> = ({ userName }) => {
   const history = useHistory();
   const location = useLocation();
 
+  const timeoutRef = useRef(0);
+
+  const [buttonDisabled, setButtonDisabled] = useState<boolean>(false);
+
   const [displayErrorMessage, setDisplayErrorMessage] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -49,8 +53,11 @@ const Home: React.FC<{ userName: string }> = ({ userName }) => {
   const [trendingMessage, setTrendingMessage] = useState<string>();
 
   const [recomendationType, setRecomendationType] = useState<string>();
+  const [trendingType, setTrendingType] = useState<string>();
+  const [trendingCategory, setTrendingCategory] = useState<string>();
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isRetrying, setIsRetyring] = useState<boolean>(false);
 
   useIonViewWillLeave(() => {
     setStatusMessage('');
@@ -59,6 +66,11 @@ const Home: React.FC<{ userName: string }> = ({ userName }) => {
     setDisplayErrorMessage(false);
     setIsLoading(false);
     setActiveBookInfo(undefined);
+    setIsRetyring(false);
+    setTrendingType('');
+
+    const timeoutId = timeoutRef.current;
+    clearTimeout(timeoutId);
   });
 
   useIonViewWillEnter(() => {
@@ -110,14 +122,17 @@ const Home: React.FC<{ userName: string }> = ({ userName }) => {
 
     if (data.trending) {
       const trendingInfo = data.trending;
+      setTrendingType(trendingInfo.type);
+
       switch (trendingInfo.type) {
         case 'category': {
+          setTrendingCategory(trendingInfo.category);
           if (trendingInfo.trendingBooksInfo.length > 0) {
             setTrendingMessage(`Because you liked ${trendingInfo.category}`);
             setTrendingBooksInfo(trendingInfo.trendingBooksInfo);
           } else {
-            setTrendingMessage(
-              `Couldn't Get Recommendations from the ${trendingInfo.category} Category`,
+            setErrorMessage(
+              `Couldn't Get Recommendations About ${trendingInfo.category}`,
             );
           }
 
@@ -129,7 +144,7 @@ const Home: React.FC<{ userName: string }> = ({ userName }) => {
             setTrendingMessage("What's on the trends this week");
             setTrendingBooksInfo(trendingInfo.trendingBooksInfo);
           } else {
-            setTrendingMessage(`Couldn't Get Trending Books`);
+            setErrorMessage(`Couldn't Get Trending Books`);
           }
 
           break;
@@ -143,6 +158,7 @@ const Home: React.FC<{ userName: string }> = ({ userName }) => {
 
   const getUserBooksRecomendation = async () => {
     setIsLoading(true);
+    setButtonDisabled(true);
     try {
       const response = await api.get('/get-user-books-recomendations');
 
@@ -174,6 +190,12 @@ const Home: React.FC<{ userName: string }> = ({ userName }) => {
       }
     } finally {
       setIsLoading(false);
+      setIsRetyring(false);
+      const timeoutID = setTimeout(() => {
+        setButtonDisabled(false);
+      }, 5000);
+
+      timeoutRef.current = timeoutID;
     }
   };
 
@@ -204,8 +226,11 @@ const Home: React.FC<{ userName: string }> = ({ userName }) => {
           className={styles.customToast}
           position="top"
         ></IonToast>
-        {isLoading ? (
-          <LoadSpinner message={'Getting Book Recomendations For You...'} />
+        {isLoading && !activeBookInfo ? (
+          <LoadSpinner
+            message={'Getting Book Recomendations For You...'}
+            fullScreen={true}
+          />
         ) : (
           <IonGrid className={styles.grid}>
             {recomendationType === 'personal' && activeBookInfo && (
@@ -223,10 +248,40 @@ const Home: React.FC<{ userName: string }> = ({ userName }) => {
                 </div>
               </>
             )}{' '}
-            {trendingBooksInfo && (
+            {trendingBooksInfo ? (
               <>
                 <h3 className={styles.trendingMessage}>{trendingMessage}</h3>
                 {<BookSwiper books={trendingBooksInfo} />}
+              </>
+            ) : isRetrying ? (
+              <div className={styles.retryingDiv}>
+                <LoadSpinner
+                  message={
+                    trendingType === 'category'
+                      ? `Getting Book Recommendations for ${trendingCategory} Category`
+                      : `Getting Trending Books`
+                  }
+                  fullScreen={false}
+                />
+              </div>
+            ) : (
+              <>
+                <h3 className={styles.failedMessage}>{errorMessage}</h3>
+                <IonButton
+                  expand="block"
+                  shape="round"
+                  size="default"
+                  onClick={() => {
+                    setIsRetyring(true);
+                    getUserBooksRecomendation();
+                  }}
+                  className="ion-margin-top"
+                  color="primary"
+                  disabled={buttonDisabled}
+                >
+                  {buttonDisabled ? 'Wait...' : 'Try Again'}
+                  <IonIcon slot="end" icon={refreshCircle}></IonIcon>
+                </IonButton>
               </>
             )}
           </IonGrid>

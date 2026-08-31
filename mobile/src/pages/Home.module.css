@@ -41,7 +41,7 @@
 .grid {
   display: flex;
   flex-direction: column;
-  padding: 20px 16px;
+  padding: 0px 16px;
   width: 100%;
   max-width: 500px;
   margin: 0 auto;
@@ -50,8 +50,18 @@
 .statusMessage,
 .trendingMessage {
   width: fit-content;
-  margin: 15px auto 0px;
+  margin: 10px auto 0px;
   color: rgba(255, 255, 255, 0.9);
   font-weight: 600;
   font-size: 20px;
+}
+
+.failedMessage {
+  text-align: center;
+  color: var(--ion-color-secondary);
+  font-weight: normal;
+}
+
+.retryingDiv {
+  max-height: 25px;
 }
