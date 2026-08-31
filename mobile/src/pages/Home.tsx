@@ -112,14 +112,26 @@ const Home: React.FC<{ userName: string }> = ({ userName }) => {
       const trendingInfo = data.trending;
       switch (trendingInfo.type) {
         case 'category': {
-          setTrendingMessage(`Because you liked ${trendingInfo.category}`);
-          setTrendingBooksInfo(trendingInfo.trendingBooksInfo);
+          if (trendingInfo.trendingBooksInfo.length > 0) {
+            setTrendingMessage(`Because you liked ${trendingInfo.category}`);
+            setTrendingBooksInfo(trendingInfo.trendingBooksInfo);
+          } else {
+            setTrendingMessage(
+              `Couldn't Get Recommendations from the ${trendingInfo.category} Category`,
+            );
+          }
+
           break;
         }
 
         case 'trending': {
-          setTrendingMessage("What's on the trends this week");
-          setTrendingBooksInfo(trendingInfo.trendingBooksInfo);
+          if (trendingInfo.trendingBooksInfo.length > 0) {
+            setTrendingMessage("What's on the trends this week");
+            setTrendingBooksInfo(trendingInfo.trendingBooksInfo);
+          } else {
+            setTrendingMessage(`Couldn't Get Trending Books`);
+          }
+
           break;
         }
 

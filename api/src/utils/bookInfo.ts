@@ -114,6 +114,27 @@ export async function fetchOpenLibraryBook(
   return cleanBookInfo;
 }
 
+export async function getAllUserBooks(
+  id: string,
+): Promise<Array<string> | null> {
+  try {
+    const isbns: Array<string> = [];
+    const { rows: status } = await pool.query(
+      'SELECT b.isbn FROM book b JOIN user_books ub ON b.id=ub.book_id WHERE ub.user_id=$1',
+      [id],
+    );
+
+    if (status.length > 0) {
+      for (const isbn of status) {
+        isbns.push(isbn.isbn);
+      }
+    }
+    return isbns;
+  } catch (error) {
+    return null;
+  }
+}
+
 export async function fetchNYTTrendingBooks(id: string): Promise<any> {
   const list = 'combined-print-and-e-book-fiction';
   const response = await fetch(
@@ -126,12 +147,20 @@ export async function fetchNYTTrendingBooks(id: string): Promise<any> {
     return null;
   }
 
-  const results = data.results.books.slice(0, 5);
+  const blackList: Array<string> | null = await getAllUserBooks(id);
 
-  const bookPromises = results.map((book: any) => {
+  const results = data.results.books;
+
+  const readyBooks = results.filter((book: any) => {
     const isbn = book.isbns[0]?.isbn13;
-    if (!isbn) return null;
-    return fetchEntireBookInfo(isbn, id);
+    if (!isbn || (blackList && blackList.includes(isbn))) return null;
+    return book;
+  });
+
+  const top5ReadyBooks = readyBooks.slice(0, 5);
+
+  const bookPromises = top5ReadyBooks.map((book: any) => {
+    return fetchEntireBookInfo(book.isbns[0]?.isbn13, id);
   });
 
   const hydratedBooks = await Promise.all(bookPromises);
@@ -143,18 +172,70 @@ export async function fetchNYTTrendingBooks(id: string): Promise<any> {
   return books;
 }
 
-export async function fetchGoogleTrendingBooks(category: string): Promise<any> {
-  const response = await fetch(
-    `https://www.googleapis.com/books/v1/volumes?q=subject:${category}&maxResults=5`,
-  );
+export async function fetchGoogleTrendingBooks(
+  category: string,
+  id: string,
+): Promise<any> {
+  const TARGET_AMOUNT = 5;
+  const FETCH_CHUNK = 10;
 
-  const data = await response.json();
+  let validBooks = [];
+  let startIndex = 0;
 
-  console.log(data);
+  const blackList: Array<string> | null = await getAllUserBooks(id);
 
-  if (!data || Object.keys(data).length === 0 || data.status !== 'OK') {
-    return null;
+  const safeCategory = encodeURIComponent(category);
+
+  while (validBooks.length < TARGET_AMOUNT) {
+    const url = `https://www.googleapis.com/books/v1/volumes?q=subject:${safeCategory}&maxResults=${FETCH_CHUNK}&startIndex=${startIndex}&key=${process.env.BOOKS_API_KEY}`;
+
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (!data.items || data.items.length === 0) {
+      break;
+    }
+
+    for (const item of data.items) {
+      if (validBooks.length === TARGET_AMOUNT) break;
+
+      const volumeInfo = item.volumeInfo;
+      let isbn = null;
+
+      if (volumeInfo.industryIdentifiers) {
+        const isbn13 = volumeInfo.industryIdentifiers.find(
+          (id: any) => id.type === 'ISBN_13',
+        );
+        const isbn10 = volumeInfo.industryIdentifiers.find(
+          (id: any) => id.type === 'ISBN_10',
+        );
+
+        if (isbn13) isbn = isbn13.identifier;
+        else if (isbn10) isbn = isbn10.identifier;
+      }
+
+      if (isbn && (!blackList || !blackList.includes(isbn))) {
+        const formatted:
+          | Partial<bookInfo>
+          | { book: Partial<bookInfo>; currentStatus?: string | null }
+          | string = await fetchEntireBookInfo(isbn, id);
+
+        if (typeof formatted !== 'string') {
+          if ('book' in formatted) {
+            validBooks.push(formatted.book);
+          } else {
+            validBooks.push(formatted);
+          }
+        } else {
+          continue;
+        }
+      }
+    }
+
+    startIndex += FETCH_CHUNK;
   }
+
+  return validBooks;
 }
 
 export async function addBookToDB(info: Partial<bookInfo>) {

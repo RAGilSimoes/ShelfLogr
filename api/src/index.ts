@@ -320,11 +320,10 @@ app.get(
         type = 'category';
         category = topCategory;
 
-        trending = { type, category };
+        const trendingBooksInfo: Array<bookInfo> =
+          await fetchGoogleTrendingBooks(category, id);
 
-        await fetchGoogleTrendingBooks(category);
-
-        console.log('Categoria top pelos livros lidos -> ' + topCategory);
+        trending = { type, category, trendingBooksInfo };
       } else {
         // If user doesn't have any book that is currently reading nor have any that wishes to read nor liked any book he completed nor have finished reading any -> checks trending
         type = 'trending';
