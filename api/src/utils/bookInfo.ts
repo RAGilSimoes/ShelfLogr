@@ -114,6 +114,130 @@ export async function fetchOpenLibraryBook(
   return cleanBookInfo;
 }
 
+export async function getAllUserBooks(
+  id: string,
+): Promise<Array<string> | null> {
+  try {
+    const isbns: Array<string> = [];
+    const { rows: status } = await pool.query(
+      'SELECT b.isbn FROM book b JOIN user_books ub ON b.id=ub.book_id WHERE ub.user_id=$1',
+      [id],
+    );
+
+    if (status.length > 0) {
+      for (const isbn of status) {
+        isbns.push(isbn.isbn);
+      }
+    }
+    return isbns;
+  } catch (error) {
+    return null;
+  }
+}
+
+export async function fetchNYTTrendingBooks(id: string): Promise<any> {
+  const list = 'combined-print-and-e-book-fiction';
+  const response = await fetch(
+    `https://api.nytimes.com/svc/books/v3/lists/current/${list}.json?api-key=${process.env.NYT_API_KEY}`,
+  );
+
+  const data = await response.json();
+
+  if (!data || Object.keys(data).length === 0 || data.status !== 'OK') {
+    return null;
+  }
+
+  const blackList: Array<string> | null = await getAllUserBooks(id);
+
+  const results = data.results.books;
+
+  const readyBooks = results.filter((book: any) => {
+    const isbn = book.isbns[0]?.isbn13;
+    if (!isbn || (blackList && blackList.includes(isbn))) return null;
+    return book;
+  });
+
+  const top5ReadyBooks = readyBooks.slice(0, 5);
+
+  const bookPromises = top5ReadyBooks.map((book: any) => {
+    return fetchEntireBookInfo(book.isbns[0]?.isbn13, id);
+  });
+
+  const hydratedBooks = await Promise.all(bookPromises);
+
+  const books = hydratedBooks
+    .filter((book) => book !== null && typeof book !== 'string')
+    .map((item) => (item.book ? item.book : item));
+
+  return books;
+}
+
+export async function fetchGoogleTrendingBooks(
+  category: string,
+  id: string,
+): Promise<any> {
+  const TARGET_AMOUNT = 5;
+  const FETCH_CHUNK = 10;
+
+  let validBooks = [];
+  let startIndex = 0;
+
+  const blackList: Array<string> | null = await getAllUserBooks(id);
+
+  const safeCategory = encodeURIComponent(category);
+
+  while (validBooks.length < TARGET_AMOUNT) {
+    const url = `https://www.googleapis.com/books/v1/volumes?q=subject:${safeCategory}&maxResults=${FETCH_CHUNK}&startIndex=${startIndex}&key=${process.env.BOOKS_API_KEY}`;
+
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (!data.items || data.items.length === 0) {
+      break;
+    }
+
+    for (const item of data.items) {
+      if (validBooks.length === TARGET_AMOUNT) break;
+
+      const volumeInfo = item.volumeInfo;
+      let isbn = null;
+
+      if (volumeInfo.industryIdentifiers) {
+        const isbn13 = volumeInfo.industryIdentifiers.find(
+          (id: any) => id.type === 'ISBN_13',
+        );
+        const isbn10 = volumeInfo.industryIdentifiers.find(
+          (id: any) => id.type === 'ISBN_10',
+        );
+
+        if (isbn13) isbn = isbn13.identifier;
+        else if (isbn10) isbn = isbn10.identifier;
+      }
+
+      if (isbn && (!blackList || !blackList.includes(isbn))) {
+        const formatted:
+          | Partial<bookInfo>
+          | { book: Partial<bookInfo>; currentStatus?: string | null }
+          | string = await fetchEntireBookInfo(isbn, id);
+
+        if (typeof formatted !== 'string') {
+          if ('book' in formatted) {
+            validBooks.push(formatted.book);
+          } else {
+            validBooks.push(formatted);
+          }
+        } else {
+          continue;
+        }
+      }
+    }
+
+    startIndex += FETCH_CHUNK;
+  }
+
+  return validBooks;
+}
+
 export async function addBookToDB(info: Partial<bookInfo>) {
   const client = await pool.connect();
   try {
@@ -180,5 +304,56 @@ export async function addBookToDB(info: Partial<bookInfo>) {
     throw e;
   } finally {
     client.release();
+  }
+}
+
+export async function fetchEntireBookInfo(
+  isbn: string,
+  id: string,
+): Promise<
+  | Partial<bookInfo>
+  | { book: Partial<bookInfo>; currentStatus?: string | null }
+  | string
+> {
+  try {
+    const bookInfoDatabase = await fetchDatabaseBook(isbn, id);
+
+    if (bookInfoDatabase) {
+      return bookInfoDatabase;
+    }
+
+    let googleResponse = await fetchGoogleBook(isbn);
+
+    if (!googleResponse) {
+      const fallbackBook = await fetchOpenLibraryBook(isbn);
+
+      if (!fallbackBook) {
+        return 'Book Not Found.';
+      }
+      await addBookToDB(fallbackBook);
+
+      return fallbackBook;
+    } else if (googleResponse?.emptyFields.length !== 0) {
+      const fallbackBook = await fetchOpenLibraryBook(isbn);
+
+      if (fallbackBook) {
+        for (const item of googleResponse.emptyFields) {
+          const key = item as keyof bookInfo;
+
+          if (fallbackBook[key]) {
+            (googleResponse.cleanBookInfo as any)[key] = fallbackBook[
+              key
+            ] as any;
+          }
+        }
+      }
+    }
+
+    await addBookToDB(googleResponse.cleanBookInfo);
+
+    return googleResponse.cleanBookInfo;
+  } catch (error) {
+    console.error('Error getting Book Information:', error);
+    return 'Error getting book information.';
   }
 }

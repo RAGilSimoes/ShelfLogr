@@ -1,0 +1,15 @@
+.trending {
+  --swiper-pagination-color: var(--ion-color-primary, #ffffff);
+  --swiper-pagination-bullet-inactive-color: #ffffff;
+  --swiper-pagination-bullet-inactive-opacity: 0.3;
+
+  --swiper-pagination-bottom: 5px;
+}
+
+.trending :global(.swiper) {
+  padding-bottom: 1px;
+}
+
+.swiper {
+  margin-bottom: 5px;
+}

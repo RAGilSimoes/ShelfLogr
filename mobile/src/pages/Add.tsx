@@ -233,8 +233,8 @@ const Add: React.FC = () => {
             isScanAlertOpen
               ? 'Confirm if the displayed ISBN matches the one from the book'
               : `Are you sure you want to add this book to your ${
-                  listToAdd === 'reading' ? 'Reading List' : 'Wish List'
-                }?`
+                  listToAdd.charAt(0).toUpperCase() + listToAdd.slice(1)
+                } List?`
           }
           cssClass="custom-isbn-alert"
           inputs={
@@ -306,10 +306,11 @@ const Add: React.FC = () => {
                 ? `Getting book info...`
                 : currentJob === 'add'
                 ? `Adding book to ${
-                    listToAdd === 'reading' ? 'Reading List' : 'Wish List'
-                  } ...`
+                    listToAdd.charAt(0).toUpperCase() + listToAdd.slice(1)
+                  } List ...`
                 : ''
             }
+            fullScreen={true}
           />
         ) : (
           <>
@@ -321,6 +322,20 @@ const Add: React.FC = () => {
               {bookInfo && <BookInfo bookInfo={bookInfo} detailed={true} />}
               {(showAddToListsButton && (
                 <>
+                  <IonButton
+                    expand="block"
+                    shape="round"
+                    size="default"
+                    onClick={() => {
+                      setListToAdd('completed');
+                      setIsAddAlertOpen(true);
+                    }}
+                    className="ion-margin-top"
+                    color="primary"
+                  >
+                    Add to Completed List{' '}
+                    <IonIcon slot="end" icon={book}></IonIcon>
+                  </IonButton>
                   <IonButton
                     expand="block"
                     shape="round"
@@ -340,7 +355,7 @@ const Add: React.FC = () => {
                     shape="round"
                     size="default"
                     onClick={() => {
-                      setListToAdd('wishlist');
+                      setListToAdd('wish');
                       setIsAddAlertOpen(true);
                     }}
                     className="ion-margin-top"
@@ -362,9 +377,10 @@ const Add: React.FC = () => {
                         <IonCardTitle>
                           It's in your{' '}
                           <strong>
-                            {bookStatus === 'reading'
-                              ? 'Reading List'
-                              : 'Wish List'}
+                            $
+                            {bookStatus.charAt(0).toUpperCase() +
+                              bookStatus.slice(1)}{' '}
+                            List
                           </strong>
                           .
                         </IonCardTitle>

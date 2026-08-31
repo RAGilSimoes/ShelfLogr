@@ -27,7 +27,7 @@ export const formatGoogleBook = (
       }
       categoriesSet.delete(splitMainCategory[0]);
       googleVolumeInfo.categories = Array(...categoriesSet);
-    } else {
+    } else if (googleVolumeInfo.categories) {
       let categoriesArray = [];
       for (const line of googleVolumeInfo.categories) {
         const splitLine = line.split(' / ');
