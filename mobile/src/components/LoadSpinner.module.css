@@ -17,7 +17,7 @@
   text-align: center;
   margin: auto auto;
   gap: 0.5rem;
-  height: fit-content;
+  height: 50%;
   width: 100%;
   background-color: var(--ion-background-color);
 }

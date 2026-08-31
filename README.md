@@ -5,6 +5,17 @@ This project was designed and built as a Mobile App to help me keep track of the
 To add books to your profile, simply scan the book's barcode!
 
 <div align="center">
+  <h1>Home Page</h1>
+  
+  <img src="./media/homePage/homeScreenRetry.png" alt="Home Screen with Retry" width="220" />
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="./media/homePage/homeScreen.png" alt="Home Screen with Books display" width="220" />
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="./media/homePage/bookInfoPage.png" alt="Book Page Display" width="220" />
+  
+</div>
+
+<div align="center">
   <h1>Adding a Book to your Lists</h1>
   
   <img src="./media/addPage/addPage.png" alt="Add Page Screen" width="220" />
@@ -19,7 +30,9 @@ To add books to your profile, simply scan the book's barcode!
 
 ## 🚧 Status
 
-Login and Register implemented. User can scan a Book's barcode to fetch book's info, and receives visual feedback if already in one of their lists. If not, gives the option to add to one _(Updated: 19/08/2026)_
+Login and Register implemented. User can scan a Book's barcode to fetch book's info, and receives visual feedback if already in one of their lists. If not, gives the option to add to one.
+
+Home Page Implemented. Fetches book in user's Reading or Wishlist, if exists. Fetches trending books from Google Books API according to user's most read category, or trending books from New York Times API if no info is available from the user _(Updated: 31/08/2026)_
 
 ---
 
@@ -28,8 +41,8 @@ Login and Register implemented. User can scan a Book's barcode to fetch book's i
 - [x] Login and Register
 - [x] Scan barcode and fetch information
 - [x] Add Book to one of the lists after scanning barcode
-- [ ] Display a book suggestion from the ones the user is reading on the home page
-- [ ] Display book suggestions by topic on the home page
+- [x] Display a book suggestion from the ones the user is reading on the home page
+- [x] Display book suggestions by topic on the home page
 - [ ] Search for book by the title, author or category
 - [ ] Create chatbot for user interaction
 - [ ] Create profile page to see user's lists
@@ -37,8 +50,9 @@ Login and Register implemented. User can scan a Book's barcode to fetch book's i
 
 #### Future Ideas:
 
-- Hability to see other people's accounts, have friends and see their lists
+- Ability to see other people's accounts, have friends and see their lists.
 - Contribution program, where users can add missing books that the APIs don't know that exist.
+- Users can add private or public review, and displays on profile and on book page.
 
 ---
 
@@ -63,6 +77,9 @@ The user enters the app and the system immediately checks for a valid token. If 
 **2. Book Scanning Process:**
 The user accesses the "Add Book" page, opens the scanner, and scans a barcode. The app verifies the `valueType` property; if it isn't a book barcode, an error is displayed. Otherwise, the app fetches the book information through the Google Books API, or the OpenLibrary API if the Google Books API doesn't return all the needed information, via a dedicated backend endpoint. User gets visual feedback if book is already on one of the lists, if not, shows buttons that allow the user to add the book to one of the lists.
 
+**3. Home Page:**
+User enters the app and receives a suggestion from the books he is reading, or from his wishlist (if available and it isn't currently reading any). If user has any completed and liked book, the API gets the main category if available, and fetches books from that category to recommend to the user. If not, does the same but from the NYT API and with no specific category.
+
 ---
 
 ## Challenges so far
@@ -75,6 +92,8 @@ The user accesses the "Add Book" page, opens the scanner, and scans a barcode. T
 
 4. **Working with External APIs:** Working with the Google Books API and the OpenLibrary API was a challenge, because not every information is returned on the Google Books, so had to use a plan B API, but the returned information was on a different format, so had to clean up everything to fit on the interface used.
 
+5. **Workflow for Home Page:** Get the books from the user if he is reading any, if not from the wishlist, if it has any. Checks if there is a main category that the user liked, and fetches some books from that category to recommend. If not, fetches trending books from the NYT API. Because the Google Books API sometimes returns an error, allows the user to retry the fetch for recommendations.
+
 ---
 
 ## Decisions made
@@ -84,6 +103,10 @@ The user accesses the "Add Book" page, opens the scanner, and scans a barcode. T
 2. **Backend Proxy for API Calls:** Create an endpoint in the API to fetch the book information, passing only the book ISBN from the front-end. This protects the Google API key and allows the backend to clean up irrelevant information returned by Google.
 
 3. **How to get the book's info:** Since the Google Books API doesn't return every info needed, OpenLibrary's API is being used as a backup plan. Everything is being cleaned to fit the interface format.
+
+4. **Use more APIs:** Use the Google Books API and the NYT API to get recommendations
+
+5. **Allow user to retry:** Implement a button to allow the user to retry the fetching for recommendations
 
 ---
 
@@ -127,6 +150,7 @@ You will need to set up the environment variables to connect the app to the data
   DATABASE_URL=
   JWT_SECRET=
   BOOKS_API_KEY=
+  NYT_API_KEY=
   ```
 - **Frontend:** Create a `.env` file in the `mobile` folder and configure the API URL
   ```env
