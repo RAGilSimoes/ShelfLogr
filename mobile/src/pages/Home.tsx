@@ -1,8 +1,6 @@
 import {
   IonContent,
   IonPage,
-  IonItem,
-  IonLabel,
   IonIcon,
   IonHeader,
   IonToolbar,
@@ -10,13 +8,11 @@ import {
   IonGrid,
   useIonViewWillLeave,
   useIonViewWillEnter,
-  IonModal,
   IonButton,
-  IonButtons,
 } from '@ionic/react';
 import { sunny, partlySunny, moon, refreshCircle } from 'ionicons/icons';
 
-import { ReactElement, useEffect, useState, useRef } from 'react';
+import { ReactElement, useState, useRef } from 'react';
 
 import styles from './Home.module.css';
 
@@ -26,7 +22,7 @@ import axios from 'axios';
 
 import BookInfo from '../components/BookInfo';
 import { bookInfo } from '@shelflogr/shared';
-import { useHistory, useLocation, useRouteMatch } from 'react-router';
+import { useHistory } from 'react-router';
 
 import LoadSpinner from '../components/LoadSpinner';
 import BookSwiper from '../components/BookSwiper';
@@ -36,7 +32,6 @@ const Home: React.FC<{ userName: string }> = ({ userName }) => {
   const queryClient = useQueryClient();
 
   const history = useHistory();
-  const location = useLocation();
 
   const timeoutRef = useRef(0);
 
@@ -153,6 +148,45 @@ const Home: React.FC<{ userName: string }> = ({ userName }) => {
     }
   };
 
+  const getTrendingBooksRecommendation = async (category?: string) => {
+    try {
+      const trendingBooksResponse = await api.get('/books/trending', {
+        params: {
+          category,
+        },
+      });
+
+      const status = trendingBooksResponse.status;
+
+      if (status === 200) {
+        if (Object.keys(trendingBooksResponse.data).length > 0) {
+          const data: {
+            type: string;
+            trendingBooksInfo: Array<bookInfo>;
+          } = trendingBooksResponse.data;
+
+          if (data.trendingBooksInfo) interpretTrendingData(data, category);
+        }
+      }
+    } catch (error) {
+      setDisplayErrorMessage(true);
+      if (axios.isAxiosError(error)) {
+        const serverMessage =
+          error.response?.data?.error || 'Server communication error.';
+        setErrorMessage(serverMessage);
+      } else {
+        setErrorMessage('Unexpected error occurred.');
+      }
+    } finally {
+      setIsRetyring(false);
+      const timeoutID = setTimeout(() => {
+        setButtonDisabled(false);
+      }, 5000);
+
+      timeoutRef.current = timeoutID;
+    }
+  };
+
   const getUserBooksRecomendation = async () => {
     setIsLoading(true);
     setButtonDisabled(true);
@@ -180,28 +214,7 @@ const Home: React.FC<{ userName: string }> = ({ userName }) => {
         }
       }
 
-      try {
-        const trendingBooksResponse = await api.get('/books/trending', {
-          params: {
-            category,
-          },
-        });
-
-        const status = trendingBooksResponse.status;
-
-        if (status === 200) {
-          if (Object.keys(trendingBooksResponse.data).length > 0) {
-            const data: {
-              type: string;
-              trendingBooksInfo: Array<bookInfo>;
-            } = trendingBooksResponse.data;
-
-            if (data.trendingBooksInfo) interpretTrendingData(data, category);
-          }
-        }
-      } catch (error) {
-        throw new Error();
-      }
+      getTrendingBooksRecommendation(category);
     } catch (error) {
       setDisplayErrorMessage(true);
       if (axios.isAxiosError(error)) {
@@ -214,11 +227,6 @@ const Home: React.FC<{ userName: string }> = ({ userName }) => {
     } finally {
       setIsLoading(false);
       setIsRetyring(false);
-      const timeoutID = setTimeout(() => {
-        setButtonDisabled(false);
-      }, 5000);
-
-      timeoutRef.current = timeoutID;
     }
   };
 
@@ -296,7 +304,7 @@ const Home: React.FC<{ userName: string }> = ({ userName }) => {
                   size="default"
                   onClick={() => {
                     setIsRetyring(true);
-                    getUserBooksRecomendation();
+                    getTrendingBooksRecommendation(trendingCategory);
                   }}
                   className="ion-margin-top"
                   color="primary"
