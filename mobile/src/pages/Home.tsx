@@ -26,11 +26,16 @@ import { useHistory } from 'react-router';
 
 import LoadSpinner from '../components/LoadSpinner';
 import BookSwiper from '../components/BookSwiper';
-import { useQueryClient } from '@tanstack/react-query';
+
+import { useQuery } from '@tanstack/react-query';
+import {
+  fetchUserBookRecommendation,
+  fetchTrendingBooksRecommendation,
+} from '../queryOptions/homeQueries';
+import { checkToken } from '../services/auth.service';
+import { jwtDecode } from 'jwt-decode';
 
 const Home: React.FC<{ userName: string }> = ({ userName }) => {
-  const queryClient = useQueryClient();
-
   const history = useHistory();
 
   const timeoutRef = useRef(0);
@@ -71,7 +76,8 @@ const Home: React.FC<{ userName: string }> = ({ userName }) => {
   });
 
   useIonViewWillEnter(() => {
-    getUserBooksRecomendation();
+    //getUserBooksRecomendation();
+    getTrendingBooksRecommendation(trendingCategory);
   });
 
   function getTimeIcon(): ReactElement {
@@ -213,8 +219,6 @@ const Home: React.FC<{ userName: string }> = ({ userName }) => {
           throw new Error();
         }
       }
-
-      getTrendingBooksRecommendation(category);
     } catch (error) {
       setDisplayErrorMessage(true);
       if (axios.isAxiosError(error)) {
@@ -229,6 +233,16 @@ const Home: React.FC<{ userName: string }> = ({ userName }) => {
       setIsRetyring(false);
     }
   };
+
+  const activeBookQuery = useQuery({
+    queryKey: ['userBook'],
+    queryFn: fetchUserBookRecommendation,
+    select: (data) => {
+      return data.activeBook;
+    },
+  });
+
+  console.log(activeBookQuery);
 
   return (
     <IonPage>
