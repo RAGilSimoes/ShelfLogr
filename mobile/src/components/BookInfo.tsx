@@ -133,7 +133,7 @@ const BookInfo: React.FC<{
       </div>
     );
   } else {
-    return <IonCard>{headerContent}</IonCard>;
+    return <IonCard className={styles.card}>{headerContent}</IonCard>;
   }
 };
 

@@ -25,6 +25,7 @@ const BookSwiper: React.FC<{
           return (
             <SwiperSlide key={index} className={styles.swiper}>
               <div
+                className={styles.cardContainer}
                 onClick={() => {
                   history.push(`/app/book`, {
                     information: book,

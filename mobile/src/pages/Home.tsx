@@ -30,8 +30,11 @@ import { useHistory, useLocation, useRouteMatch } from 'react-router';
 
 import LoadSpinner from '../components/LoadSpinner';
 import BookSwiper from '../components/BookSwiper';
+import { useQueryClient } from '@tanstack/react-query';
 
 const Home: React.FC<{ userName: string }> = ({ userName }) => {
+  const queryClient = useQueryClient();
+
   const history = useHistory();
   const location = useLocation();
 
@@ -52,7 +55,6 @@ const Home: React.FC<{ userName: string }> = ({ userName }) => {
   const [statusMessage, setStatusMessage] = useState<string>();
   const [trendingMessage, setTrendingMessage] = useState<string>();
 
-  const [recomendationType, setRecomendationType] = useState<string>();
   const [trendingType, setTrendingType] = useState<string>();
   const [trendingCategory, setTrendingCategory] = useState<string>();
 
@@ -96,63 +98,58 @@ const Home: React.FC<{ userName: string }> = ({ userName }) => {
     return icon;
   }
 
-  const interpretData = (data: {
-    activeBook?: { type: string; list: string; book: bookInfo };
-    trending: {
-      type: string;
-      category?: string;
-      trendingBooksInfo: Array<bookInfo>;
-    };
+  const interpretActiveData = (activeBook: {
+    type: string;
+    list: string;
+    book: bookInfo;
   }) => {
-    if (data.activeBook) {
-      const activeInfo = data.activeBook;
-      let book = activeInfo.book;
-      let bookStatus = activeInfo.list!;
+    let book = activeBook.book;
+    let bookStatus = activeBook.list!;
 
-      setStatusMessage(
-        `This book is in your ${
-          bookStatus?.charAt(0).toUpperCase() + bookStatus?.slice(1)
-        } List`,
-      );
+    setStatusMessage(
+      `This book is in your ${
+        bookStatus?.charAt(0).toUpperCase() + bookStatus?.slice(1)
+      } List`,
+    );
 
-      setActiveBookInfo(book);
+    setActiveBookInfo(book);
+  };
 
-      setRecomendationType(activeInfo.type);
-    }
+  const interpretTrendingData = (
+    trendingBooks: {
+      type: string;
+      trendingBooksInfo: Array<bookInfo>;
+    },
+    category?: string,
+  ) => {
+    setTrendingType(trendingBooks.type);
 
-    if (data.trending) {
-      const trendingInfo = data.trending;
-      setTrendingType(trendingInfo.type);
-
-      switch (trendingInfo.type) {
-        case 'category': {
-          setTrendingCategory(trendingInfo.category);
-          if (trendingInfo.trendingBooksInfo.length > 0) {
-            setTrendingMessage(`Because you liked ${trendingInfo.category}`);
-            setTrendingBooksInfo(trendingInfo.trendingBooksInfo);
-          } else {
-            setErrorMessage(
-              `Couldn't Get Recommendations About ${trendingInfo.category}`,
-            );
-          }
-
-          break;
+    switch (trendingBooks.type) {
+      case 'category': {
+        setTrendingCategory(category);
+        if (trendingBooks.trendingBooksInfo.length > 0) {
+          setTrendingMessage(`Because you liked ${category}`);
+          setTrendingBooksInfo(trendingBooks.trendingBooksInfo);
+        } else {
+          setErrorMessage(`Couldn't Get Recommendations About ${category}`);
         }
 
-        case 'trending': {
-          if (trendingInfo.trendingBooksInfo.length > 0) {
-            setTrendingMessage("What's on the trends this week");
-            setTrendingBooksInfo(trendingInfo.trendingBooksInfo);
-          } else {
-            setErrorMessage(`Couldn't Get Trending Books`);
-          }
-
-          break;
-        }
-
-        default:
-          break;
+        break;
       }
+
+      case 'trending': {
+        if (trendingBooks.trendingBooksInfo.length > 0) {
+          setTrendingMessage("What's on the trends this week");
+          setTrendingBooksInfo(trendingBooks.trendingBooksInfo);
+        } else {
+          setErrorMessage(`Couldn't Get Trending Books`);
+        }
+
+        break;
+      }
+
+      default:
+        break;
     }
   };
 
@@ -160,24 +157,50 @@ const Home: React.FC<{ userName: string }> = ({ userName }) => {
     setIsLoading(true);
     setButtonDisabled(true);
     try {
-      const response = await api.get('/get-user-books-recomendations');
+      const activeBookResponse = await api.get(
+        '/user/active-book-recommendation',
+      );
 
-      const status = response.status;
+      const status = activeBookResponse.status;
+
+      let category;
 
       if (status == 200) {
-        if (Object.keys(response.data).length) {
+        if (Object.keys(activeBookResponse.data).length) {
           const data: {
             activeBook?: { type: string; list: string; book: bookInfo };
-            trending: {
-              type: string;
-              category?: string;
-              trendingBooksInfo: Array<bookInfo>;
-            };
-          } = response.data;
-          interpretData(data);
+            category?: string;
+          } = activeBookResponse.data;
+
+          if (data.activeBook) interpretActiveData(data.activeBook);
+
+          if (data.category) category = data.category;
         } else {
           throw new Error();
         }
+      }
+
+      try {
+        const trendingBooksResponse = await api.get('/books/trending', {
+          params: {
+            category,
+          },
+        });
+
+        const status = trendingBooksResponse.status;
+
+        if (status === 200) {
+          if (Object.keys(trendingBooksResponse.data).length > 0) {
+            const data: {
+              type: string;
+              trendingBooksInfo: Array<bookInfo>;
+            } = trendingBooksResponse.data;
+
+            if (data.trendingBooksInfo) interpretTrendingData(data, category);
+          }
+        }
+      } catch (error) {
+        throw new Error();
       }
     } catch (error) {
       setDisplayErrorMessage(true);
@@ -233,7 +256,7 @@ const Home: React.FC<{ userName: string }> = ({ userName }) => {
           />
         ) : (
           <IonGrid className={styles.grid}>
-            {recomendationType === 'personal' && activeBookInfo && (
+            {activeBookInfo && (
               <>
                 <h3 className={styles.statusMessage}>{statusMessage}</h3>
                 <div

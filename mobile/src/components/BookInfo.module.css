@@ -1,5 +1,11 @@
 .card {
   border: 1px solid black;
+  height: inherit;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  justify-content: center;
+  margin-top: 5px;
 }
 
 .fullPage {
