@@ -7,7 +7,6 @@ import {
   IonToast,
   IonGrid,
   useIonViewWillLeave,
-  useIonViewWillEnter,
   IonButton,
 } from '@ionic/react';
 import { sunny, partlySunny, moon, refreshCircle } from 'ionicons/icons';
@@ -16,12 +15,7 @@ import { ReactElement, useState, useRef } from 'react';
 
 import styles from './Home.module.css';
 
-import api from '../services/api.service';
-
-import axios from 'axios';
-
 import BookInfo from '../components/BookInfo';
-import { bookInfo } from '@shelflogr/shared';
 import { useHistory } from 'react-router';
 
 import LoadSpinner from '../components/LoadSpinner';
@@ -41,32 +35,12 @@ const Home: React.FC<{ userName: string }> = ({ userName }) => {
   const [buttonDisabled, setButtonDisabled] = useState<boolean>(false);
 
   const [displayErrorMessage, setDisplayErrorMessage] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
-
-  const [trendingBooksInfo, setTrendingBooksInfo] = useState<
-    Array<bookInfo> | undefined
-  >(undefined);
-
-  const [trendingMessage, setTrendingMessage] = useState<string>();
-
-  const [trendingType, setTrendingType] = useState<string>();
-  const [trendingCategory, setTrendingCategory] = useState<string>();
-
-  const [isRetrying, setIsRetyring] = useState<boolean>(false);
 
   useIonViewWillLeave(() => {
-    setTrendingBooksInfo(undefined);
-    setErrorMessage('');
     setDisplayErrorMessage(false);
-    setIsRetyring(false);
-    setTrendingType('');
 
     const timeoutId = timeoutRef.current;
     clearTimeout(timeoutId);
-  });
-
-  useIonViewWillEnter(() => {
-    getTrendingBooksRecommendation(trendingCategory);
   });
 
   function getTimeIcon(): ReactElement {
@@ -88,86 +62,16 @@ const Home: React.FC<{ userName: string }> = ({ userName }) => {
     return icon;
   }
 
-  const interpretTrendingData = (
-    trendingBooks: {
-      type: string;
-      trendingBooksInfo: Array<bookInfo>;
-    },
-    category?: string,
-  ) => {
-    setTrendingType(trendingBooks.type);
-
-    switch (trendingBooks.type) {
-      case 'category': {
-        setTrendingCategory(category);
-        if (trendingBooks.trendingBooksInfo.length > 0) {
-          setTrendingMessage(`Because you liked ${category}`);
-          setTrendingBooksInfo(trendingBooks.trendingBooksInfo);
-        } else {
-          setErrorMessage(`Couldn't Get Recommendations About ${category}`);
-        }
-
-        break;
-      }
-
-      case 'trending': {
-        if (trendingBooks.trendingBooksInfo.length > 0) {
-          setTrendingMessage("What's on the trends this week");
-          setTrendingBooksInfo(trendingBooks.trendingBooksInfo);
-        } else {
-          setErrorMessage(`Couldn't Get Trending Books`);
-        }
-
-        break;
-      }
-
-      default:
-        break;
-    }
-  };
-
-  const getTrendingBooksRecommendation = async (category?: string) => {
-    try {
-      const trendingBooksResponse = await api.get('/books/trending', {
-        params: {
-          category,
-        },
-      });
-
-      const status = trendingBooksResponse.status;
-
-      if (status === 200) {
-        if (Object.keys(trendingBooksResponse.data).length > 0) {
-          const data: {
-            type: string;
-            trendingBooksInfo: Array<bookInfo>;
-          } = trendingBooksResponse.data;
-
-          if (data.trendingBooksInfo) interpretTrendingData(data, category);
-        }
-      }
-    } catch (error) {
-      setDisplayErrorMessage(true);
-      if (axios.isAxiosError(error)) {
-        const serverMessage =
-          error.response?.data?.error || 'Server communication error.';
-        setErrorMessage(serverMessage);
-      } else {
-        setErrorMessage('Unexpected error occurred.');
-      }
-    } finally {
-      setIsRetyring(false);
-      const timeoutID = setTimeout(() => {
-        setButtonDisabled(false);
-      }, 5000);
-
-      timeoutRef.current = timeoutID;
-    }
-  };
-
   const activeBookQuery = useQuery({
     queryKey: ['userBook'],
     queryFn: fetchUserBookRecommendation,
+  });
+
+  const trendingBookQuery = useQuery({
+    queryKey: ['trendingBooks', activeBookQuery.data?.category],
+    queryFn: () =>
+      fetchTrendingBooksRecommendation(activeBookQuery.data?.category),
+    enabled: activeBookQuery.status === 'success',
   });
 
   return (
@@ -184,19 +88,24 @@ const Home: React.FC<{ userName: string }> = ({ userName }) => {
           </div>
         </IonToolbar>
       </IonHeader>
+
       <IonContent fullscreen>
         <IonToast
           trigger="open-toast"
-          message={errorMessage}
+          message={
+            activeBookQuery.isError
+              ? activeBookQuery.error.message
+              : trendingBookQuery.isError
+              ? trendingBookQuery.error.message
+              : ''
+          }
           duration={5000}
           isOpen={displayErrorMessage}
-          onDidDismiss={() => {
-            setDisplayErrorMessage(false);
-            setErrorMessage('');
-          }}
+          onDidDismiss={() => setDisplayErrorMessage(false)}
           className={styles.customToast}
           position="top"
         ></IonToast>
+
         {activeBookQuery.isLoading ? (
           <LoadSpinner
             message={'Getting Book Recomendations For You...'}
@@ -231,17 +140,26 @@ const Home: React.FC<{ userName: string }> = ({ userName }) => {
                   </div>
                 </>
               )}{' '}
-            {trendingBooksInfo ? (
+            {trendingBookQuery.status === 'success' &&
+            trendingBookQuery.data.trendingBooksInfo.length > 0 ? (
               <>
-                <h3 className={styles.trendingMessage}>{trendingMessage}</h3>
-                {<BookSwiper books={trendingBooksInfo} />}
+                <h3 className={styles.trendingMessage}>
+                  {activeBookQuery.data.category !== undefined
+                    ? `Because you liked ${activeBookQuery.data.category}`
+                    : `What's Trending This Week`}
+                </h3>
+                {
+                  <BookSwiper
+                    books={trendingBookQuery.data.trendingBooksInfo}
+                  />
+                }
               </>
-            ) : isRetrying ? (
+            ) : trendingBookQuery.isRefetching ? (
               <div className={styles.retryingDiv}>
                 <LoadSpinner
                   message={
-                    trendingType === 'category'
-                      ? `Getting Book Recommendations for ${trendingCategory} Category`
+                    activeBookQuery.data.category !== undefined
+                      ? `Getting Book Recommendations for ${trendingBookQuery.data.category} Category`
                       : `Getting Trending Books`
                   }
                   fullScreen={false}
@@ -249,14 +167,24 @@ const Home: React.FC<{ userName: string }> = ({ userName }) => {
               </div>
             ) : (
               <>
-                <h3 className={styles.failedMessage}>{errorMessage}</h3>
+                <h3 className={styles.failedMessage}>
+                  {activeBookQuery.data.category !== undefined
+                    ? `Couldn't Get Recommendations About ${activeBookQuery.data.category}`
+                    : `Couldn't Get Trending Books`}
+                </h3>
                 <IonButton
                   expand="block"
                   shape="round"
                   size="default"
                   onClick={() => {
-                    setIsRetyring(true);
-                    getTrendingBooksRecommendation(trendingCategory);
+                    trendingBookQuery.refetch();
+                    setButtonDisabled(true);
+
+                    const timeoutID = setTimeout(() => {
+                      setButtonDisabled(false);
+                    }, 5000);
+
+                    timeoutRef.current = timeoutID;
                   }}
                   className="ion-margin-top"
                   color="primary"
