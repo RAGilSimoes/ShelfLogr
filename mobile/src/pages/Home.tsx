@@ -32,8 +32,6 @@ import {
   fetchUserBookRecommendation,
   fetchTrendingBooksRecommendation,
 } from '../queryOptions/homeQueries';
-import { checkToken } from '../services/auth.service';
-import { jwtDecode } from 'jwt-decode';
 
 const Home: React.FC<{ userName: string }> = ({ userName }) => {
   const history = useHistory();
@@ -45,29 +43,21 @@ const Home: React.FC<{ userName: string }> = ({ userName }) => {
   const [displayErrorMessage, setDisplayErrorMessage] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  const [activeBookInfo, setActiveBookInfo] = useState<bookInfo | undefined>(
-    undefined,
-  );
   const [trendingBooksInfo, setTrendingBooksInfo] = useState<
     Array<bookInfo> | undefined
   >(undefined);
 
-  const [statusMessage, setStatusMessage] = useState<string>();
   const [trendingMessage, setTrendingMessage] = useState<string>();
 
   const [trendingType, setTrendingType] = useState<string>();
   const [trendingCategory, setTrendingCategory] = useState<string>();
 
-  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isRetrying, setIsRetyring] = useState<boolean>(false);
 
   useIonViewWillLeave(() => {
-    setStatusMessage('');
     setTrendingBooksInfo(undefined);
     setErrorMessage('');
     setDisplayErrorMessage(false);
-    setIsLoading(false);
-    setActiveBookInfo(undefined);
     setIsRetyring(false);
     setTrendingType('');
 
@@ -76,7 +66,6 @@ const Home: React.FC<{ userName: string }> = ({ userName }) => {
   });
 
   useIonViewWillEnter(() => {
-    //getUserBooksRecomendation();
     getTrendingBooksRecommendation(trendingCategory);
   });
 
@@ -98,23 +87,6 @@ const Home: React.FC<{ userName: string }> = ({ userName }) => {
 
     return icon;
   }
-
-  const interpretActiveData = (activeBook: {
-    type: string;
-    list: string;
-    book: bookInfo;
-  }) => {
-    let book = activeBook.book;
-    let bookStatus = activeBook.list!;
-
-    setStatusMessage(
-      `This book is in your ${
-        bookStatus?.charAt(0).toUpperCase() + bookStatus?.slice(1)
-      } List`,
-    );
-
-    setActiveBookInfo(book);
-  };
 
   const interpretTrendingData = (
     trendingBooks: {
@@ -193,56 +165,10 @@ const Home: React.FC<{ userName: string }> = ({ userName }) => {
     }
   };
 
-  const getUserBooksRecomendation = async () => {
-    setIsLoading(true);
-    setButtonDisabled(true);
-    try {
-      const activeBookResponse = await api.get(
-        '/user/active-book-recommendation',
-      );
-
-      const status = activeBookResponse.status;
-
-      let category;
-
-      if (status == 200) {
-        if (Object.keys(activeBookResponse.data).length) {
-          const data: {
-            activeBook?: { type: string; list: string; book: bookInfo };
-            category?: string;
-          } = activeBookResponse.data;
-
-          if (data.activeBook) interpretActiveData(data.activeBook);
-
-          if (data.category) category = data.category;
-        } else {
-          throw new Error();
-        }
-      }
-    } catch (error) {
-      setDisplayErrorMessage(true);
-      if (axios.isAxiosError(error)) {
-        const serverMessage =
-          error.response?.data?.error || 'Server communication error.';
-        setErrorMessage(serverMessage);
-      } else {
-        setErrorMessage('Unexpected error occurred.');
-      }
-    } finally {
-      setIsLoading(false);
-      setIsRetyring(false);
-    }
-  };
-
   const activeBookQuery = useQuery({
     queryKey: ['userBook'],
     queryFn: fetchUserBookRecommendation,
-    select: (data) => {
-      return data.activeBook;
-    },
   });
-
-  console.log(activeBookQuery);
 
   return (
     <IonPage>
@@ -271,28 +197,40 @@ const Home: React.FC<{ userName: string }> = ({ userName }) => {
           className={styles.customToast}
           position="top"
         ></IonToast>
-        {isLoading && !activeBookInfo ? (
+        {activeBookQuery.isLoading ? (
           <LoadSpinner
             message={'Getting Book Recomendations For You...'}
             fullScreen={true}
           />
         ) : (
           <IonGrid className={styles.grid}>
-            {activeBookInfo && (
-              <>
-                <h3 className={styles.statusMessage}>{statusMessage}</h3>
-                <div
-                  onClick={() => {
-                    history.push(`/app/book`, {
-                      information: activeBookInfo,
-                    });
-                  }}
-                  style={{ cursor: 'pointer' }}
-                >
-                  <BookInfo bookInfo={activeBookInfo} detailed={false} />
-                </div>
-              </>
-            )}{' '}
+            {activeBookQuery.status === 'success' &&
+              activeBookQuery.data.activeBook &&
+              Object.keys(activeBookQuery.data.activeBook).length > 0 && (
+                <>
+                  <h3 className={styles.statusMessage}>
+                    This book is in your{' '}
+                    {activeBookQuery.data.activeBook.list
+                      ?.charAt(0)
+                      .toUpperCase() +
+                      activeBookQuery.data.activeBook.list?.slice(1)}{' '}
+                    List
+                  </h3>
+                  <div
+                    onClick={() => {
+                      history.push(`/app/book`, {
+                        information: activeBookQuery.data.activeBook.book,
+                      });
+                    }}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <BookInfo
+                      bookInfo={activeBookQuery.data.activeBook.book}
+                      detailed={false}
+                    />
+                  </div>
+                </>
+              )}{' '}
             {trendingBooksInfo ? (
               <>
                 <h3 className={styles.trendingMessage}>{trendingMessage}</h3>
