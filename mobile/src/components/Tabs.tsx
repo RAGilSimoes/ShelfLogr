@@ -18,7 +18,7 @@ import Profile from '../pages/Profile';
 import ChatBot from '../pages/ChatBot';
 import BookPage from '../pages/BookPage';
 
-const Tabs: React.FC<{ userName: string }> = ({ userName }) => {
+const Tabs: React.FC = () => {
   const match = useRouteMatch();
   const path = match.url;
 
@@ -26,7 +26,7 @@ const Tabs: React.FC<{ userName: string }> = ({ userName }) => {
     <IonTabs>
       <IonRouterOutlet>
         <Route exact path={path + '/home'}>
-          <Home userName={userName} />
+          <Home />
         </Route>
         <Route exact path={path + '/search'}>
           <Search />

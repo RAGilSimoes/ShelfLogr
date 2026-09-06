@@ -28,6 +28,8 @@ import { setToken } from '../services/auth.service';
 
 import styles from './Login.module.css';
 
+import useAuthStore from '../store/useAuthStore';
+
 const Login: React.FC = () => {
   const history = useHistory();
   const location = useLocation<{ message?: string }>();
@@ -92,6 +94,8 @@ const Login: React.FC = () => {
 
   const isValidForm = isValidEmail && isValidPassword;
 
+  const updateAuthToken = useAuthStore((state) => state.updateJWT);
+
   const submitForm = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -111,7 +115,8 @@ const Login: React.FC = () => {
 
       if (status == 200) {
         const token = response.data.token;
-        setToken(token);
+        updateAuthToken(token);
+
         setShowError(false);
         setErrorMessage('');
         history.push('/app/home');

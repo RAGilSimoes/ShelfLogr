@@ -27,7 +27,10 @@ import {
   fetchTrendingBooksRecommendation,
 } from '../queryOptions/homeQueries';
 
-const Home: React.FC<{ userName: string }> = ({ userName }) => {
+import useAuthStore from '../store/useAuthStore';
+
+const Home: React.FC = () => {
+  const username = useAuthStore().username;
   const history = useHistory();
 
   const timeoutRef = useRef(0);
@@ -83,7 +86,7 @@ const Home: React.FC<{ userName: string }> = ({ userName }) => {
 
             <div className={styles.welcomeTextDiv}>
               <span className={styles.welcomeTextStatic}>Welcome Back</span>
-              <strong className={styles.welcomeTextDynamic}>{userName}</strong>
+              <strong className={styles.welcomeTextDynamic}>{username}</strong>
             </div>
           </div>
         </IonToolbar>
@@ -154,12 +157,13 @@ const Home: React.FC<{ userName: string }> = ({ userName }) => {
                   />
                 }
               </>
-            ) : trendingBookQuery.isRefetching ? (
+            ) : trendingBookQuery.isLoading ||
+              trendingBookQuery.isRefetching ? (
               <div className={styles.retryingDiv}>
                 <LoadSpinner
                   message={
                     activeBookQuery.data.category !== undefined
-                      ? `Getting Book Recommendations for ${trendingBookQuery.data.category} Category`
+                      ? `Getting Book Recommendations for ${activeBookQuery.data.category} Category`
                       : `Getting Trending Books`
                   }
                   fullScreen={false}
@@ -177,8 +181,8 @@ const Home: React.FC<{ userName: string }> = ({ userName }) => {
                   shape="round"
                   size="default"
                   onClick={() => {
-                    trendingBookQuery.refetch();
                     setButtonDisabled(true);
+                    trendingBookQuery.refetch();
 
                     const timeoutID = setTimeout(() => {
                       setButtonDisabled(false);
