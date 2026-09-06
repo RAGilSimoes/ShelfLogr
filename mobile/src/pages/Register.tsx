@@ -2,7 +2,6 @@ import {
   IonContent,
   IonPage,
   IonItem,
-  IonLabel,
   IonIcon,
   IonImg,
   IonGrid,
@@ -24,7 +23,7 @@ import { useHistory, useLocation } from 'react-router-dom';
 
 import api from '../services/api.service';
 
-import { setToken } from '../services/auth.service';
+import useAuthStore from '../store/useAuthStore';
 
 import styles from './Register.module.css';
 
@@ -118,6 +117,8 @@ const Register: React.FC = () => {
   const isValidForm =
     isValidEmail && isValidPassword && isValidVerifyPassword && isValidUsername;
 
+  const updateAuthToken = useAuthStore((state) => state.updateJWT);
+
   const submitForm = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -138,7 +139,8 @@ const Register: React.FC = () => {
 
       if (status == 200) {
         const token = response.data.token;
-        setToken(token);
+        updateAuthToken(token);
+        
         setShowError(false);
         setErrorMessage('');
         history.push('/app/home');
