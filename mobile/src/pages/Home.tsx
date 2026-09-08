@@ -11,7 +11,7 @@ import {
 } from '@ionic/react';
 import { sunny, partlySunny, moon, refreshCircle } from 'ionicons/icons';
 
-import { ReactElement, useState, useRef } from 'react';
+import { ReactElement, useState, useRef, useEffect } from 'react';
 
 import styles from './Home.module.css';
 
@@ -22,15 +22,20 @@ import LoadSpinner from '../components/LoadSpinner';
 import BookSwiper from '../components/BookSwiper';
 
 import { useQuery } from '@tanstack/react-query';
-import {
-  fetchUserBookRecommendation,
-  fetchTrendingBooksRecommendation,
-} from '../queryOptions/homeQueries';
+import fetchTrendingBooksRecommendation from '../queryOptions/homeQueries';
+import fetchUserLists from '../queryOptions/loginQueries';
 
 import useAuthStore from '../store/useAuthStore';
+import { bookInfo } from '@shelflogr/shared';
 
 const Home: React.FC = () => {
   const username = useAuthStore().username;
+  const userID = useAuthStore().userID;
+  const activeBook = useAuthStore().activeBook;
+  const category = useAuthStore().category;
+  const list = useAuthStore().list;
+  const updateActiveBookInfo = useAuthStore().updateActiveBookRecommendation;
+
   const history = useHistory();
 
   const timeoutRef = useRef(0);
@@ -66,12 +71,54 @@ const Home: React.FC = () => {
   }
 
   const activeBookQuery = useQuery({
-    queryKey: ['userBook'],
-    queryFn: fetchUserBookRecommendation,
+    queryKey: ['userBook', userID],
+    queryFn: fetchUserLists,
+    select(data: {
+      category?: string;
+      lists: { reading: Array<bookInfo>; wish: Array<bookInfo> };
+    }) {
+      if (activeBook && category && list) {
+        return {
+          category,
+          activeBook,
+          list,
+        };
+      } else if (data.lists.reading.length > 0) {
+        return {
+          category: data.category,
+          activeBooks: data.lists.reading,
+          list: 'reading',
+        };
+      } else if (data.lists.wish.length > 0) {
+        return {
+          category: data.category,
+          activeBooks: data.lists.wish,
+          list: 'wish',
+        };
+      } else if (data.category) {
+        return { category: data.category };
+      } else {
+        return { category: undefined };
+      }
+    },
   });
 
+  useEffect(() => {
+    if (
+      !activeBook &&
+      activeBookQuery.data &&
+      activeBookQuery.data.activeBooks
+    ) {
+      updateActiveBookInfo(
+        activeBookQuery.data?.activeBooks!,
+        activeBookQuery.data?.list!,
+        activeBookQuery.data?.category,
+      );
+    }
+  }, [activeBookQuery.data]);
+
   const trendingBookQuery = useQuery({
-    queryKey: ['trendingBooks', activeBookQuery.data?.category],
+    queryKey: ['trendingBooks', activeBookQuery.data?.category, userID],
     queryFn: () =>
       fetchTrendingBooksRecommendation(activeBookQuery.data?.category),
     enabled: activeBookQuery.status === 'success',
@@ -122,22 +169,20 @@ const Home: React.FC = () => {
                 <>
                   <h3 className={styles.statusMessage}>
                     This book is in your{' '}
-                    {activeBookQuery.data.activeBook.list
-                      ?.charAt(0)
-                      .toUpperCase() +
-                      activeBookQuery.data.activeBook.list?.slice(1)}{' '}
+                    {activeBookQuery.data.list?.charAt(0).toUpperCase() +
+                      activeBookQuery.data.list?.slice(1)}{' '}
                     List
                   </h3>
                   <div
                     onClick={() => {
                       history.push(`/app/book`, {
-                        information: activeBookQuery.data.activeBook.book,
+                        information: activeBookQuery.data.activeBook,
                       });
                     }}
                     style={{ cursor: 'pointer' }}
                   >
                     <BookInfo
-                      bookInfo={activeBookQuery.data.activeBook.book}
+                      bookInfo={activeBookQuery.data.activeBook}
                       detailed={false}
                     />
                   </div>
@@ -147,8 +192,8 @@ const Home: React.FC = () => {
             trendingBookQuery.data.trendingBooksInfo.length > 0 ? (
               <>
                 <h3 className={styles.trendingMessage}>
-                  {activeBookQuery.data.category !== undefined
-                    ? `Because you liked ${activeBookQuery.data.category}`
+                  {activeBookQuery.data!.category !== undefined
+                    ? `Because you liked ${activeBookQuery.data!.category}`
                     : `What's Trending This Week`}
                 </h3>
                 {
@@ -162,8 +207,10 @@ const Home: React.FC = () => {
               <div className={styles.retryingDiv}>
                 <LoadSpinner
                   message={
-                    activeBookQuery.data.category !== undefined
-                      ? `Getting Book Recommendations for ${activeBookQuery.data.category} Category`
+                    activeBookQuery.data!.category !== undefined
+                      ? `Getting Book Recommendations for ${
+                          activeBookQuery.data!.category
+                        } Category`
                       : `Getting Trending Books`
                   }
                   fullScreen={false}
@@ -172,8 +219,10 @@ const Home: React.FC = () => {
             ) : (
               <>
                 <h3 className={styles.failedMessage}>
-                  {activeBookQuery.data.category !== undefined
-                    ? `Couldn't Get Recommendations About ${activeBookQuery.data.category}`
+                  {activeBookQuery.data!.category !== undefined
+                    ? `Couldn't Get Recommendations About ${
+                        activeBookQuery.data!.category
+                      }`
                     : `Couldn't Get Trending Books`}
                 </h3>
                 <IonButton

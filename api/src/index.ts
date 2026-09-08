@@ -230,67 +230,45 @@ app.post(
 );
 
 app.get(
-  '/api/user/active-book-recommendation',
+  '/api/user/active-lists',
   verifyAuthorization(false),
   async (req: Request, res: Response) => {
     try {
       const { id } = req.token;
-      let bookID;
 
-      const getBookID =
-        'SELECT "book_id" FROM user_books WHERE "user_id"=$1 AND "status"=$2 LIMIT $3';
-
-      const getBookInfo = `SELECT 
-            b.*, 
+      const getBookLists = `SELECT b.* as book, 
             COALESCE((ARRAY_AGG(c.name) FILTER (WHERE bc.main = true))[1], '') as "mainCategory",
-            COALESCE(ARRAY_AGG(c.name) FILTER (WHERE bc.main = false), '{}') as categories
-        FROM "book" b
-        LEFT JOIN book_category bc ON b.id = bc.book_id
-        LEFT JOIN categories c ON bc.category_id = c.id
-        WHERE b.id = $1
-        GROUP BY b.id;`;
+            COALESCE(ARRAY_AGG(c.name) FILTER (WHERE bc.main = false), '{}') as categories 
+            FROM "user_books" ub 
+            JOIN book b ON b.id = ub.book_id
+            LEFT JOIN book_category bc ON b.id = bc.book_id
+            LEFT JOIN categories c ON bc.category_id = c.id
+            WHERE ub.user_id = $1 AND ub.status = $2
+            GROUP BY b.id;`;
 
       const bookStatusOptions = ['reading', 'wish', 'completed'];
 
-      let { rows: readingBook } = await pool.query(getBookID, [
+      const { rows: readingList } = await pool.query(getBookLists, [
         id,
         bookStatusOptions[0],
-        1,
       ]);
 
-      let list;
-      const type = 'personal';
-      let activeBook = {};
+      let lists: { reading: Array<bookInfo>; wish: Array<bookInfo> } = {
+        reading: [],
+        wish: [],
+      };
 
-      if (readingBook.length > 0) {
-        bookID = readingBook[0].book_id;
+      if (readingList.length > 0) {
+        lists.reading = readingList;
+      }
 
-        list = bookStatusOptions[0];
+      const { rows: wishList } = await pool.query(getBookLists, [
+        id,
+        bookStatusOptions[1],
+      ]);
 
-        const { rows: bookInfo } = await pool.query(getBookInfo, [bookID]);
-
-        if (bookInfo.length > 0) {
-          const book = bookInfo[0];
-          activeBook = { type, list, book };
-        }
-      } else {
-        let { rows: wishBook } = await pool.query(getBookID, [
-          id,
-          bookStatusOptions[1],
-          1,
-        ]);
-
-        if (wishBook.length > 0) {
-          bookID = wishBook[0].book_id;
-          list = bookStatusOptions[1];
-
-          const { rows: bookInfo } = await pool.query(getBookInfo, [bookID]);
-
-          if (bookInfo.length > 0) {
-            const book = bookInfo[0];
-            activeBook = { type, list, book };
-          }
-        }
+      if (wishList.length > 0) {
+        lists.wish = wishList;
       }
 
       const getTopCategoryQuery = `
@@ -316,7 +294,7 @@ app.get(
 
       if (topCategoryRow.length > 0) category = topCategoryRow[0].topCategory;
 
-      res.status(200).json({ activeBook, category });
+      res.status(200).json({ lists, category });
     } catch (error) {
       console.error('Database query failed:', error);
       res
