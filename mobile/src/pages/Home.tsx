@@ -166,7 +166,7 @@ const Home: React.FC = () => {
             {activeBookQuery.status === 'success' &&
               activeBookQuery.data.activeBook &&
               Object.keys(activeBookQuery.data.activeBook).length > 0 && (
-                <>
+                <div>
                   <h3 className={styles.statusMessage}>
                     This book is in your{' '}
                     {activeBookQuery.data.list?.charAt(0).toUpperCase() +
@@ -186,11 +186,11 @@ const Home: React.FC = () => {
                       detailed={false}
                     />
                   </div>
-                </>
+                </div>
               )}{' '}
             {trendingBookQuery.status === 'success' &&
             trendingBookQuery.data.trendingBooksInfo.length > 0 ? (
-              <>
+              <div>
                 <h3 className={styles.trendingMessage}>
                   {activeBookQuery.data!.category !== undefined
                     ? `Because you liked ${activeBookQuery.data!.category}`
@@ -201,7 +201,7 @@ const Home: React.FC = () => {
                     books={trendingBookQuery.data.trendingBooksInfo}
                   />
                 }
-              </>
+              </div>
             ) : trendingBookQuery.isLoading ||
               trendingBookQuery.isRefetching ? (
               <div className={styles.retryingDiv}>
@@ -217,7 +217,7 @@ const Home: React.FC = () => {
                 />
               </div>
             ) : (
-              <>
+              <div>
                 <h3 className={styles.failedMessage}>
                   {activeBookQuery.data!.category !== undefined
                     ? `Couldn't Get Recommendations About ${
@@ -246,7 +246,7 @@ const Home: React.FC = () => {
                   {buttonDisabled ? 'Wait...' : 'Try Again'}
                   <IonIcon slot="end" icon={refreshCircle}></IonIcon>
                 </IonButton>
-              </>
+              </div>
             )}
           </IonGrid>
         )}
