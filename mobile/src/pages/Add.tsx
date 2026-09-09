@@ -146,17 +146,14 @@ const Add: React.FC = () => {
       const response = await api.get(`/get-book-info/${isbn}`);
 
       if (response.status === 200) {
-        if (
-          response.data.book.description &&
-          response.data.book.description.length !== 0
-        ) {
-          response.data.book.description = DOMPurify.sanitize(
-            response.data.book.description,
-          );
+        const data = response.data.result;
+        if (data.book.description && data.book.description.length !== 0) {
+          data.book.description = DOMPurify.sanitize(data.book.description);
         }
-        const responseBookInfo: bookInfo = response.data.book;
-        if (response.data.currentStatus) {
-          setBookStatus(response.data.currentStatus);
+
+        const responseBookInfo: bookInfo = data.book;
+        if (data.currentStatus) {
+          setBookStatus(data.currentStatus);
           setSuccessMessage('You already added this book!');
         } else {
           setBookStatus('');
