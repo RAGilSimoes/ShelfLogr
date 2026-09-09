@@ -316,7 +316,7 @@ const Add: React.FC = () => {
                 bookInfo === undefined ? styles.centerContent : ''
               }`}
             >
-              {bookInfo && <BookInfo bookInfo={bookInfo} detailed={true} />}
+              {bookInfo && <BookInfo bookInfo={bookInfo} detailed={false} />}
               {(showAddToListsButton && (
                 <>
                   <IonButton
@@ -374,7 +374,6 @@ const Add: React.FC = () => {
                         <IonCardTitle>
                           It's in your{' '}
                           <strong>
-                            $
                             {bookStatus.charAt(0).toUpperCase() +
                               bookStatus.slice(1)}{' '}
                             List

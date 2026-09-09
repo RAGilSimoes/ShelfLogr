@@ -15,7 +15,7 @@ import styles from './BookCard.module.css';
 
 const BookCard: React.FC<{
   bookInfo: bookInfo;
-  detailed: boolean;
+  detailed: boolean | null;
 }> = ({ bookInfo, detailed }) => {
   const content = (
     <IonGrid className={styles.grid}>
@@ -61,10 +61,12 @@ const BookCard: React.FC<{
     </IonGrid>
   );
 
-  return detailed ? (
+  return detailed === true ? (
     <>{content}</>
-  ) : (
+  ) : detailed === false ? (
     <IonCard className={styles.card}>{content}</IonCard>
+  ) : (
+    <></>
   );
 };
 

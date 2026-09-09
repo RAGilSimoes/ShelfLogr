@@ -8,11 +8,15 @@ import BookCard from './BookCard';
 
 const BookInfo: React.FC<{
   bookInfo: bookInfo;
-  detailed: boolean;
+  detailed: boolean | null;
 }> = ({ bookInfo, detailed }) => {
-  const detailedContent = detailed && (
+  const additionalInfo = detailed !== undefined && (
     <div className={styles.detailedInfo}>
-      <div className={styles.secondaryInfo}>
+      <div
+        className={
+          detailed ? styles.secondaryInfoDetailed : styles.secondaryInfoShrunk
+        }
+      >
         <h3 className={styles.sinopse}>
           <strong>Sinopse:</strong>
         </h3>
@@ -73,13 +77,15 @@ const BookInfo: React.FC<{
     </div>
   );
 
-  return detailed ? (
-    <div className={styles.fullPage}>
-      <BookCard bookInfo={bookInfo} detailed={detailed} />
-      {detailedContent}
+  return detailed !== null ? (
+    <div className={detailed ? styles.fullPageDetailed : styles.fullPageShrunk}>
+      <BookCard bookInfo={bookInfo} detailed={true} />
+      {additionalInfo}
     </div>
   ) : (
-    <BookCard bookInfo={bookInfo} detailed={detailed} />
+    <div className={styles.fullPage}>
+      <BookCard bookInfo={bookInfo} detailed={false} />
+    </div>
   );
 };
 
