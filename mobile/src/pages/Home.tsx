@@ -73,6 +73,7 @@ const Home: React.FC = () => {
   const activeBookQuery = useQuery({
     queryKey: ['userBook', userID],
     queryFn: fetchUserLists,
+    refetchOnWindowFocus: true,
     select(data: {
       category?: string;
       lists: { reading: Array<bookInfo>; wish: Array<bookInfo> };
@@ -117,10 +118,19 @@ const Home: React.FC = () => {
     }
   }, [activeBookQuery.data]);
 
-  const trendingBookQuery = useQuery({
-    queryKey: ['trendingBooks', activeBookQuery.data?.category, userID],
+  const trendingCategoryBookQuery = useQuery({
+    queryKey: ['trendingCategoryBooks', activeBookQuery.data?.category, userID],
     queryFn: () =>
       fetchTrendingBooksRecommendation(activeBookQuery.data?.category),
+    enabled:
+      activeBookQuery.status === 'success' &&
+      activeBookQuery.data.category !== undefined,
+    refetchOnWindowFocus: true,
+  });
+
+  const trendingBookQuery = useQuery({
+    queryKey: ['trendingBooks', userID],
+    queryFn: () => fetchTrendingBooksRecommendation(undefined),
     enabled: activeBookQuery.status === 'success',
   });
 
@@ -156,7 +166,9 @@ const Home: React.FC = () => {
           position="top"
         ></IonToast>
 
-        {activeBookQuery.isLoading ? (
+        {activeBookQuery.isLoading ||
+        trendingBookQuery.isLoading ||
+        trendingCategoryBookQuery.isLoading ? (
           <LoadSpinner
             message={'Getting Book Recomendations For You...'}
             fullScreen={true}
@@ -188,13 +200,63 @@ const Home: React.FC = () => {
                   </div>
                 </div>
               )}{' '}
+            {trendingCategoryBookQuery.status === 'success' &&
+            trendingCategoryBookQuery.data.trendingBooksInfo.length > 0 ? (
+              <div>
+                <h3 className={styles.trendingMessage}>
+                  {`Because you liked ${activeBookQuery.data!.category}`}
+                </h3>
+                {
+                  <BookSwiper
+                    books={trendingCategoryBookQuery.data.trendingBooksInfo}
+                  />
+                }
+              </div>
+            ) : trendingCategoryBookQuery.isLoading ||
+              trendingCategoryBookQuery.isRefetching ? (
+              <div className={styles.retryingDiv}>
+                <LoadSpinner
+                  message={`Getting Book Recommendations for ${
+                    activeBookQuery.data!.category
+                  } Category`}
+                  fullScreen={false}
+                />
+              </div>
+            ) : (
+              <div>
+                <h3 className={styles.failedMessage}>
+                  {`Couldn't Get Recommendations About ${
+                    activeBookQuery.data!.category
+                  }`}
+                </h3>
+                <IonButton
+                  expand="block"
+                  shape="round"
+                  size="default"
+                  onClick={() => {
+                    setButtonDisabled(true);
+                    trendingCategoryBookQuery.refetch();
+
+                    const timeoutID = setTimeout(() => {
+                      setButtonDisabled(false);
+                    }, 5000);
+
+                    timeoutRef.current = timeoutID;
+                  }}
+                  className="ion-margin-top"
+                  color="primary"
+                  disabled={buttonDisabled}
+                >
+                  {buttonDisabled ? 'Wait...' : 'Try Again'}
+                  <IonIcon slot="end" icon={refreshCircle}></IonIcon>
+                </IonButton>
+              </div>
+            )}
             {trendingBookQuery.status === 'success' &&
             trendingBookQuery.data.trendingBooksInfo.length > 0 ? (
               <div>
                 <h3 className={styles.trendingMessage}>
-                  {activeBookQuery.data!.category !== undefined
-                    ? `Because you liked ${activeBookQuery.data!.category}`
-                    : `What's Trending This Week`}
+                  {`What's Trending This Week`}
                 </h3>
                 {
                   <BookSwiper
@@ -206,24 +268,14 @@ const Home: React.FC = () => {
               trendingBookQuery.isRefetching ? (
               <div className={styles.retryingDiv}>
                 <LoadSpinner
-                  message={
-                    activeBookQuery.data!.category !== undefined
-                      ? `Getting Book Recommendations for ${
-                          activeBookQuery.data!.category
-                        } Category`
-                      : `Getting Trending Books`
-                  }
+                  message={`Getting Trending Books`}
                   fullScreen={false}
                 />
               </div>
             ) : (
               <div>
                 <h3 className={styles.failedMessage}>
-                  {activeBookQuery.data!.category !== undefined
-                    ? `Couldn't Get Recommendations About ${
-                        activeBookQuery.data!.category
-                      }`
-                    : `Couldn't Get Trending Books`}
+                  {`Couldn't Get Trending Books`}
                 </h3>
                 <IonButton
                   expand="block"

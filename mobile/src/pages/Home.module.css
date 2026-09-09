@@ -47,6 +47,7 @@
   margin: 0 auto 5px;
   justify-content: space-evenly;
   min-height: 100%;
+  gap: 1rem;
 }
 
 .statusMessage,
