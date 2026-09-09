@@ -1,67 +1,15 @@
-import {
-  IonCard,
-  IonCardHeader,
-  IonCardTitle,
-  IonCardSubtitle,
-  IonCardContent,
-  IonCol,
-  IonRow,
-  IonGrid,
-  IonChip,
-} from '@ionic/react';
+import { IonChip } from '@ionic/react';
 
 import { bookInfo } from '@shelflogr/shared';
 
 import styles from './BookInfo.module.css';
 
+import BookCard from './BookCard';
+
 const BookInfo: React.FC<{
   bookInfo: bookInfo;
   detailed: boolean;
 }> = ({ bookInfo, detailed }) => {
-  const headerContent = (
-    <IonGrid className={styles.grid}>
-      <IonRow>
-        <IonCol size="4">
-          <img
-            alt="Book Cover"
-            src={bookInfo.cover ? bookInfo.cover : '/missing-book-cover.jpg'}
-            className={styles.bookCover}
-          />
-        </IonCol>
-
-        <IonCol size="8">
-          <IonCardHeader className="ion-no-padding">
-            <IonCardTitle className={styles.title}>
-              {bookInfo.title ? bookInfo.title : 'No title found'}
-            </IonCardTitle>
-            <IonCardSubtitle className={styles.authors}>
-              {bookInfo.authors
-                ? bookInfo.authors?.join(', ')
-                : 'No authors found'}
-            </IonCardSubtitle>
-          </IonCardHeader>
-
-          <div className={styles.metadataInfo}>
-            <p>
-              <strong>Publisher:</strong>{' '}
-              {bookInfo.publisher ? bookInfo.publisher : 'No publisher found'}
-            </p>
-          </div>
-          <>
-            <p className={styles.mainCategory}>
-              <strong>Main Category:</strong>
-            </p>
-            <IonChip color="primary">
-              {bookInfo.mainCategory
-                ? bookInfo.mainCategory
-                : 'No Main Category found.'}
-            </IonChip>
-          </>
-        </IonCol>
-      </IonRow>
-    </IonGrid>
-  );
-
   const detailedContent = detailed && (
     <div className={styles.detailedInfo}>
       <div className={styles.secondaryInfo}>
@@ -125,16 +73,14 @@ const BookInfo: React.FC<{
     </div>
   );
 
-  if (detailed) {
-    return (
-      <div className={styles.fullPage}>
-        {headerContent}
-        {detailedContent}
-      </div>
-    );
-  } else {
-    return <IonCard className={styles.card}>{headerContent}</IonCard>;
-  }
+  return detailed ? (
+    <div className={styles.fullPage}>
+      <BookCard bookInfo={bookInfo} detailed={detailed} />
+      {detailedContent}
+    </div>
+  ) : (
+    <BookCard bookInfo={bookInfo} detailed={detailed} />
+  );
 };
 
 export default BookInfo;

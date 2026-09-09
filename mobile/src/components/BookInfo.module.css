@@ -1,49 +1,13 @@
-.card {
-  border: 1px solid black;
-  height: inherit;
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  justify-content: center;
-  margin-top: 5px;
-}
-
 .fullPage {
   display: flex;
   flex-direction: column;
   min-height: 100%;
 }
 
-.grid {
-  flex: 0 0 auto;
-}
-
 .detailedInfo {
   flex-grow: 1;
   display: flex;
   flex-direction: column;
-}
-
-.bookCover {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  border-radius: 4px;
-}
-
-.title {
-  font-size: 1.2rem;
-  line-height: 1.2;
-}
-
-.authors {
-  margin-top: 4px;
-}
-
-.metadataInfo {
-  margin-top: 8px;
-  font-size: 0.85rem;
-  color: var(--ion-color-step-600);
 }
 
 .secondaryInfo {
@@ -62,10 +26,6 @@
 
 .categories {
   margin-top: 16px;
-}
-
-.mainCategory {
-  margin-bottom: 8px;
 }
 
 .secondaryCategoriesTitle {

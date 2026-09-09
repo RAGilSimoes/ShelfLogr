@@ -15,7 +15,7 @@ import { ReactElement, useState, useRef, useEffect } from 'react';
 
 import styles from './Home.module.css';
 
-import BookInfo from '../components/BookInfo';
+import BookCard from '../components/BookCard';
 import { useHistory } from 'react-router';
 
 import LoadSpinner from '../components/LoadSpinner';
@@ -193,7 +193,7 @@ const Home: React.FC = () => {
                     }}
                     style={{ cursor: 'pointer' }}
                   >
-                    <BookInfo
+                    <BookCard
                       bookInfo={activeBookQuery.data.activeBook}
                       detailed={false}
                     />

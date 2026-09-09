@@ -6,7 +6,7 @@ import { Pagination } from 'swiper/modules';
 
 import { bookInfo } from '@shelflogr/shared';
 
-import BookInfo from './BookInfo';
+import BookCard from './BookCard';
 import { useHistory } from 'react-router';
 
 const BookSwiper: React.FC<{
@@ -33,7 +33,7 @@ const BookSwiper: React.FC<{
                 }}
                 style={{ cursor: 'pointer' }}
               >
-                <BookInfo bookInfo={book} detailed={false} />
+                <BookCard bookInfo={book} detailed={false} />
               </div>
             </SwiperSlide>
           );
