@@ -2,7 +2,6 @@ import {
   IonContent,
   IonPage,
   IonItem,
-  IonLabel,
   IonIcon,
   IonImg,
   IonGrid,
@@ -24,13 +23,18 @@ import { useHistory, useLocation } from 'react-router-dom';
 
 import api from '../services/api.service';
 
-import { setToken } from '../services/auth.service';
-
 import styles from './Login.module.css';
+
+import useAuthStore from '../store/useAuthStore';
+
+import { useQueryClient } from '@tanstack/react-query';
+import fetchUserLists from '../queryOptions/loginQueries';
 
 const Login: React.FC = () => {
   const history = useHistory();
   const location = useLocation<{ message?: string }>();
+
+  const queryClient = useQueryClient();
 
   const [showError, setShowError] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -92,6 +96,8 @@ const Login: React.FC = () => {
 
   const isValidForm = isValidEmail && isValidPassword;
 
+  const updateAuthToken = useAuthStore((state) => state.updateJWT);
+
   const submitForm = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -111,7 +117,13 @@ const Login: React.FC = () => {
 
       if (status == 200) {
         const token = response.data.token;
-        setToken(token);
+        updateAuthToken(token);
+
+        queryClient.prefetchQuery({
+          queryKey: ['userBook', useAuthStore.getState().userID],
+          queryFn: () => fetchUserLists(),
+        });
+
         setShowError(false);
         setErrorMessage('');
         history.push('/app/home');

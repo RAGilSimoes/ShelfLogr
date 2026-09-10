@@ -26,6 +26,8 @@
     "@ionic/react": "^8.5.0",
     "@ionic/react-router": "^8.5.0",
     "@shelflogr/shared": "*",
+    "@tanstack/react-query": "^5.102.8",
+    "@tanstack/react-query-devtools": "^5.102.8",
     "@types/react-router": "^5.1.20",
     "@types/react-router-dom": "^5.3.3",
     "axios": "^1.19.0",
@@ -36,11 +38,13 @@
     "react-dom": "19.0.0",
     "react-router": "^5.3.4",
     "react-router-dom": "^5.3.4",
-    "swiper": "^14.2.0"
+    "swiper": "^14.2.0",
+    "zustand": "^5.0.15"
   },
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^8.5.0",
+    "@tanstack/eslint-plugin-query": "^5.102.8",
     "@testing-library/dom": ">=7.21.4",
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^16.2.0",
@@ -60,7 +64,7 @@
     "terser": "^5.4.0",
     "typescript": "~5.9.0",
     "typescript-eslint": "^8.24.0",
-    "vite": "^5.0.0",
+    "vite": "5.4.21",
     "vitest": "^0.34.6"
   },
   "description": "An Ionic project"

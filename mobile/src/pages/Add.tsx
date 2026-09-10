@@ -1,15 +1,10 @@
 import {
-  IonBackButton,
   IonButton,
   IonContent,
-  IonHeader,
   IonPage,
-  IonTitle,
-  IonToolbar,
   IonToast,
   IonGrid,
   IonCard,
-  IonCardContent,
   IonCardHeader,
   IonCardSubtitle,
   IonCardTitle,
@@ -17,20 +12,17 @@ import {
   IonIcon,
   IonAlert,
 } from '@ionic/react';
-import ExploreContainer from '../components/ExploreContainer';
 
 import {
   BarcodeScanner,
   BarcodeFormat,
 } from '@capacitor-mlkit/barcode-scanning';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import styles from './Add.module.css';
 
 import api from '../services/api.service';
-
-import axios from 'axios';
 
 import LoadSpinner from '../components/LoadSpinner';
 import BookInfo from '../components/BookInfo';
@@ -46,32 +38,38 @@ import { bookInfo } from '@shelflogr/shared';
 
 import DOMPurify from 'dompurify';
 
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import fetchBookInfo from '../queryOptions/addQueries';
+import useAuthStore from '../store/useAuthStore';
+
 const Add: React.FC = () => {
-  const [bookInfo, setBookInfo] = useState<bookInfo | undefined>(undefined);
-  const [bookStatus, setBookStatus] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [displayErrorMessage, setDisplayErrorMessage] =
     useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isScanAlertOpen, setIsScanAlertOpen] = useState<boolean>(false);
   const [listToAdd, setListToAdd] = useState<string>('');
   const [isAddAlertOpen, setIsAddAlertOpen] = useState<boolean>(false);
-  const [currentJob, setCurrentJob] = useState<string>('');
-  const [successMessage, setSuccessMessage] = useState<string>('');
 
   const [tempIsbn, setTempIsbn] = useState<number>(0);
+  const [finalIsbn, setFinalIsbn] = useState<string>('');
+
+  const queryClient = useQueryClient();
+
+  const userID = useAuthStore().userID;
 
   useIonViewWillLeave(() => {
-    setBookInfo(undefined);
-    setBookStatus(null);
     setErrorMessage('');
     setDisplayErrorMessage(false);
-    setIsLoading(false);
     setIsScanAlertOpen(false);
     setListToAdd('');
     setIsAddAlertOpen(false);
-    setCurrentJob('');
-    setSuccessMessage('');
+
+    queryClient.removeQueries({
+      queryKey: ['bookInfoISBN', finalIsbn, userID],
+    });
+    addBookToList.reset();
+
+    setFinalIsbn('');
   });
 
   const checkPermissions = async () => {
@@ -82,10 +80,6 @@ const Add: React.FC = () => {
   const requestPermissions = async () => {
     const { camera } = await BarcodeScanner.requestPermissions();
     return camera;
-  };
-
-  const openSettings = async () => {
-    await BarcodeScanner.openSettings();
   };
 
   const scan = async () => {
@@ -131,7 +125,6 @@ const Add: React.FC = () => {
         setDisplayErrorMessage(true);
       } finally {
         BarcodeScanner.stopScan();
-        setIsLoading(false);
       }
     } else {
       setErrorMessage('You need to grant permission to use the camera.');
@@ -139,85 +132,60 @@ const Add: React.FC = () => {
     }
   };
 
-  const fetchBookInfo = async (isbn: number) => {
-    setIsLoading(true);
-    setCurrentJob('info');
-    try {
-      const response = await api.get(`/get-book-info/${isbn}`);
-
-      if (response.status === 200) {
-        if (
-          response.data.book.description &&
-          response.data.book.description.length !== 0
-        ) {
-          response.data.book.description = DOMPurify.sanitize(
-            response.data.book.description,
-          );
-        }
-        const responseBookInfo: bookInfo = response.data.book;
-        if (response.data.currentStatus) {
-          setBookStatus(response.data.currentStatus);
-          setSuccessMessage('You already added this book!');
-        } else {
-          setBookStatus('');
-        }
-        setBookInfo(responseBookInfo);
-        setIsLoading(false);
+  const bookInfoQuery = useQuery({
+    queryKey: ['bookInfoISBN', finalIsbn, userID],
+    queryFn: () => fetchBookInfo(finalIsbn),
+    enabled: finalIsbn !== '',
+    select(data) {
+      if (
+        data.result &&
+        data.result.book.description &&
+        data.result.book.description.length !== 0
+      ) {
+        data.result.book.description = DOMPurify.sanitize(
+          data.result.book.description,
+        );
       }
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        setDisplayErrorMessage(true);
-        const serverMessage =
-          error.response?.data?.error || 'Server communication error.';
-        setErrorMessage(serverMessage);
-      }
-    } finally {
-      setIsLoading(false);
-      setIsScanAlertOpen(false);
-      setCurrentJob('');
-    }
-  };
 
-  const addBookToList = async () => {
-    setIsLoading(true);
-    setCurrentJob('add');
-    try {
-      const response = await api.post(`/add-book-to-list`, {
-        book: bookInfo,
-        list: listToAdd,
-      });
+      return data.result;
+    },
+  });
 
-      if (response.status === 200) {
-        const message = response.data.message;
-        setBookStatus(listToAdd);
-        setSuccessMessage(message);
-      }
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        setDisplayErrorMessage(true);
-        const serverMessage =
-          error.response?.data?.error || 'Server communication error.';
-        setErrorMessage(serverMessage);
-      }
-    } finally {
-      setIsLoading(false);
-      setIsAddAlertOpen(false);
-      setCurrentJob('');
-    }
-  };
+  const addBookToList = useMutation({
+    mutationFn: (content: { book: bookInfo; list: string }) => {
+      return api.post('/add-book-to-list', content);
+    },
+  });
 
-  const showAddToListsButton = bookInfo && bookStatus === '';
+  const showAddToListsButton =
+    bookInfoQuery.isSuccess &&
+    bookInfoQuery.data.book &&
+    bookInfoQuery.data.currentStatus === undefined &&
+    addBookToList.isIdle;
+
   const showAlreadyHasBook =
-    bookInfo && bookStatus !== '' && bookStatus !== null;
+    bookInfoQuery.isSuccess &&
+    bookInfoQuery.data.book &&
+    bookInfoQuery.data.currentStatus !== undefined;
 
   return (
     <IonPage>
       <IonContent className="ion-padding">
         <IonToast
           trigger="open-toast"
-          message={errorMessage}
+          message={
+            addBookToList.isError
+              ? addBookToList.error?.message
+              : bookInfoQuery.isError
+              ? bookInfoQuery.error.message
+              : errorMessage
+          }
           duration={5000}
-          isOpen={displayErrorMessage}
+          isOpen={
+            addBookToList.isError ||
+            bookInfoQuery.isError ||
+            displayErrorMessage
+          }
           onDidDismiss={() => {
             setDisplayErrorMessage(false);
             setErrorMessage('');
@@ -267,8 +235,14 @@ const Add: React.FC = () => {
                     role: 'confirm',
                     cssClass: 'alert-confirm-button',
                     handler: (alertData) => {
-                      const finalIsbn = Number(alertData.isbnField);
-                      fetchBookInfo(finalIsbn);
+                      const selectedIsbn = String(
+                        alertData.isbnField || tempIsbn,
+                      ).trim();
+                      if (selectedIsbn) {
+                        setIsScanAlertOpen(false);
+                        if (selectedIsbn === finalIsbn) bookInfoQuery.refetch();
+                        else setFinalIsbn(selectedIsbn);
+                      }
                     },
                   },
                 ]
@@ -283,32 +257,29 @@ const Add: React.FC = () => {
                     role: 'confirm',
                     cssClass: 'alert-confirm-button',
                     handler: () => {
-                      addBookToList();
+                      addBookToList.mutate({
+                        book: bookInfoQuery.data.book,
+                        list: listToAdd,
+                      });
                     },
                   },
                 ]
           }
           onDidDismiss={() => {
-            if (isScanAlertOpen) {
-              setIsScanAlertOpen(false);
-              setTempIsbn(0);
-            } else {
-              setIsAddAlertOpen(false);
-            }
+            setIsScanAlertOpen(false);
+            setIsAddAlertOpen(false);
           }}
           className={styles.alert}
         ></IonAlert>
 
-        {isLoading ? (
+        {bookInfoQuery.isFetching || addBookToList.isPending ? (
           <LoadSpinner
             message={
-              currentJob === 'info'
+              bookInfoQuery.isFetching
                 ? `Getting book info...`
-                : currentJob === 'add'
-                ? `Adding book to ${
+                : `Adding book to ${
                     listToAdd.charAt(0).toUpperCase() + listToAdd.slice(1)
                   } List ...`
-                : ''
             }
             fullScreen={true}
           />
@@ -316,10 +287,14 @@ const Add: React.FC = () => {
           <>
             <IonGrid
               className={`${styles.grid} ${
-                bookInfo === undefined ? styles.centerContent : ''
+                bookInfoQuery.isSuccess && bookInfoQuery.data.book === undefined
+                  ? styles.centerContent
+                  : ''
               }`}
             >
-              {bookInfo && <BookInfo bookInfo={bookInfo} detailed={true} />}
+              {bookInfoQuery.isSuccess && bookInfoQuery.data.book && (
+                <BookInfo bookInfo={bookInfoQuery.data.book} detailed={false} />
+              )}
               {(showAddToListsButton && (
                 <>
                   <IonButton
@@ -366,20 +341,30 @@ const Add: React.FC = () => {
                   </IonButton>
                 </>
               )) ||
-                (showAlreadyHasBook && (
+                ((showAlreadyHasBook || addBookToList.isSuccess) && (
                   <>
                     <IonCard color="success">
                       <IonCardHeader className={styles.successHeader}>
                         <IonCardSubtitle className={styles.successTitle}>
                           <IonIcon icon={checkmarkCircleOutline} />
-                          {successMessage}
+                          {bookInfoQuery.isSuccess && addBookToList.isIdle
+                            ? 'You already added this book!'
+                            : addBookToList.isSuccess
+                            ? addBookToList.data.data.message
+                            : ''}
                         </IonCardSubtitle>
                         <IonCardTitle>
                           It's in your{' '}
                           <strong>
-                            $
-                            {bookStatus.charAt(0).toUpperCase() +
-                              bookStatus.slice(1)}{' '}
+                            {bookInfoQuery.isSuccess && addBookToList.isIdle
+                              ? bookInfoQuery.data.currentStatus
+                                  .charAt(0)
+                                  .toUpperCase() +
+                                bookInfoQuery.data.currentStatus.slice(1)
+                              : addBookToList.isSuccess
+                              ? listToAdd.charAt(0).toUpperCase() +
+                                listToAdd.slice(1)
+                              : ''}{' '}
                             List
                           </strong>
                           .

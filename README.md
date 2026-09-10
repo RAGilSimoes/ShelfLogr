@@ -32,7 +32,7 @@ To add books to your profile, simply scan the book's barcode!
 
 Login and Register implemented. User can scan a Book's barcode to fetch book's info, and receives visual feedback if already in one of their lists. If not, gives the option to add to one.
 
-Home Page Implemented. Fetches book in user's Reading or Wishlist, if exists. Fetches trending books from Google Books API according to user's most read category, or trending books from New York Times API if no info is available from the user _(Updated: 31/08/2026)_
+Home Page Implemented. Fetches book in user's Reading or Wishlist, if exists. Fetches trending books from Google Books API according to user's most read category, or trending books from New York Times API if no info is available from the user _(Updated: 10/09/2026)_
 
 ---
 
@@ -66,6 +66,9 @@ The main technologies used in this project are:
 ![Express.js](https://img.shields.io/badge/express.js-%23404d59.svg?style=for-the-badge&logo=express&logoColor=%2361DAFB)
 ![PostgreSQL](https://img.shields.io/badge/postgresql-%23316192.svg?style=for-the-badge&logo=postgresql&logoColor=white)
 ![Neon.tech](https://img.shields.io/badge/neon.tech-%2300E599.svg?style=for-the-badge&logo=neon&logoColor=black)
+![TanStack Query](https://img.shields.io/badge/TanStack_Query-FF4154?style=for-the-badge&logo=react-query&logoColor=white)
+![Zustand](https://img.shields.io/badge/Zustand-000000?style=for-the-badge&logo=react)
+![Capacitor](https://img.shields.io/badge/Capacitor-%23119EFF.svg?style=for-the-badge&logo=capacitor&logoColor=white)
 
 ---
 
@@ -78,7 +81,7 @@ The user enters the app and the system immediately checks for a valid token. If 
 The user accesses the "Add Book" page, opens the scanner, and scans a barcode. The app verifies the `valueType` property; if it isn't a book barcode, an error is displayed. Otherwise, the app fetches the book information through the Google Books API, or the OpenLibrary API if the Google Books API doesn't return all the needed information, via a dedicated backend endpoint. User gets visual feedback if book is already on one of the lists, if not, shows buttons that allow the user to add the book to one of the lists.
 
 **3. Home Page:**
-User enters the app and receives a suggestion from the books he is reading, or from his wishlist (if available and it isn't currently reading any). If user has any completed and liked book, the API gets the main category if available, and fetches books from that category to recommend to the user. If not, does the same but from the NYT API and with no specific category.
+User enters the app and receives a suggestion from the books he is reading, or from his wishlist (if available and they aren't currently reading any). If user has any completed and liked book, the API gets the main category if available, and fetches books from that category to recommend to the user. If not, does the same but from the NYT API and with no specific category.
 
 ---
 
@@ -94,6 +97,8 @@ User enters the app and receives a suggestion from the books he is reading, or f
 
 5. **Workflow for Home Page:** Get the books from the user if he is reading any, if not from the wishlist, if it has any. Checks if there is a main category that the user liked, and fetches some books from that category to recommend. If not, fetches trending books from the NYT API. Because the Google Books API sometimes returns an error, allows the user to retry the fetch for recommendations.
 
+6. **Availability of Information:** Having every info needed available for the whole application to run smoother and be faster
+
 ---
 
 ## Decisions made
@@ -107,6 +112,8 @@ User enters the app and receives a suggestion from the books he is reading, or f
 4. **Use more APIs:** Use the Google Books API and the NYT API to get recommendations
 
 5. **Allow user to retry:** Implement a button to allow the user to retry the fetching for recommendations
+
+6. **Cache and Global Storage:** Implement Tanstack Query and Zustand for cache and global storage, respectively. Eliminated prop drilling between components while making server cache and global state reliably accessible app-wide.
 
 ---
 

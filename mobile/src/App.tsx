@@ -51,7 +51,6 @@ setupIonicReact();
 const AppRouter: React.FC = () => {
   const history = useHistory();
   const location = useLocation();
-  const [userName, setUserName] = useState('');
 
   const [isLoading, setIsLoading] = useState(true);
 
@@ -85,8 +84,6 @@ const AppRouter: React.FC = () => {
             setToken(response.data.token);
           }
 
-          setUserName(decodedData.name);
-
           if (isPublicPath) {
             history.replace('/app/home');
           }
@@ -114,7 +111,7 @@ const AppRouter: React.FC = () => {
   return (
     <>
       {isLoading ? (
-        <LoadSpinner message={'Getting everyting ready...'} />
+        <LoadSpinner message={'Getting everyting ready...'} fullScreen={true} />
       ) : (
         <IonRouterOutlet>
           <Route exact path="/login">
@@ -124,7 +121,7 @@ const AppRouter: React.FC = () => {
             <Register />
           </Route>
           <Route path="/app">
-            <Tabs userName={userName} />
+            <Tabs />
           </Route>
           <Route exact path="/">
             <Redirect to="/login" />

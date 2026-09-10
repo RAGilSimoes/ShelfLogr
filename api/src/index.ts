@@ -49,7 +49,7 @@ app.get('/', async (req: Request, res: Response) => {
 });
 
 app.get(
-  '/refresh-token',
+  '/api/refresh-token',
   verifyAuthorization(false),
   async (req: Request, res: Response) => {
     try {
@@ -65,7 +65,7 @@ app.get(
   },
 );
 
-app.post('/login', async (req: Request, res: Response) => {
+app.post('/api/login', async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
 
@@ -96,7 +96,7 @@ app.post('/login', async (req: Request, res: Response) => {
   }
 });
 
-app.post('/register', async (req: Request, res: Response) => {
+app.post('/api/register', async (req: Request, res: Response) => {
   try {
     const { email, username, password } = req.body;
 
@@ -138,7 +138,7 @@ app.post('/register', async (req: Request, res: Response) => {
 });
 
 app.get(
-  '/get-book-info/:isbn',
+  '/api/get-book-info/:isbn',
   verifyAuthorization(false),
   async (req: Request, res: Response) => {
     const isbn: string = req.params.isbn as string;
@@ -155,7 +155,7 @@ app.get(
 );
 
 app.post(
-  '/add-book-to-list',
+  '/api/add-book-to-list',
   verifyAuthorization(false),
   async (req: Request, res: Response) => {
     if (!req.body || !req.body.book) {
@@ -230,70 +230,47 @@ app.post(
 );
 
 app.get(
-  '/get-user-books-recomendations',
+  '/api/user/active-lists',
   verifyAuthorization(false),
   async (req: Request, res: Response) => {
     try {
       const { id } = req.token;
-      let bookID;
-      const getBookID =
-        'SELECT "book_id" FROM user_books WHERE "user_id"=$1 AND "status"=$2 LIMIT $3';
 
-      const getBookInfo = `SELECT 
-            b.*, 
+      const getBookLists = `SELECT b.* as book, 
             COALESCE((ARRAY_AGG(c.name) FILTER (WHERE bc.main = true))[1], '') as "mainCategory",
-            COALESCE(ARRAY_AGG(c.name) FILTER (WHERE bc.main = false), '{}') as categories
-        FROM "book" b
-        LEFT JOIN book_category bc ON b.id = bc.book_id
-        LEFT JOIN categories c ON bc.category_id = c.id
-        WHERE b.id = $1
-        GROUP BY b.id;`;
+            COALESCE(ARRAY_AGG(c.name) FILTER (WHERE bc.main = false), '{}') as categories 
+            FROM "user_books" ub 
+            JOIN book b ON b.id = ub.book_id
+            LEFT JOIN book_category bc ON b.id = bc.book_id
+            LEFT JOIN categories c ON bc.category_id = c.id
+            WHERE ub.user_id = $1 AND ub.status = $2
+            GROUP BY b.id;`;
 
       const bookStatusOptions = ['reading', 'wish', 'completed'];
 
-      // Checks if user has any book that he is reading
-      let { rows: readingBook } = await pool.query(getBookID, [
+      const { rows: readingList } = await pool.query(getBookLists, [
         id,
         bookStatusOptions[0],
-        1,
       ]);
 
-      let list;
-      let type;
-      let category;
-      let activeBook;
+      let lists: { reading: Array<bookInfo>; wish: Array<bookInfo> } = {
+        reading: [],
+        wish: [],
+      };
 
-      if (readingBook.length > 0) {
-        bookID = readingBook[0].book_id;
-
-        list = bookStatusOptions[0];
-        type = 'personal';
-        const { rows: bookInfo } = await pool.query(getBookInfo, [bookID]);
-        if (bookInfo.length > 0) {
-          const book = bookInfo[0];
-          activeBook = { type, list, book };
-        }
-      } else {
-        // If user doesn't have any book that is currently reading, check if he wishes to read any
-        let { rows: wishBook } = await pool.query(getBookID, [
-          id,
-          bookStatusOptions[1],
-          1,
-        ]);
-
-        if (wishBook.length > 0) {
-          bookID = wishBook[0].book_id;
-          list = bookStatusOptions[1];
-          type = 'personal';
-          const { rows: bookInfo } = await pool.query(getBookInfo, [bookID]);
-          if (bookInfo.length > 0) {
-            const book = bookInfo[0];
-            activeBook = { type, list, book };
-          }
-        }
+      if (readingList.length > 0) {
+        lists.reading = readingList;
       }
 
-      // If user doesn't have any book that is currently reading nor have any that wishes to read, check if he liked any book he completed if he already finished reading any -> checks trending for that category
+      const { rows: wishList } = await pool.query(getBookLists, [
+        id,
+        bookStatusOptions[1],
+      ]);
+
+      if (wishList.length > 0) {
+        lists.wish = wishList;
+      }
+
       const getTopCategoryQuery = `
             SELECT c.name as "topCategory"
             FROM user_books ub
@@ -308,24 +285,44 @@ app.get(
             LIMIT 1;
           `;
 
+      let category;
+
       let { rows: topCategoryRow } = await pool.query(getTopCategoryQuery, [
         id,
         bookStatusOptions[2],
       ]);
 
+      if (topCategoryRow.length > 0) category = topCategoryRow[0].topCategory;
+
+      res.status(200).json({ lists, category });
+    } catch (error) {
+      console.error('Database query failed:', error);
+      res
+        .status(500)
+        .json({ error: 'Error getting active book recommendations.' });
+    }
+  },
+);
+
+app.get(
+  '/api/books/trending',
+  verifyAuthorization(false),
+  async (req: Request, res: Response) => {
+    try {
+      const { id } = req.token;
+      const category = req.query.category;
+
+      let type;
       let trending;
 
-      if (topCategoryRow.length > 0) {
-        const topCategory = topCategoryRow[0].topCategory;
+      if (category && typeof category === 'string') {
         type = 'category';
-        category = topCategory;
 
         const trendingBooksInfo: Array<bookInfo> =
           await fetchGoogleTrendingBooks(category, id);
 
         trending = { type, category, trendingBooksInfo };
       } else {
-        // If user doesn't have any book that is currently reading nor have any that wishes to read nor liked any book he completed nor have finished reading any -> checks trending
         type = 'trending';
         const trendingBooksInfo: Array<bookInfo> = await fetchNYTTrendingBooks(
           id,
@@ -333,13 +330,7 @@ app.get(
         trending = { type, trendingBooksInfo };
       }
 
-      let finalObject;
-      if (activeBook) {
-        finalObject = { activeBook, trending };
-      } else {
-        finalObject = { trending };
-      }
-      return res.status(200).json(finalObject);
+      return res.status(200).json(trending);
     } catch (error) {
       console.error('Database query failed:', error);
       res.status(500).json({ error: 'Error getting book recommendations.' });

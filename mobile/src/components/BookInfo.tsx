@@ -1,70 +1,22 @@
-import {
-  IonCard,
-  IonCardHeader,
-  IonCardTitle,
-  IonCardSubtitle,
-  IonCardContent,
-  IonCol,
-  IonRow,
-  IonGrid,
-  IonChip,
-} from '@ionic/react';
+import { IonChip } from '@ionic/react';
 
 import { bookInfo } from '@shelflogr/shared';
 
 import styles from './BookInfo.module.css';
 
+import BookCard from './BookCard';
+
 const BookInfo: React.FC<{
   bookInfo: bookInfo;
-  detailed: boolean;
+  detailed: boolean | null;
 }> = ({ bookInfo, detailed }) => {
-  const headerContent = (
-    <IonGrid className={styles.grid}>
-      <IonRow>
-        <IonCol size="4">
-          <img
-            alt="Book Cover"
-            src={bookInfo.cover ? bookInfo.cover : '/missing-book-cover.jpg'}
-            className={styles.bookCover}
-          />
-        </IonCol>
-
-        <IonCol size="8">
-          <IonCardHeader className="ion-no-padding">
-            <IonCardTitle className={styles.title}>
-              {bookInfo.title ? bookInfo.title : 'No title found'}
-            </IonCardTitle>
-            <IonCardSubtitle className={styles.authors}>
-              {bookInfo.authors
-                ? bookInfo.authors?.join(', ')
-                : 'No authors found'}
-            </IonCardSubtitle>
-          </IonCardHeader>
-
-          <div className={styles.metadataInfo}>
-            <p>
-              <strong>Publisher:</strong>{' '}
-              {bookInfo.publisher ? bookInfo.publisher : 'No publisher found'}
-            </p>
-          </div>
-          <>
-            <p className={styles.mainCategory}>
-              <strong>Main Category:</strong>
-            </p>
-            <IonChip color="primary">
-              {bookInfo.mainCategory
-                ? bookInfo.mainCategory
-                : 'No Main Category found.'}
-            </IonChip>
-          </>
-        </IonCol>
-      </IonRow>
-    </IonGrid>
-  );
-
-  const detailedContent = detailed && (
+  const additionalInfo = detailed !== undefined && (
     <div className={styles.detailedInfo}>
-      <div className={styles.secondaryInfo}>
+      <div
+        className={
+          detailed ? styles.secondaryInfoDetailed : styles.secondaryInfoShrunk
+        }
+      >
         <h3 className={styles.sinopse}>
           <strong>Sinopse:</strong>
         </h3>
@@ -125,16 +77,16 @@ const BookInfo: React.FC<{
     </div>
   );
 
-  if (detailed) {
-    return (
-      <div className={styles.fullPage}>
-        {headerContent}
-        {detailedContent}
-      </div>
-    );
-  } else {
-    return <IonCard>{headerContent}</IonCard>;
-  }
+  return detailed !== null ? (
+    <div className={detailed ? styles.fullPageDetailed : styles.fullPageShrunk}>
+      <BookCard bookInfo={bookInfo} detailed={true} />
+      {additionalInfo}
+    </div>
+  ) : (
+    <div className={styles.fullPage}>
+      <BookCard bookInfo={bookInfo} detailed={false} />
+    </div>
+  );
 };
 
 export default BookInfo;
