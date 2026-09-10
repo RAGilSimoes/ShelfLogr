@@ -27,7 +27,7 @@
 }
 
 .secondaryInfoShrunk {
-  padding: 12px 16px;
+  padding: 0px 16px 12px;
   max-height: 35vh;
   overflow-y: auto;
 }
