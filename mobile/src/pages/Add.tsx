@@ -24,8 +24,6 @@ import styles from './Add.module.css';
 
 import api from '../services/api.service';
 
-import axios from 'axios';
-
 import LoadSpinner from '../components/LoadSpinner';
 import BookInfo from '../components/BookInfo';
 
@@ -40,12 +38,11 @@ import { bookInfo } from '@shelflogr/shared';
 
 import DOMPurify from 'dompurify';
 
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import fetchBookInfo from '../queryOptions/addQueries';
 import useAuthStore from '../store/useAuthStore';
 
 const Add: React.FC = () => {
-  const [bookInfo, setBookInfo] = useState<bookInfo | undefined>(undefined);
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [displayErrorMessage, setDisplayErrorMessage] =
     useState<boolean>(false);
@@ -56,15 +53,23 @@ const Add: React.FC = () => {
   const [tempIsbn, setTempIsbn] = useState<number>(0);
   const [finalIsbn, setFinalIsbn] = useState<string>('');
 
+  const queryClient = useQueryClient();
+
   const userID = useAuthStore().userID;
 
   useIonViewWillLeave(() => {
-    setBookInfo(undefined);
     setErrorMessage('');
     setDisplayErrorMessage(false);
     setIsScanAlertOpen(false);
     setListToAdd('');
     setIsAddAlertOpen(false);
+
+    queryClient.removeQueries({
+      queryKey: ['bookInfoISBN', finalIsbn, userID],
+    });
+    addBookToList.reset();
+
+    setFinalIsbn('');
   });
 
   const checkPermissions = async () => {
@@ -146,32 +151,17 @@ const Add: React.FC = () => {
     },
   });
 
-  const addBookToList = async () => {
-    try {
-      const response = await api.post(`/add-book-to-list`, {
-        book: bookInfoQuery.data.book,
-        list: listToAdd,
-      });
-
-      if (response.status === 200) {
-        const message = response.data.message;
-      }
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        setDisplayErrorMessage(true);
-        const serverMessage =
-          error.response?.data?.error || 'Server communication error.';
-        setErrorMessage(serverMessage);
-      }
-    } finally {
-      setIsAddAlertOpen(false);
-    }
-  };
+  const addBookToList = useMutation({
+    mutationFn: (content: { book: bookInfo; list: string }) => {
+      return api.post('/add-book-to-list', content);
+    },
+  });
 
   const showAddToListsButton =
     bookInfoQuery.isSuccess &&
     bookInfoQuery.data.book &&
-    bookInfoQuery.data.currentStatus === undefined;
+    bookInfoQuery.data.currentStatus === undefined &&
+    addBookToList.isIdle;
 
   const showAlreadyHasBook =
     bookInfoQuery.isSuccess &&
@@ -183,9 +173,19 @@ const Add: React.FC = () => {
       <IonContent className="ion-padding">
         <IonToast
           trigger="open-toast"
-          message={errorMessage}
+          message={
+            addBookToList.isError
+              ? addBookToList.error?.message
+              : bookInfoQuery.isError
+              ? bookInfoQuery.error.message
+              : errorMessage
+          }
           duration={5000}
-          isOpen={displayErrorMessage}
+          isOpen={
+            addBookToList.isError ||
+            bookInfoQuery.isError ||
+            displayErrorMessage
+          }
           onDidDismiss={() => {
             setDisplayErrorMessage(false);
             setErrorMessage('');
@@ -257,7 +257,10 @@ const Add: React.FC = () => {
                     role: 'confirm',
                     cssClass: 'alert-confirm-button',
                     handler: () => {
-                      addBookToList();
+                      addBookToList.mutate({
+                        book: bookInfoQuery.data.book,
+                        list: listToAdd,
+                      });
                     },
                   },
                 ]
@@ -269,7 +272,7 @@ const Add: React.FC = () => {
           className={styles.alert}
         ></IonAlert>
 
-        {bookInfoQuery.isFetching ? (
+        {bookInfoQuery.isFetching || addBookToList.isPending ? (
           <LoadSpinner
             message={
               bookInfoQuery.isFetching
@@ -338,23 +341,30 @@ const Add: React.FC = () => {
                   </IonButton>
                 </>
               )) ||
-                (showAlreadyHasBook && (
+                ((showAlreadyHasBook || addBookToList.isSuccess) && (
                   <>
                     <IonCard color="success">
                       <IonCardHeader className={styles.successHeader}>
                         <IonCardSubtitle className={styles.successTitle}>
                           <IonIcon icon={checkmarkCircleOutline} />
-                          {bookInfoQuery.isSuccess
+                          {bookInfoQuery.isSuccess && addBookToList.isIdle
                             ? 'You already added this book!'
+                            : addBookToList.isSuccess
+                            ? addBookToList.data.data.message
                             : ''}
                         </IonCardSubtitle>
                         <IonCardTitle>
                           It's in your{' '}
                           <strong>
-                            {bookInfoQuery.data.currentStatus
-                              .charAt(0)
-                              .toUpperCase() +
-                              bookInfoQuery.data.currentStatus.slice(1)}{' '}
+                            {bookInfoQuery.isSuccess && addBookToList.isIdle
+                              ? bookInfoQuery.data.currentStatus
+                                  .charAt(0)
+                                  .toUpperCase() +
+                                bookInfoQuery.data.currentStatus.slice(1)
+                              : addBookToList.isSuccess
+                              ? listToAdd.charAt(0).toUpperCase() +
+                                listToAdd.slice(1)
+                              : ''}{' '}
                             List
                           </strong>
                           .
