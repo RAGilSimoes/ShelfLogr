@@ -81,7 +81,7 @@ const Home: React.FC = () => {
       if (activeBook && category && list) {
         return {
           category,
-          activeBook,
+          book: activeBook,
           list,
         };
       } else if (data.lists.reading.length > 0) {
@@ -176,8 +176,8 @@ const Home: React.FC = () => {
         ) : (
           <IonGrid className={styles.grid}>
             {activeBookQuery.status === 'success' &&
-              activeBookQuery.data.activeBook &&
-              Object.keys(activeBookQuery.data.activeBook).length > 0 && (
+              activeBookQuery.data.book &&
+              Object.keys(activeBookQuery.data.book).length > 0 && (
                 <div>
                   <h3 className={styles.statusMessage}>
                     This book is in your{' '}
@@ -194,7 +194,7 @@ const Home: React.FC = () => {
                     style={{ cursor: 'pointer' }}
                   >
                     <BookCard
-                      bookInfo={activeBookQuery.data.activeBook}
+                      bookInfo={activeBookQuery.data.book}
                       detailed={false}
                     />
                   </div>
