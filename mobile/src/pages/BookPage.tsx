@@ -14,24 +14,37 @@ import { useHistory, useLocation } from 'react-router';
 
 const BookPage: React.FC = () => {
   const history = useHistory();
-  const location = useLocation<{ information?: bookInfo }>();
+  const location = useLocation<{
+    information: { book: bookInfo; category?: string; list?: string };
+  }>();
 
-  const information = location.state?.information;
+  const information: {
+    book: bookInfo;
+    category?: string;
+    list?: string;
+  } = location.state?.information;
 
-  return (
-    <IonPage>
-      <IonHeader>
-        <IonToolbar>
-          <IonButtons slot="start">
-            <IonBackButton></IonBackButton>
-          </IonButtons>
-        </IonToolbar>
-      </IonHeader>
-      <IonContent fullscreen>
-        {information && <BookInfo bookInfo={information} detailed={true} />}
-      </IonContent>
-    </IonPage>
-  );
+  if (information) {
+    const bookInfo = information.book;
+
+    return (
+      <IonPage>
+        <IonHeader>
+          <IonToolbar>
+            <IonButtons slot="start">
+              <IonBackButton></IonBackButton>
+            </IonButtons>
+          </IonToolbar>
+        </IonHeader>
+        <IonContent fullscreen>
+          {bookInfo && <BookInfo bookInfo={bookInfo} detailed={true} />}
+          <p>{information.list ? information.list : 'não está nas listas'}</p>
+        </IonContent>
+      </IonPage>
+    );
+  } else {
+    return <>Erro</>;
+  }
 };
 
 export default BookPage;

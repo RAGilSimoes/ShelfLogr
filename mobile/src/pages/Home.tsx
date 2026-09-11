@@ -188,7 +188,7 @@ const Home: React.FC = () => {
                   <div
                     onClick={() => {
                       history.push(`/app/book`, {
-                        information: activeBookQuery.data.activeBook,
+                        information: activeBookQuery.data,
                       });
                     }}
                     style={{ cursor: 'pointer' }}

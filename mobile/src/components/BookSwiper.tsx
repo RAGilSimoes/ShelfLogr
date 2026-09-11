@@ -10,7 +10,7 @@ import BookCard from './BookCard';
 import { useHistory } from 'react-router';
 
 const BookSwiper: React.FC<{
-  books: Array<bookInfo>;
+  books: Array<{ book: bookInfo; currentStatus: string | null }>;
 }> = ({ books }) => {
   const history = useHistory();
   return (
@@ -21,23 +21,28 @@ const BookSwiper: React.FC<{
         spaceBetween={50}
         slidesPerView={1}
       >
-        {books.map((book: bookInfo, index: number) => {
-          return (
-            <SwiperSlide key={index} className={styles.swiper}>
-              <div
-                className={styles.cardContainer}
-                onClick={() => {
-                  history.push(`/app/book`, {
-                    information: book,
-                  });
-                }}
-                style={{ cursor: 'pointer' }}
-              >
-                <BookCard bookInfo={book} detailed={false} />
-              </div>
-            </SwiperSlide>
-          );
-        })}
+        {books.map(
+          (
+            info: { book: bookInfo; currentStatus: string | null },
+            index: number,
+          ) => {
+            return (
+              <SwiperSlide key={index} className={styles.swiper}>
+                <div
+                  className={styles.cardContainer}
+                  onClick={() => {
+                    history.push(`/app/book`, {
+                      information: info,
+                    });
+                  }}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <BookCard bookInfo={info.book} detailed={false} />
+                </div>
+              </SwiperSlide>
+            );
+          },
+        )}
       </Swiper>
     </div>
   );

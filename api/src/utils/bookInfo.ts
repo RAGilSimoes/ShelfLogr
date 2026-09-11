@@ -7,7 +7,7 @@ import { pool } from '../db.js';
 export async function fetchDatabaseBook(
   isbn: string,
   userID: string,
-): Promise<{ book: bookInfo; currentStatus?: string | null } | null> {
+): Promise<{ book: bookInfo; currentStatus: string | null } | null> {
   try {
     const { rows: bookExists } = await pool.query(
       `SELECT 
@@ -37,7 +37,7 @@ export async function fetchDatabaseBook(
         return { book, currentStatus };
       }
 
-      return { book };
+      return { book, currentStatus: null };
     } else {
       return null;
     }
@@ -167,7 +167,9 @@ export async function fetchNYTTrendingBooks(id: string): Promise<any> {
 
   const books = hydratedBooks
     .filter((book) => book !== null && typeof book !== 'string')
-    .map((item) => (item.book ? item.book : item));
+    .map((item) =>
+      item.book ? { book: item.book, currentStatus: null } : item,
+    );
 
   return books;
 }
@@ -216,16 +218,11 @@ export async function fetchGoogleTrendingBooks(
 
       if (isbn && (!blackList || !blackList.includes(isbn))) {
         const formatted:
-          | Partial<bookInfo>
           | { book: Partial<bookInfo>; currentStatus?: string | null }
           | string = await fetchEntireBookInfo(isbn, id);
 
         if (typeof formatted !== 'string') {
-          if ('book' in formatted) {
-            validBooks.push(formatted.book);
-          } else {
-            validBooks.push(formatted);
-          }
+          validBooks.push(formatted);
         } else {
           continue;
         }
@@ -310,16 +307,15 @@ export async function addBookToDB(info: Partial<bookInfo>) {
 export async function fetchEntireBookInfo(
   isbn: string,
   id: string,
-): Promise<
-  | Partial<bookInfo>
-  | { book: Partial<bookInfo>; currentStatus?: string | null }
-  | string
-> {
+): Promise<{ book: Partial<bookInfo>; currentStatus: string | null } | string> {
   try {
     const bookInfoDatabase = await fetchDatabaseBook(isbn, id);
 
     if (bookInfoDatabase) {
-      return bookInfoDatabase;
+      return {
+        book: bookInfoDatabase.book,
+        currentStatus: bookInfoDatabase.currentStatus,
+      };
     }
 
     let googleResponse = await fetchGoogleBook(isbn);
@@ -332,7 +328,7 @@ export async function fetchEntireBookInfo(
       }
       await addBookToDB(fallbackBook);
 
-      return fallbackBook;
+      return { book: fallbackBook, currentStatus: null };
     } else if (googleResponse?.emptyFields.length !== 0) {
       const fallbackBook = await fetchOpenLibraryBook(isbn);
 
@@ -351,7 +347,7 @@ export async function fetchEntireBookInfo(
 
     await addBookToDB(googleResponse.cleanBookInfo);
 
-    return googleResponse.cleanBookInfo;
+    return { book: googleResponse.cleanBookInfo, currentStatus: null };
   } catch (error) {
     console.error('Error getting Book Information:', error);
     return 'Error getting book information.';
