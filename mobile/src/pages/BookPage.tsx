@@ -53,11 +53,16 @@ const BookPage: React.FC = () => {
       queryClient.invalidateQueries({
         queryKey: ['bookInfoISBN', userID],
       });
+      useAuthStore.getState().removeActiveBookRecommendationID();
     },
   });
 
   if (information || addBookToList.isSuccess) {
     const bookInfo = information?.book || addBookToList.variables?.book;
+    const addList = information?.list || addBookToList.variables?.list || '';
+    const formattedListName = addList
+      ? addList.charAt(0).toUpperCase() + addList.slice(1)
+      : '';
 
     const handleBookAdd = (list: string) => {
       addBookToList.mutate({
@@ -78,25 +83,20 @@ const BookPage: React.FC = () => {
         <IonContent fullscreen>
           {addBookToList.isPending ? (
             <LoadSpinner
-              message={`Adding book to ${
-                addBookToList.variables.list.charAt(0).toUpperCase() +
-                addBookToList.variables.list.slice(1)
-              } List ...`}
+              message={`Adding book to ${formattedListName} List ...`}
               fullScreen={true}
             />
           ) : (
             <>
               <BookInfo bookInfo={bookInfo} detailed={true} />
-              {information.list || addBookToList.isSuccess ? (
+              {information?.list || addBookToList.isSuccess ? (
                 <StatusFeedback
-                  successMessage={'You already have this book!'}
-                  list={
-                    information.list
-                      ? information.list.charAt(0).toUpperCase() +
-                        information.list.slice(1)
-                      : addBookToList.variables?.list.charAt(0).toUpperCase() +
-                        addBookToList.variables?.list.slice(1)
+                  successMessage={
+                    information?.list
+                      ? 'You already have this book'
+                      : 'Book added successfully'
                   }
+                  list={formattedListName}
                 />
               ) : (
                 <AddButtons onAddBook={handleBookAdd} />

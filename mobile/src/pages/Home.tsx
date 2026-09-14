@@ -31,10 +31,7 @@ import { bookInfo } from '@shelflogr/shared';
 const Home: React.FC = () => {
   const username = useAuthStore().username;
   const userID = useAuthStore().userID;
-  const activeBook = useAuthStore().activeBook;
-  const category = useAuthStore().category;
-  const list = useAuthStore().list;
-  const updateActiveBookInfo = useAuthStore().updateActiveBookRecommendation;
+  const activeBookID = useAuthStore((state) => state.activeBookID);
 
   const history = useHistory();
 
@@ -78,45 +75,70 @@ const Home: React.FC = () => {
       category?: string;
       lists: { reading: Array<bookInfo>; wish: Array<bookInfo> };
     }) {
-      if (activeBook && category && list) {
-        return {
-          category,
-          book: activeBook,
-          list,
-        };
-      } else if (data.lists.reading.length > 0) {
-        return {
-          category: data.category,
-          activeBooks: data.lists.reading,
-          list: 'reading',
-        };
-      } else if (data.lists.wish.length > 0) {
-        return {
-          category: data.category,
-          activeBooks: data.lists.wish,
-          list: 'wish',
-        };
+      let listName =
+        data.lists.reading.length > 0
+          ? 'reading'
+          : data.lists.wish.length > 0
+          ? 'wish'
+          : undefined;
+      let list =
+        data.lists.reading.length > 0
+          ? data.lists.reading
+          : data.lists.wish.length > 0
+          ? data.lists.wish
+          : undefined;
+
+      if (listName && list) {
+        if (activeBookID === undefined) {
+          const ind: number = Math.floor(Math.random() * list.length);
+          const book = list[ind];
+
+          return { category: data.category, book: book, list: listName };
+        } else {
+          const backupList =
+            listName === 'reading' ? data.lists.wish : data.lists.reading;
+          const backupListName = listName === 'reading' ? 'wish' : 'reading';
+
+          let book;
+
+          book = list.find((book) => activeBookID === book.id);
+
+          if (!book) {
+            book = backupList.find((book) => activeBookID === book.id);
+
+            if (book) {
+              listName = backupListName;
+              list = backupList;
+            }
+          }
+
+          if (book) {
+            return {
+              category: data.category,
+              book: book,
+              list: listName,
+            };
+          } else {
+            const ind: number = Math.floor(Math.random() * list.length);
+            const book = list[ind];
+
+            return { category: data.category, book: book, list: listName };
+          }
+        }
       } else if (data.category) {
-        return { category: data.category };
+        return { category: data.category, book: undefined, list: undefined };
       } else {
-        return { category: undefined };
+        return { category: undefined, book: undefined, list: undefined };
       }
     },
   });
 
   useEffect(() => {
-    if (
-      !activeBook &&
-      activeBookQuery.data &&
-      activeBookQuery.data.activeBooks
-    ) {
-      updateActiveBookInfo(
-        activeBookQuery.data?.activeBooks!,
-        activeBookQuery.data?.list!,
-        activeBookQuery.data?.category,
-      );
-    }
-  }, [activeBookQuery.data]);
+    if (activeBookQuery.data?.book?.id)
+      useAuthStore
+        .getState()
+        .updateActiveBookRecommendationID(activeBookQuery.data?.book?.id);
+  }, [activeBookQuery.data?.book?.id]);
 
   const trendingCategoryBookQuery = useQuery({
     queryKey: ['trendingCategoryBooks', userID, activeBookQuery.data?.category],
@@ -166,142 +188,129 @@ const Home: React.FC = () => {
           position="top"
         ></IonToast>
 
-        {activeBookQuery.isLoading ||
-        trendingBookQuery.isLoading ||
-        trendingCategoryBookQuery.isLoading ? (
-          <LoadSpinner
-            message={'Getting Book Recomendations For You...'}
-            fullScreen={true}
-          />
-        ) : (
-          <IonGrid className={styles.grid}>
-            {activeBookQuery.status === 'success' &&
-              activeBookQuery.data.book &&
-              Object.keys(activeBookQuery.data.book).length > 0 && (
-                <div>
-                  <h3 className={styles.statusMessage}>
-                    This book is in your{' '}
-                    {activeBookQuery.data.list?.charAt(0).toUpperCase() +
-                      activeBookQuery.data.list?.slice(1)}{' '}
-                    List
-                  </h3>
-                  <div
-                    onClick={() => {
-                      history.push(`/app/book`, {
-                        information: activeBookQuery.data,
-                      });
-                    }}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <BookCard
-                      bookInfo={activeBookQuery.data.book}
-                      detailed={false}
-                    />
-                  </div>
+        <IonGrid className={styles.grid}>
+          {activeBookQuery.isFetching ? (
+            <LoadSpinner message={'Getting Active Book'} fullScreen={false} />
+          ) : (
+            activeBookQuery.status === 'success' &&
+            activeBookQuery.data.book &&
+            Object.keys(activeBookQuery.data.book).length > 0 && (
+              <div>
+                <h3 className={styles.statusMessage}>
+                  This book is in your{' '}
+                  {activeBookQuery.data.list?.charAt(0).toUpperCase() +
+                    activeBookQuery.data.list?.slice(1)}{' '}
+                  List
+                </h3>
+                <div
+                  onClick={() => {
+                    history.push(`/app/book`, {
+                      information: activeBookQuery.data,
+                    });
+                  }}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <BookCard
+                    bookInfo={activeBookQuery.data.book}
+                    detailed={false}
+                  />
                 </div>
-              )}{' '}
-            {trendingCategoryBookQuery.status === 'success' &&
+              </div>
+            )
+          )}
+
+          {trendingCategoryBookQuery.isFetching ? (
+            <LoadSpinner
+              message={`Getting Recommendations about ${
+                activeBookQuery.data?.category || 'your favorite book'
+              }`}
+              fullScreen={false}
+            />
+          ) : trendingCategoryBookQuery.status === 'success' &&
             trendingCategoryBookQuery.data.trendingBooksInfo.length > 0 ? (
-              <div>
-                <h3 className={styles.trendingMessage}>
-                  {`Because you liked ${activeBookQuery.data!.category}`}
-                </h3>
-                {
-                  <BookSwiper
-                    books={trendingCategoryBookQuery.data.trendingBooksInfo}
-                  />
-                }
-              </div>
-            ) : trendingCategoryBookQuery.isLoading ||
-              trendingCategoryBookQuery.isRefetching ? (
-              <div className={styles.retryingDiv}>
-                <LoadSpinner
-                  message={`Getting Book Recommendations for ${
-                    activeBookQuery.data!.category
-                  } Category`}
-                  fullScreen={false}
+            <div>
+              <h3 className={styles.trendingMessage}>
+                {`Because you liked ${activeBookQuery.data!.category}`}
+              </h3>
+              {
+                <BookSwiper
+                  books={trendingCategoryBookQuery.data.trendingBooksInfo}
                 />
-              </div>
-            ) : (
-              <div>
-                <h3 className={styles.failedMessage}>
-                  {`Couldn't Get Recommendations About ${
-                    activeBookQuery.data!.category
-                  }`}
-                </h3>
-                <IonButton
-                  expand="block"
-                  shape="round"
-                  size="default"
-                  onClick={() => {
-                    setButtonDisabled(true);
-                    trendingCategoryBookQuery.refetch();
+              }
+            </div>
+          ) : (
+            <div>
+              <h3 className={styles.failedMessage}>
+                {`Couldn't Get Recommendations About ${
+                  activeBookQuery.data?.category || 'your favorite book'
+                }`}
+              </h3>
+              <IonButton
+                expand="block"
+                shape="round"
+                size="default"
+                onClick={() => {
+                  setButtonDisabled(true);
+                  trendingCategoryBookQuery.refetch();
 
-                    const timeoutID = setTimeout(() => {
-                      setButtonDisabled(false);
-                    }, 5000);
+                  const timeoutID = setTimeout(() => {
+                    setButtonDisabled(false);
+                  }, 5000);
 
-                    timeoutRef.current = timeoutID;
-                  }}
-                  className="ion-margin-top"
-                  color="primary"
-                  disabled={buttonDisabled}
-                >
-                  {buttonDisabled ? 'Wait...' : 'Try Again'}
-                  <IonIcon slot="end" icon={refreshCircle}></IonIcon>
-                </IonButton>
-              </div>
-            )}
-            {trendingBookQuery.status === 'success' &&
+                  timeoutRef.current = timeoutID;
+                }}
+                className="ion-margin-top"
+                color="primary"
+                disabled={buttonDisabled}
+              >
+                {buttonDisabled ? 'Wait...' : 'Try Again'}
+                <IonIcon slot="end" icon={refreshCircle}></IonIcon>
+              </IonButton>
+            </div>
+          )}
+
+          {trendingBookQuery.isFetching ? (
+            <LoadSpinner
+              message={`Getting Trending Books`}
+              fullScreen={false}
+            />
+          ) : trendingBookQuery.status === 'success' &&
             trendingBookQuery.data.trendingBooksInfo.length > 0 ? (
-              <div>
-                <h3 className={styles.trendingMessage}>
-                  {`What's Trending This Week`}
-                </h3>
-                {
-                  <BookSwiper
-                    books={trendingBookQuery.data.trendingBooksInfo}
-                  />
-                }
-              </div>
-            ) : trendingBookQuery.isLoading ||
-              trendingBookQuery.isRefetching ? (
-              <div className={styles.retryingDiv}>
-                <LoadSpinner
-                  message={`Getting Trending Books`}
-                  fullScreen={false}
-                />
-              </div>
-            ) : (
-              <div>
-                <h3 className={styles.failedMessage}>
-                  {`Couldn't Get Trending Books`}
-                </h3>
-                <IonButton
-                  expand="block"
-                  shape="round"
-                  size="default"
-                  onClick={() => {
-                    setButtonDisabled(true);
-                    trendingBookQuery.refetch();
+            <div>
+              <h3 className={styles.trendingMessage}>
+                {`What's Trending This Week`}
+              </h3>
+              {<BookSwiper books={trendingBookQuery.data.trendingBooksInfo} />}
+            </div>
+          ) : (
+            <div>
+              <h3 className={styles.failedMessage}>
+                {`Couldn't Get Trending Books`}
+              </h3>
+              <IonButton
+                expand="block"
+                shape="round"
+                size="default"
+                onClick={() => {
+                  setButtonDisabled(true);
+                  trendingBookQuery.refetch();
 
-                    const timeoutID = setTimeout(() => {
-                      setButtonDisabled(false);
-                    }, 5000);
+                  const timeoutID = setTimeout(() => {
+                    setButtonDisabled(false);
+                  }, 5000);
 
-                    timeoutRef.current = timeoutID;
-                  }}
-                  className="ion-margin-top"
-                  color="primary"
-                  disabled={buttonDisabled}
-                >
-                  {buttonDisabled ? 'Wait...' : 'Try Again'}
-                  <IonIcon slot="end" icon={refreshCircle}></IonIcon>
-                </IonButton>
-              </div>
-            )}
-          </IonGrid>
-        )}
+                  timeoutRef.current = timeoutID;
+                }}
+                className="ion-margin-top"
+                color="primary"
+                disabled={buttonDisabled}
+              >
+                {buttonDisabled ? 'Wait...' : 'Try Again'}
+                <IonIcon slot="end" icon={refreshCircle}></IonIcon>
+              </IonButton>
+            </div>
+          )}
+        </IonGrid>
       </IonContent>
     </IonPage>
   );

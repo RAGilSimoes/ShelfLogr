@@ -159,7 +159,7 @@ const Add: React.FC = () => {
       queryClient.invalidateQueries({
         queryKey: ['bookInfoISBN', userID],
       });
-      useAuthStore().removeInformation();
+      useAuthStore.getState().removeActiveBookRecommendation();
     },
   });
 

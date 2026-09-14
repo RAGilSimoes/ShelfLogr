@@ -157,9 +157,9 @@ export async function fetchNYTTrendingBooks(id: string): Promise<any> {
     return book;
   });
 
-  const top5ReadyBooks = readyBooks.slice(0, 5);
+  const top10ReadyBooks = readyBooks.slice(0, 10);
 
-  const bookPromises = top5ReadyBooks.map((book: any) => {
+  const bookPromises = top10ReadyBooks.map((book: any) => {
     return fetchEntireBookInfo(book.isbns[0]?.isbn13, id);
   });
 
@@ -171,7 +171,7 @@ export async function fetchNYTTrendingBooks(id: string): Promise<any> {
       item.book ? { book: item.book, currentStatus: null } : item,
     );
 
-  return books;
+  return books.slice(0, 5);
 }
 
 export async function fetchGoogleTrendingBooks(
