@@ -214,6 +214,7 @@ app.post(
       await client.query('COMMIT');
       return res.status(200).json({
         message: 'Book added successfully',
+        list,
       });
     } catch (error) {
       console.log(error);

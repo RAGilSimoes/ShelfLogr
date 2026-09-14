@@ -4,10 +4,6 @@ import {
   IonPage,
   IonToast,
   IonGrid,
-  IonCard,
-  IonCardHeader,
-  IonCardSubtitle,
-  IonCardTitle,
   useIonViewWillLeave,
   IonIcon,
   IonAlert,
@@ -28,12 +24,7 @@ import LoadSpinner from '../components/LoadSpinner';
 import BookInfo from '../components/BookInfo';
 import StatusFeedback from '../components/StatusFeedback';
 
-import {
-  book,
-  bookmark,
-  checkmarkCircleOutline,
-  barcodeOutline,
-} from 'ionicons/icons';
+import { barcodeOutline } from 'ionicons/icons';
 
 import { bookInfo } from '@shelflogr/shared';
 
@@ -42,6 +33,7 @@ import DOMPurify from 'dompurify';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import fetchBookInfo from '../queryOptions/addQueries';
 import useAuthStore from '../store/useAuthStore';
+import AddButtons from '../components/AddButtons';
 
 const Add: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string>('');
@@ -49,7 +41,6 @@ const Add: React.FC = () => {
     useState<boolean>(false);
   const [isScanAlertOpen, setIsScanAlertOpen] = useState<boolean>(false);
   const [listToAdd, setListToAdd] = useState<string>('');
-  const [isAddAlertOpen, setIsAddAlertOpen] = useState<boolean>(false);
 
   const [tempIsbn, setTempIsbn] = useState<number>(0);
   const [finalIsbn, setFinalIsbn] = useState<string>('');
@@ -63,10 +54,9 @@ const Add: React.FC = () => {
     setDisplayErrorMessage(false);
     setIsScanAlertOpen(false);
     setListToAdd('');
-    setIsAddAlertOpen(false);
 
     queryClient.removeQueries({
-      queryKey: ['bookInfoISBN', finalIsbn, userID],
+      queryKey: ['bookInfoISBN', userID, finalIsbn],
     });
     addBookToList.reset();
 
@@ -134,7 +124,7 @@ const Add: React.FC = () => {
   };
 
   const bookInfoQuery = useQuery({
-    queryKey: ['bookInfoISBN', finalIsbn, userID],
+    queryKey: ['bookInfoISBN', userID, finalIsbn],
     queryFn: () => fetchBookInfo(finalIsbn),
     enabled: finalIsbn !== '',
     select(data) {
@@ -156,7 +146,30 @@ const Add: React.FC = () => {
     mutationFn: (content: { book: bookInfo; list: string }) => {
       return api.post('/add-book-to-list', content);
     },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [['userBook']],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['trendingCategoryBooks', userID],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['trendingBooks', userID],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['bookInfoISBN', userID],
+      });
+      useAuthStore().removeInformation();
+    },
   });
+
+  const handleBookAdd = (list: string) => {
+    setListToAdd(list);
+    addBookToList.mutate({
+      book: bookInfoQuery.data.book,
+      list: list,
+    });
+  };
 
   const showAddToListsButton =
     bookInfoQuery.isSuccess &&
@@ -178,7 +191,9 @@ const Add: React.FC = () => {
       bookInfoQuery.data.currentStatus.slice(1);
     successMessage = 'You already added this book!';
   } else if (addBookToList.isSuccess) {
-    list = listToAdd.charAt(0).toUpperCase() + listToAdd.slice(1);
+    list =
+      addBookToList.variables.list.charAt(0).toUpperCase() +
+      addBookToList.variables.list.slice(1);
     successMessage = addBookToList.data.data.message;
   }
 
@@ -209,14 +224,10 @@ const Add: React.FC = () => {
         ></IonToast>
 
         <IonAlert
-          isOpen={isScanAlertOpen || isAddAlertOpen}
-          header={isScanAlertOpen ? 'ISBN Detected' : 'Confirm Action'}
+          isOpen={isScanAlertOpen}
+          header={'ISBN Detected'}
           message={
-            isScanAlertOpen
-              ? 'Confirm if the displayed ISBN matches the one from the book'
-              : `Are you sure you want to add this book to your ${
-                  listToAdd.charAt(0).toUpperCase() + listToAdd.slice(1)
-                } List?`
+            'Confirm if the displayed ISBN matches the one from the book'
           }
           cssClass="custom-isbn-alert"
           inputs={
@@ -236,52 +247,30 @@ const Add: React.FC = () => {
                 ]
               : []
           }
-          buttons={
-            isScanAlertOpen
-              ? [
-                  {
-                    text: 'Cancel',
-                    role: 'cancel',
-                    cssClass: 'alert-cancel-button',
-                  },
-                  {
-                    text: 'Get Info',
-                    role: 'confirm',
-                    cssClass: 'alert-confirm-button',
-                    handler: (alertData) => {
-                      const selectedIsbn = String(
-                        alertData.isbnField || tempIsbn,
-                      ).trim();
-                      if (selectedIsbn) {
-                        setIsScanAlertOpen(false);
-                        if (selectedIsbn === finalIsbn) bookInfoQuery.refetch();
-                        else setFinalIsbn(selectedIsbn);
-                      }
-                    },
-                  },
-                ]
-              : [
-                  {
-                    text: 'Cancel',
-                    role: 'cancel',
-                    cssClass: 'alert-cancel-button',
-                  },
-                  {
-                    text: 'Confirm',
-                    role: 'confirm',
-                    cssClass: 'alert-confirm-button',
-                    handler: () => {
-                      addBookToList.mutate({
-                        book: bookInfoQuery.data.book,
-                        list: listToAdd,
-                      });
-                    },
-                  },
-                ]
-          }
+          buttons={[
+            {
+              text: 'Cancel',
+              role: 'cancel',
+              cssClass: 'alert-cancel-button',
+            },
+            {
+              text: 'Get Info',
+              role: 'confirm',
+              cssClass: 'alert-confirm-button',
+              handler: (alertData) => {
+                const selectedIsbn = String(
+                  alertData.isbnField || tempIsbn,
+                ).trim();
+                if (selectedIsbn) {
+                  setIsScanAlertOpen(false);
+                  if (selectedIsbn === finalIsbn) bookInfoQuery.refetch();
+                  else setFinalIsbn(selectedIsbn);
+                }
+              },
+            },
+          ]}
           onDidDismiss={() => {
             setIsScanAlertOpen(false);
-            setIsAddAlertOpen(false);
           }}
           className={styles.alert}
         ></IonAlert>
@@ -311,48 +300,7 @@ const Add: React.FC = () => {
               )}
               {(showAddToListsButton && (
                 <>
-                  <IonButton
-                    expand="block"
-                    shape="round"
-                    size="default"
-                    onClick={() => {
-                      setListToAdd('completed');
-                      setIsAddAlertOpen(true);
-                    }}
-                    className="ion-margin-top"
-                    color="primary"
-                  >
-                    Add to Completed List{' '}
-                    <IonIcon slot="end" icon={book}></IonIcon>
-                  </IonButton>
-                  <IonButton
-                    expand="block"
-                    shape="round"
-                    size="default"
-                    onClick={() => {
-                      setListToAdd('reading');
-                      setIsAddAlertOpen(true);
-                    }}
-                    className="ion-margin-top"
-                    color="primary"
-                  >
-                    Add to Reading List{' '}
-                    <IonIcon slot="end" icon={book}></IonIcon>
-                  </IonButton>
-                  <IonButton
-                    expand="block"
-                    shape="round"
-                    size="default"
-                    onClick={() => {
-                      setListToAdd('wish');
-                      setIsAddAlertOpen(true);
-                    }}
-                    className="ion-margin-top"
-                    color="tertiary"
-                  >
-                    Add to Wish List
-                    <IonIcon slot="end" icon={bookmark}></IonIcon>
-                  </IonButton>
+                  <AddButtons onAddBook={handleBookAdd} />
                 </>
               )) ||
                 ((showAlreadyHasBook || addBookToList.isSuccess) && (

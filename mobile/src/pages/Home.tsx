@@ -119,7 +119,7 @@ const Home: React.FC = () => {
   }, [activeBookQuery.data]);
 
   const trendingCategoryBookQuery = useQuery({
-    queryKey: ['trendingCategoryBooks', activeBookQuery.data?.category, userID],
+    queryKey: ['trendingCategoryBooks', userID, activeBookQuery.data?.category],
     queryFn: () =>
       fetchTrendingBooksRecommendation(activeBookQuery.data?.category),
     enabled:

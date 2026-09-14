@@ -24,7 +24,8 @@ type Action = {
   updateUserName: (username: State['username']) => void;
   updateUserID: (userID: State['userID']) => void;
   updateEmail: (email: State['email']) => void;
-  removeInformation: (jwt: '', username: '', userID: '', email: '') => void;
+  removeInformation: () => void;
+  removeActiveBookRecommendation: () => void;
 };
 
 const useAuthStore = create<State & Action>()((set) => ({
@@ -75,6 +76,10 @@ const useAuthStore = create<State & Action>()((set) => ({
       list: '',
       category: '',
     });
+  },
+
+  removeActiveBookRecommendation: function () {
+    set({ activeBook: undefined, category: '', list: '' });
   },
 }));
 
