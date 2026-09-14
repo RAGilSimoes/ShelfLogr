@@ -26,6 +26,7 @@ import api from '../services/api.service';
 
 import LoadSpinner from '../components/LoadSpinner';
 import BookInfo from '../components/BookInfo';
+import StatusFeedback from '../components/StatusFeedback';
 
 import {
   book,
@@ -167,6 +168,19 @@ const Add: React.FC = () => {
     bookInfoQuery.isSuccess &&
     bookInfoQuery.data.book &&
     bookInfoQuery.data.currentStatus !== undefined;
+
+  let list;
+  let successMessage;
+
+  if (bookInfoQuery.isSuccess && addBookToList.isIdle) {
+    list =
+      bookInfoQuery.data.currentStatus.charAt(0).toUpperCase() +
+      bookInfoQuery.data.currentStatus.slice(1);
+    successMessage = 'You already added this book!';
+  } else if (addBookToList.isSuccess) {
+    list = listToAdd.charAt(0).toUpperCase() + listToAdd.slice(1);
+    successMessage = addBookToList.data.data.message;
+  }
 
   return (
     <IonPage>
@@ -342,36 +356,7 @@ const Add: React.FC = () => {
                 </>
               )) ||
                 ((showAlreadyHasBook || addBookToList.isSuccess) && (
-                  <>
-                    <IonCard color="success">
-                      <IonCardHeader className={styles.successHeader}>
-                        <IonCardSubtitle className={styles.successTitle}>
-                          <IonIcon icon={checkmarkCircleOutline} />
-                          {bookInfoQuery.isSuccess && addBookToList.isIdle
-                            ? 'You already added this book!'
-                            : addBookToList.isSuccess
-                            ? addBookToList.data.data.message
-                            : ''}
-                        </IonCardSubtitle>
-                        <IonCardTitle>
-                          It's in your{' '}
-                          <strong>
-                            {bookInfoQuery.isSuccess && addBookToList.isIdle
-                              ? bookInfoQuery.data.currentStatus
-                                  .charAt(0)
-                                  .toUpperCase() +
-                                bookInfoQuery.data.currentStatus.slice(1)
-                              : addBookToList.isSuccess
-                              ? listToAdd.charAt(0).toUpperCase() +
-                                listToAdd.slice(1)
-                              : ''}{' '}
-                            List
-                          </strong>
-                          .
-                        </IonCardTitle>
-                      </IonCardHeader>
-                    </IonCard>
-                  </>
+                  <StatusFeedback successMessage={successMessage} list={list} />
                 ))}
               <IonButton
                 expand="block"

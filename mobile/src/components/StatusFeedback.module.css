@@ -1,0 +1,10 @@
+.successHeader {
+  align-items: center;
+}
+
+.successTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.2rem;
+}

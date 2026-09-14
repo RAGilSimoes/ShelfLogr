@@ -7,6 +7,7 @@ import {
   IonBackButton,
 } from '@ionic/react';
 
+import StatusFeedback from '../components/StatusFeedback';
 import BookInfo from '../components/BookInfo';
 import { bookInfo } from '@shelflogr/shared';
 
@@ -38,7 +39,17 @@ const BookPage: React.FC = () => {
         </IonHeader>
         <IonContent fullscreen>
           {bookInfo && <BookInfo bookInfo={bookInfo} detailed={true} />}
-          <p>{information.list ? information.list : 'não está nas listas'}</p>
+          {information.list ? (
+            <StatusFeedback
+              successMessage={'You already have this book!'}
+              list={
+                information.list.charAt(0).toUpperCase() +
+                information.list.slice(1)
+              }
+            />
+          ) : (
+            <p>Não está numa lista</p>
+          )}
         </IonContent>
       </IonPage>
     );
