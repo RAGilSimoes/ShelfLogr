@@ -246,7 +246,7 @@ app.post(
 );
 
 app.get(
-  '/api/user/lists',
+  '/api/user/lists-names',
   verifyAuthorization(false),
   async (req: Request, res: Response) => {
     try {
