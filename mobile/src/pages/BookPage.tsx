@@ -15,7 +15,9 @@ import { bookInfo } from '@shelflogr/shared';
 
 import { useHistory, useLocation } from 'react-router';
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+
+import fetchUserListsNames from '../queryOptions/bookPageQueries';
 
 import api from '../services/api.service';
 import useAuthStore from '../store/useAuthStore';
@@ -35,6 +37,11 @@ const BookPage: React.FC = () => {
     category?: string;
     list?: string;
   } = location.state?.information;
+
+  const getListsNames = useQuery({
+    queryKey: ['listsNames', userID],
+    queryFn: fetchUserListsNames,
+  });
 
   const addBookToList = useMutation({
     mutationFn: (content: { book: bookInfo; list: string }) => {

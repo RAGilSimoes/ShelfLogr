@@ -246,6 +246,26 @@ app.post(
 );
 
 app.get(
+  '/api/user/lists',
+  verifyAuthorization(false),
+  async (req: Request, res: Response) => {
+    try {
+      const { id } = req.token;
+
+      const getBookListsNamesQuery =
+        'SELECT ul.id, ul.name, ul.is_system, COUNT(lb.book_id)::int as quantity FROM "user_list" ul LEFT JOIN "list_books" lb ON ul.id = lb.list_id WHERE ul.user_id=$1 GROUP BY ul.id, ul.is_system ORDER BY ul.is_system DESC, ul.name ASC;';
+
+      const { rows: lists } = await pool.query(getBookListsNamesQuery, [id]);
+
+      return res.status(200).json({ lists });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ error: "Couldn't get user lists." });
+    }
+  },
+);
+
+app.get(
   '/api/user/active-lists',
   verifyAuthorization(false),
   async (req: Request, res: Response) => {

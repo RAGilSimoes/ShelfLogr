@@ -29,8 +29,8 @@ import useAuthStore from '../store/useAuthStore';
 import { bookInfo } from '@shelflogr/shared';
 
 const Home: React.FC = () => {
-  const username = useAuthStore().username;
-  const userID = useAuthStore().userID;
+  const username = useAuthStore((state) => state.username);
+  const userID = useAuthStore((state) => state.userID);
   const activeBookID = useAuthStore((state) => state.activeBookID);
 
   const history = useHistory();
@@ -217,55 +217,56 @@ const Home: React.FC = () => {
             )
           )}
 
-          {trendingCategoryBookQuery.isFetching ? (
-            <LoadSpinner
-              message={`Getting Recommendations about ${
-                activeBookQuery.data?.category || 'Your Favorite Book'
-              }`}
-              fullScreen={false}
-            />
-          ) : trendingCategoryBookQuery.status === 'success' &&
-            trendingCategoryBookQuery.data.trendingBooksInfo.length > 0 ? (
-            <div>
-              <h3 className={styles.trendingMessage}>
-                {`Because you liked ${activeBookQuery.data!.category}`}
-              </h3>
-              {
-                <BookSwiper
-                  books={trendingCategoryBookQuery.data.trendingBooksInfo}
-                />
-              }
-            </div>
-          ) : (
-            <div>
-              <h3 className={styles.failedMessage}>
-                {`Couldn't Get Recommendations About ${
+          {activeBookQuery.data?.category !== undefined &&
+            (trendingCategoryBookQuery.isFetching ? (
+              <LoadSpinner
+                message={`Getting Recommendations about ${
                   activeBookQuery.data?.category || 'Your Favorite Book'
                 }`}
-              </h3>
-              <IonButton
-                expand="block"
-                shape="round"
-                size="default"
-                onClick={() => {
-                  setButtonDisabled(true);
-                  trendingCategoryBookQuery.refetch();
+                fullScreen={false}
+              />
+            ) : trendingCategoryBookQuery.status === 'success' &&
+              trendingCategoryBookQuery.data.trendingBooksInfo.length > 0 ? (
+              <div>
+                <h3 className={styles.trendingMessage}>
+                  {`Because you liked ${activeBookQuery.data!.category}`}
+                </h3>
+                {
+                  <BookSwiper
+                    books={trendingCategoryBookQuery.data.trendingBooksInfo}
+                  />
+                }
+              </div>
+            ) : (
+              <div>
+                <h3 className={styles.failedMessage}>
+                  {`Couldn't Get Recommendations About ${
+                    activeBookQuery.data?.category || 'Your Favorite Book'
+                  }`}
+                </h3>
+                <IonButton
+                  expand="block"
+                  shape="round"
+                  size="default"
+                  onClick={() => {
+                    setButtonDisabled(true);
+                    trendingCategoryBookQuery.refetch();
 
-                  const timeoutID = setTimeout(() => {
-                    setButtonDisabled(false);
-                  }, 5000);
+                    const timeoutID = setTimeout(() => {
+                      setButtonDisabled(false);
+                    }, 5000);
 
-                  timeoutRef.current = timeoutID;
-                }}
-                className="ion-margin-top"
-                color="primary"
-                disabled={buttonDisabled}
-              >
-                {buttonDisabled ? 'Wait...' : 'Try Again'}
-                <IonIcon slot="end" icon={refreshCircle}></IonIcon>
-              </IonButton>
-            </div>
-          )}
+                    timeoutRef.current = timeoutID;
+                  }}
+                  className="ion-margin-top"
+                  color="primary"
+                  disabled={buttonDisabled}
+                >
+                  {buttonDisabled ? 'Wait...' : 'Try Again'}
+                  <IonIcon slot="end" icon={refreshCircle}></IonIcon>
+                </IonButton>
+              </div>
+            ))}
 
           {trendingBookQuery.isFetching ? (
             <LoadSpinner
@@ -273,6 +274,7 @@ const Home: React.FC = () => {
               fullScreen={false}
             />
           ) : trendingBookQuery.status === 'success' &&
+            trendingBookQuery.data.trendingBooksInfo &&
             trendingBookQuery.data.trendingBooksInfo.length > 0 ? (
             <div>
               <h3 className={styles.trendingMessage}>
@@ -281,32 +283,34 @@ const Home: React.FC = () => {
               {<BookSwiper books={trendingBookQuery.data.trendingBooksInfo} />}
             </div>
           ) : (
-            <div>
-              <h3 className={styles.failedMessage}>
-                {`Couldn't Get Trending Books`}
-              </h3>
-              <IonButton
-                expand="block"
-                shape="round"
-                size="default"
-                onClick={() => {
-                  setButtonDisabled(true);
-                  trendingBookQuery.refetch();
+            trendingBookQuery.isError && (
+              <div>
+                <h3 className={styles.failedMessage}>
+                  {`Couldn't Get Trending Books`}
+                </h3>
+                <IonButton
+                  expand="block"
+                  shape="round"
+                  size="default"
+                  onClick={() => {
+                    setButtonDisabled(true);
+                    trendingBookQuery.refetch();
 
-                  const timeoutID = setTimeout(() => {
-                    setButtonDisabled(false);
-                  }, 5000);
+                    const timeoutID = setTimeout(() => {
+                      setButtonDisabled(false);
+                    }, 5000);
 
-                  timeoutRef.current = timeoutID;
-                }}
-                className="ion-margin-top"
-                color="primary"
-                disabled={buttonDisabled}
-              >
-                {buttonDisabled ? 'Wait...' : 'Try Again'}
-                <IonIcon slot="end" icon={refreshCircle}></IonIcon>
-              </IonButton>
-            </div>
+                    timeoutRef.current = timeoutID;
+                  }}
+                  className="ion-margin-top"
+                  color="primary"
+                  disabled={buttonDisabled}
+                >
+                  {buttonDisabled ? 'Wait...' : 'Try Again'}
+                  <IonIcon slot="end" icon={refreshCircle}></IonIcon>
+                </IonButton>
+              </div>
+            )
           )}
         </IonGrid>
       </IonContent>
