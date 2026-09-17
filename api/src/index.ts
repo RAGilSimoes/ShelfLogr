@@ -3,29 +3,26 @@ import type { Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import bcrypt from 'bcrypt';
+import rateLimit from 'express-rate-limit';
 
 import { pool } from './db.js';
 
-import {
-  generateToken,
-  verifyToken,
-  decodeToken,
-} from './services/jwt.service.js';
-import type { JwtPayload } from 'jsonwebtoken';
+import { generateToken } from './services/jwt.service.js';
 
 import { verifyAuthorization } from './middlewares/auth.middleware.js';
 import type { bookInfo } from '@shelflogr/shared';
 import {
-  fetchGoogleBook,
-  fetchOpenLibraryBook,
-  fetchDatabaseBook,
-  addBookToDB,
   fetchNYTTrendingBooks,
   fetchEntireBookInfo,
   fetchGoogleTrendingBooks,
 } from './utils/bookInfo.js';
 
 dotenv.config();
+
+// const authLimiter = rateLimit({
+//   windowMs: 1 * 60 * 1000,
+//   max: 10000,
+// });
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -100,35 +97,53 @@ app.post('/api/register', async (req: Request, res: Response) => {
   try {
     const { email, username, password } = req.body;
 
-    const { rows: emailResult } = await pool.query(
-      'SELECT * FROM "user" WHERE email = $1',
-      [email],
-    );
-
-    if (emailResult.length !== 0) {
-      return res.status(409).json({ error: 'Email already in use.' });
-    }
-
-    const { rows: usernameResult } = await pool.query(
-      'SELECT * FROM "user" WHERE name = $1',
-      [username],
-    );
-
-    if (usernameResult.length !== 0) {
-      return res.status(409).json({ error: 'Username already in use.' });
-    }
-
     const saltRounds = 10;
 
-    const encryptedPassword = await bcrypt.hash(password, saltRounds);
-    const { rows: insertResult } = await pool.query(
-      'INSERT INTO "user"(name, email, password) VALUES ($1, $2, $3) RETURNING id',
-      [username, email, encryptedPassword],
-    );
+    const client = await pool.connect();
 
-    const token = generateToken(insertResult[0]!.id, email, username);
+    try {
+      await client.query('BEGIN');
 
-    return res.status(200).json({ message: 'Success', token });
+      const encryptedPassword = await bcrypt.hash(password, saltRounds);
+      const { rows: insertResult } = await client.query(
+        'INSERT INTO "user"(name, email, password) VALUES ($1, $2, $3) RETURNING id',
+        [username, email, encryptedPassword],
+      );
+
+      const userID = insertResult[0]!.id;
+
+      const token = generateToken(userID, email, username);
+
+      const createDefaultTablesQuery =
+        "INSERT INTO user_list(user_id, name, is_system) VALUES ($1,'reading',true),($1,'wish',true),($1,'completed',true)";
+
+      await client.query(createDefaultTablesQuery, [userID]);
+
+      await client.query('COMMIT');
+
+      return res.status(201).json({ message: 'Success', token });
+    } catch (error: any) {
+      const errorCode = error.code;
+      console.error(error);
+
+      await client.query('ROLLBACK').catch(() => {});
+
+      if (errorCode === '23505') {
+        const detail: string = error.detail;
+        const local = detail.includes('name');
+
+        const message = local
+          ? 'Username already in use'
+          : 'Email already in use';
+        return res.status(409).json({ error: message });
+      } else {
+        return res
+          .status(500)
+          .json({ error: 'Internal error processing registration' });
+      }
+    } finally {
+      client.release();
+    }
   } catch (error) {
     console.error(error);
     return res

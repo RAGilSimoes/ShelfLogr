@@ -137,10 +137,10 @@ const Register: React.FC = () => {
 
       const status = response.status;
 
-      if (status == 200) {
+      if (status == 201) {
         const token = response.data.token;
         updateAuthToken(token);
-        
+
         setShowError(false);
         setErrorMessage('');
         history.push('/app/home');

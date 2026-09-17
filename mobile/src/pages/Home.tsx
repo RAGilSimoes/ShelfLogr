@@ -70,7 +70,6 @@ const Home: React.FC = () => {
   const activeBookQuery = useQuery({
     queryKey: ['userBook', userID],
     queryFn: fetchUserLists,
-    refetchOnWindowFocus: true,
     select(data: {
       category?: string;
       lists: { reading: Array<bookInfo>; wish: Array<bookInfo> };
@@ -147,7 +146,6 @@ const Home: React.FC = () => {
     enabled:
       activeBookQuery.status === 'success' &&
       activeBookQuery.data.category !== undefined,
-    refetchOnWindowFocus: true,
   });
 
   const trendingBookQuery = useQuery({
@@ -222,7 +220,7 @@ const Home: React.FC = () => {
           {trendingCategoryBookQuery.isFetching ? (
             <LoadSpinner
               message={`Getting Recommendations about ${
-                activeBookQuery.data?.category || 'your favorite book'
+                activeBookQuery.data?.category || 'Your Favorite Book'
               }`}
               fullScreen={false}
             />
@@ -242,7 +240,7 @@ const Home: React.FC = () => {
             <div>
               <h3 className={styles.failedMessage}>
                 {`Couldn't Get Recommendations About ${
-                  activeBookQuery.data?.category || 'your favorite book'
+                  activeBookQuery.data?.category || 'Your Favorite Book'
                 }`}
               </h3>
               <IonButton
