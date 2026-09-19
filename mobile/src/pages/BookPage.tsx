@@ -33,16 +33,14 @@ const BookPage: React.FC = () => {
 
   const queryClient = useQueryClient();
 
-  const information: {
-    book: bookInfo;
-    category?: string;
-    list?: string;
-  } = location.state?.information;
-
   const bookInformation = useRef(location.state?.information);
 
   const addBookToList = useMutation({
-    mutationFn: (content: { book: bookInfo; list: string }) => {
+    mutationFn: (content: {
+      book: bookInfo;
+      requiredList: string;
+      optionalLists?: Array<string>;
+    }) => {
       return api.post('/add-book-to-list', content);
     },
     onSuccess: () => {
@@ -66,15 +64,21 @@ const BookPage: React.FC = () => {
     const bookInfo =
       bookInformation.current?.book || addBookToList.variables?.book;
     const addList =
-      bookInformation.current?.list || addBookToList.variables?.list || '';
+      bookInformation.current?.list ||
+      addBookToList.variables?.requiredList ||
+      '';
     const formattedListName = addList
       ? addList.charAt(0).toUpperCase() + addList.slice(1)
       : '';
 
-    const handleBookAdd = (list: string) => {
+    const handleBookAdd = (
+      requiredList: string,
+      optionalLists?: Array<string>,
+    ) => {
       addBookToList.mutate({
         book: bookInfo,
-        list: list,
+        requiredList,
+        optionalLists,
       });
     };
 
@@ -96,10 +100,10 @@ const BookPage: React.FC = () => {
           ) : (
             <>
               <BookInfo bookInfo={bookInfo} detailed={true} />
-              {information?.list || addBookToList.isSuccess ? (
+              {bookInformation.current.list || addBookToList.isSuccess ? (
                 <StatusFeedback
                   successMessage={
-                    information?.list
+                    bookInformation.current?.list
                       ? 'You already have this book'
                       : 'Book added successfully'
                   }
