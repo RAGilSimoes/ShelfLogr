@@ -1,7 +1,7 @@
 import api from '../services/api.service';
 
 export default async function fetchTrendingBooksRecommendation(
-  category?: string,
+  category?: string | null,
 ) {
   const response = await api.get('/books/trending', {
     params: {

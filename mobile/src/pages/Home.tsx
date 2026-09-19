@@ -127,10 +127,10 @@ const Home: React.FC = () => {
             return { category: data.category, book: book, list: listName };
           }
         }
-      } else if (data.category) {
-        return { category: data.category, book: undefined, list: undefined };
+      } else if (data.category !== null) {
+        return { category: data.category, book: null, list: null };
       } else {
-        return { category: undefined, book: undefined, list: undefined };
+        return { category: null, book: null, list: null };
       }
     },
   });
@@ -153,7 +153,7 @@ const Home: React.FC = () => {
       fetchTrendingBooksRecommendation(activeBookQuery.data?.category),
     enabled:
       activeBookQuery.status === 'success' &&
-      activeBookQuery.data.category !== undefined,
+      activeBookQuery.data.category !== null,
   });
 
   const trendingBookQuery = useQuery({
@@ -225,7 +225,7 @@ const Home: React.FC = () => {
             )
           )}
 
-          {activeBookQuery.data?.category !== undefined &&
+          {activeBookQuery.data?.category !== null &&
             (trendingCategoryBookQuery.isFetching ? (
               <LoadSpinner
                 message={`Getting Recommendations about ${

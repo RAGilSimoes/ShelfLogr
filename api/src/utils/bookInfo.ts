@@ -28,7 +28,7 @@ export async function fetchDatabaseBook(
       const bookID = book.id;
 
       const { rows: status } = await pool.query(
-        'SELECT status FROM user_books WHERE user_id = $1 AND book_id = $2',
+        'SELECT ul.name as status FROM user_list ul JOIN list_books lb ON ul.id=lb.list_id WHERE ul.user_id = $1 AND lb.book_id = $2 AND ul.is_system=true',
         [userID, bookID],
       );
 
@@ -120,7 +120,7 @@ export async function getAllUserBooks(
   try {
     const isbns: Array<string> = [];
     const { rows: status } = await pool.query(
-      'SELECT b.isbn FROM book b JOIN user_books ub ON b.id=ub.book_id WHERE ub.user_id=$1',
+      'SELECT DISTINCT b.isbn FROM book b JOIN list_books lb ON b.id=lb.book_id JOIN user_list ul ON lb.list_id=ul.id WHERE ul.user_id=$1',
       [id],
     );
 
