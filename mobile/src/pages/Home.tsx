@@ -23,10 +23,12 @@ import BookSwiper from '../components/BookSwiper';
 
 import { useQuery } from '@tanstack/react-query';
 import fetchTrendingBooksRecommendation from '../queryOptions/homeQueries';
+import { fetchUserLists } from '../queryOptions/loginQueries';
+
 import {
-  fetchUserLists,
-  fetchUserListsNames,
-} from '../queryOptions/loginQueries';
+  useUserLists,
+  getUserListsOptions,
+} from '../queryOptions/useUserLists';
 
 import useAuthStore from '../store/useAuthStore';
 import { bookInfo } from '@shelflogr/shared';
@@ -71,8 +73,8 @@ const Home: React.FC = () => {
   }
 
   const activeBookQuery = useQuery({
-    queryKey: ['userBook', userID],
-    queryFn: fetchUserLists,
+    ...getUserListsOptions(userID),
+    refetchOnWindowFocus: false,
     select(data: {
       category?: string;
       lists: { reading: Array<bookInfo>; wish: Array<bookInfo> };
@@ -135,11 +137,6 @@ const Home: React.FC = () => {
     },
   });
 
-  const listsNamesQuery = useQuery({
-    queryKey: ['userLists', userID],
-    queryFn: fetchUserListsNames,
-  });
-
   useEffect(() => {
     if (activeBookQuery.data?.book?.id)
       useAuthStore
@@ -154,12 +151,14 @@ const Home: React.FC = () => {
     enabled:
       activeBookQuery.status === 'success' &&
       activeBookQuery.data.category !== null,
+    refetchOnWindowFocus: false,
   });
 
   const trendingBookQuery = useQuery({
     queryKey: ['trendingBooks', userID],
     queryFn: () => fetchTrendingBooksRecommendation(undefined),
     enabled: activeBookQuery.status === 'success',
+    refetchOnWindowFocus: false,
   });
 
   return (
@@ -195,7 +194,7 @@ const Home: React.FC = () => {
         ></IonToast>
 
         <IonGrid className={styles.grid}>
-          {activeBookQuery.isFetching ? (
+          {activeBookQuery.isLoading ? (
             <LoadSpinner message={'Getting Active Book'} fullScreen={false} />
           ) : (
             activeBookQuery.status === 'success' &&
@@ -225,8 +224,9 @@ const Home: React.FC = () => {
             )
           )}
 
-          {activeBookQuery.data?.category !== null &&
-            (trendingCategoryBookQuery.isFetching ? (
+          {activeBookQuery.isSuccess &&
+            activeBookQuery.data?.category !== null &&
+            (trendingCategoryBookQuery.isLoading ? (
               <LoadSpinner
                 message={`Getting Recommendations about ${
                   activeBookQuery.data?.category || 'Your Favorite Book'
@@ -276,12 +276,13 @@ const Home: React.FC = () => {
               </div>
             ))}
 
-          {trendingBookQuery.isFetching ? (
+          {trendingBookQuery.isLoading ? (
             <LoadSpinner
               message={`Getting Trending Books`}
               fullScreen={false}
             />
-          ) : trendingBookQuery.status === 'success' &&
+          ) : activeBookQuery.isSuccess &&
+            trendingBookQuery.status === 'success' &&
             trendingBookQuery.data.trendingBooksInfo &&
             trendingBookQuery.data.trendingBooksInfo.length > 0 ? (
             <div>

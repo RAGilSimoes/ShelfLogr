@@ -21,6 +21,7 @@ import fetchUserListsNames from '../queryOptions/bookPageQueries';
 
 import api from '../services/api.service';
 import useAuthStore from '../store/useAuthStore';
+import { useRef } from 'react';
 
 const BookPage: React.FC = () => {
   const history = useHistory();
@@ -38,10 +39,7 @@ const BookPage: React.FC = () => {
     list?: string;
   } = location.state?.information;
 
-  const getListsNames = useQuery({
-    queryKey: ['listsNames', userID],
-    queryFn: fetchUserListsNames,
-  });
+  const bookInformation = useRef(location.state?.information);
 
   const addBookToList = useMutation({
     mutationFn: (content: { book: bookInfo; list: string }) => {
@@ -64,9 +62,11 @@ const BookPage: React.FC = () => {
     },
   });
 
-  if (information || addBookToList.isSuccess) {
-    const bookInfo = information?.book || addBookToList.variables?.book;
-    const addList = information?.list || addBookToList.variables?.list || '';
+  if (bookInformation.current || addBookToList.isSuccess) {
+    const bookInfo =
+      bookInformation.current?.book || addBookToList.variables?.book;
+    const addList =
+      bookInformation.current?.list || addBookToList.variables?.list || '';
     const formattedListName = addList
       ? addList.charAt(0).toUpperCase() + addList.slice(1)
       : '';
@@ -113,8 +113,6 @@ const BookPage: React.FC = () => {
         </IonContent>
       </IonPage>
     );
-  } else if (!information) {
-    return <>Erro</>;
   }
 };
 
