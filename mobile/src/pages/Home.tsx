@@ -23,7 +23,10 @@ import BookSwiper from '../components/BookSwiper';
 
 import { useQuery } from '@tanstack/react-query';
 import fetchTrendingBooksRecommendation from '../queryOptions/homeQueries';
-import fetchUserLists from '../queryOptions/loginQueries';
+import {
+  fetchUserLists,
+  fetchUserListsNames,
+} from '../queryOptions/loginQueries';
 
 import useAuthStore from '../store/useAuthStore';
 import { bookInfo } from '@shelflogr/shared';
@@ -130,6 +133,11 @@ const Home: React.FC = () => {
         return { category: undefined, book: undefined, list: undefined };
       }
     },
+  });
+
+  const listsNamesQuery = useQuery({
+    queryKey: ['userLists', userID],
+    queryFn: fetchUserListsNames,
   });
 
   useEffect(() => {

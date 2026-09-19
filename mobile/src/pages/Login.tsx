@@ -28,7 +28,10 @@ import styles from './Login.module.css';
 import useAuthStore from '../store/useAuthStore';
 
 import { useQueryClient } from '@tanstack/react-query';
-import fetchUserLists from '../queryOptions/loginQueries';
+import {
+  fetchUserLists,
+  fetchUserListsNames,
+} from '../queryOptions/loginQueries';
 
 const Login: React.FC = () => {
   const history = useHistory();
@@ -121,7 +124,12 @@ const Login: React.FC = () => {
 
         queryClient.prefetchQuery({
           queryKey: ['userBook', useAuthStore.getState().userID],
-          queryFn: () => fetchUserLists(),
+          queryFn: fetchUserLists,
+        });
+
+        queryClient.prefetchQuery({
+          queryKey: ['userLists', useAuthStore.getState().userID],
+          queryFn: fetchUserListsNames,
         });
 
         setShowError(false);
