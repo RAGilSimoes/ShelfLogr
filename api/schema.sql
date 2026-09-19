@@ -35,7 +35,8 @@ CREATE TABLE "user" (
 	"name" text NOT NULL CONSTRAINT "user_name_key" UNIQUE,
 	"email" text NOT NULL CONSTRAINT "user_email_key" UNIQUE,
 	"password" text NOT NULL,
-	"updated_at" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+	"updated_at" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	"created_at" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 CREATE TABLE "user_category" (
 	"user_id" uuid,
@@ -47,7 +48,8 @@ CREATE TABLE "user_list" (
 	"user_id" uuid NOT NULL,
 	"name" text NOT NULL,
 	"is_system" boolean NOT NULL,
-	"added_at" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+	"added_at" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	CONSTRAINT "list_name" UNIQUE("user_id","name")
 );
 CREATE TABLE "user_reviews" (
 	"user_id" uuid,
@@ -56,20 +58,13 @@ CREATE TABLE "user_reviews" (
 	"review" text,
 	"updated_at" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
 	"display" boolean NOT NULL,
+	"created_at" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
 	CONSTRAINT "user_book" PRIMARY KEY("user_id","book_id")
 );
-CREATE UNIQUE INDEX "book_isbn_key" ON "book" ("isbn");
-CREATE UNIQUE INDEX "book_pkey" ON "book" ("id");
-CREATE UNIQUE INDEX "primary_key" ON "book_category" ("book_id","category_id");
-CREATE UNIQUE INDEX "categories_name_key" ON "categories" ("name");
-CREATE UNIQUE INDEX "categories_pkey" ON "categories" ("id");
-CREATE UNIQUE INDEX "list_book" ON "list_books" ("list_id","book_id");
-CREATE UNIQUE INDEX "user_email_key" ON "user" ("email");
-CREATE UNIQUE INDEX "user_name_key" ON "user" ("name");
-CREATE UNIQUE INDEX "user_pkey" ON "user" ("id");
-CREATE UNIQUE INDEX "primary" ON "user_category" ("user_id","category_id");
-CREATE UNIQUE INDEX "user_list_pkey" ON "user_list" ("id");
-CREATE UNIQUE INDEX "user_book" ON "user_reviews" ("user_id","book_id");
+CREATE INDEX "book_category_index" ON "book_category" ("category_id");
+CREATE INDEX "book_index" ON "list_books" ("book_id");
+CREATE INDEX "user_list_index" ON "user_list" ("user_id");
+CREATE INDEX "book_reviews_index" ON "user_reviews" ("book_id");
 ALTER TABLE "book_category" ADD CONSTRAINT "book" FOREIGN KEY ("book_id") REFERENCES "book"("id") ON DELETE CASCADE;
 ALTER TABLE "book_category" ADD CONSTRAINT "category" FOREIGN KEY ("category_id") REFERENCES "categories"("id") ON DELETE CASCADE;
 ALTER TABLE "list_books" ADD CONSTRAINT "book" FOREIGN KEY ("book_id") REFERENCES "book"("id") ON DELETE CASCADE;
