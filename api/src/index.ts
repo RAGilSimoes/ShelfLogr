@@ -272,60 +272,61 @@ app.get(
     try {
       const { id } = req.token;
 
-      const getBookLists = `SELECT b.* as book, 
-            COALESCE((ARRAY_AGG(c.name) FILTER (WHERE bc.main = true))[1], '') as "mainCategory",
-            COALESCE(ARRAY_AGG(c.name) FILTER (WHERE bc.main = false), '{}') as categories 
-            FROM "user_books" ub 
-            JOIN book b ON b.id = ub.book_id
-            LEFT JOIN book_category bc ON b.id = bc.book_id
-            LEFT JOIN categories c ON bc.category_id = c.id
-            WHERE ub.user_id = $1 AND ub.status = $2
-            GROUP BY b.id;`;
-
-      const bookStatusOptions = ['reading', 'wish', 'completed'];
-
-      const { rows: readingList } = await pool.query(getBookLists, [
-        id,
-        bookStatusOptions[0],
-      ]);
-
       let lists: { reading: Array<bookInfo>; wish: Array<bookInfo> } = {
         reading: [],
         wish: [],
       };
 
-      if (readingList.length > 0) {
-        lists.reading = readingList;
-      }
+      const defaultLists = ['reading', 'wish', 'completed'];
 
-      const { rows: wishList } = await pool.query(getBookLists, [
-        id,
-        bookStatusOptions[1],
-      ]);
+      const getBookLists = `SELECT ul.name as "listName",
+            b.*, 
+            COALESCE((ARRAY_AGG(c.name) FILTER (WHERE bc.main = true))[1], '') as "mainCategory",
+            COALESCE(ARRAY_AGG(c.name) FILTER (WHERE bc.main = false), '{}') as categories 
+            FROM "list_books" lb 
+            JOIN user_list ul ON ul.id = lb.list_id
+            JOIN book b ON b.id = lb.book_id
+            LEFT JOIN book_category bc ON b.id = bc.book_id
+            LEFT JOIN categories c ON bc.category_id = c.id
+            WHERE ul.user_id=$1 AND ul.name = ANY($2)
+            GROUP BY b.id, ul.name;`;
 
-      if (wishList.length > 0) {
-        lists.wish = wishList;
-      }
+      await pool
+        .query(getBookLists, [id, defaultLists.slice(0, 2)])
+        .then((result: any) =>
+          result.rows.forEach((index: any) => {
+            const listName = index.listName;
+            delete index.listName;
+
+            if (listName === 'reading') {
+              lists.reading.push(index);
+            } else if (listName === 'wish') {
+              lists.wish.push(index);
+            }
+          }),
+        );
 
       const getTopCategoryQuery = `
             SELECT c.name as "topCategory"
-            FROM user_books ub
-            JOIN book_category bc ON ub.book_id = bc.book_id
+            FROM list_books lb
+            JOIN user_list ul ON ul.id=lb.list_id
+            JOIN book_category bc ON lb.book_id = bc.book_id
             JOIN categories c ON bc.category_id = c.id
-            WHERE ub.user_id = $1 
-              AND ub.status = $2 
-              AND ub.liked = true 
+            JOIN user_reviews ur ON ur.book_id = lb.book_id
+            WHERE ur.user_id = $1
               AND bc.main = true
+              AND ur.liked = true
+              AND ul.user_id = $1
+              AND ul.name = 'completed'
             GROUP BY c.name
             ORDER BY COUNT(c.name) DESC
             LIMIT 1;
           `;
 
-      let category;
+      let category = null;
 
       let { rows: topCategoryRow } = await pool.query(getTopCategoryQuery, [
         id,
-        bookStatusOptions[2],
       ]);
 
       if (topCategoryRow.length > 0) category = topCategoryRow[0].topCategory;

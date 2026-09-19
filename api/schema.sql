@@ -59,6 +59,7 @@ CREATE TABLE "user_reviews" (
 	"updated_at" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
 	"display" boolean NOT NULL,
 	"created_at" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	"liked" boolean NOT NULL,
 	CONSTRAINT "user_book" PRIMARY KEY("user_id","book_id")
 );
 CREATE INDEX "book_category_index" ON "book_category" ("category_id");
