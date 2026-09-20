@@ -1,5 +1,6 @@
 .successHeader {
-  align-items: center;
+  align-items: left;
+  white-space: pre-line;
 }
 
 .successTitle {

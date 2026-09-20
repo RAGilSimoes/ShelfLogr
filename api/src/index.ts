@@ -179,17 +179,29 @@ app.post(
     const client = await pool.connect();
     try {
       const { id } = req.token;
-      const { book, list } = req.body;
+      const { book, requiredList, optionalLists } = req.body;
 
       const bookID = book.id;
 
       const userID = id;
 
       await client.query('BEGIN');
-      const insertBookUserRelation =
-        'INSERT INTO "user_books"(user_id, book_id, status) VALUES($1,$2,$3) ON CONFLICT (user_id, book_id) DO UPDATE SET status = EXCLUDED.status';
 
-      await client.query(insertBookUserRelation, [userID, bookID, list]);
+      const deleteRequiredListRelation =
+        'DELETE FROM list_books WHERE list_books.book_id=$1 AND list_books.list_id IN (SELECT id FROM user_list WHERE user_list.user_id=$2 AND user_list.is_system = true)';
+
+      await client.query(deleteRequiredListRelation, [bookID, userID]);
+
+      const insertBookList =
+        'INSERT INTO list_books(list_id, book_id) VALUES($1,$2) ON CONFLICT DO NOTHING;';
+
+      await client.query(insertBookList, [requiredList, bookID]);
+
+      if (optionalLists && optionalLists.length > 0) {
+        for (const optionalList of optionalLists) {
+          await client.query(insertBookList, [optionalList, bookID]);
+        }
+      }
 
       const getCategoryID = 'SELECT id FROM categories WHERE name=$1';
 
@@ -229,15 +241,14 @@ app.post(
       await client.query('COMMIT');
       return res.status(200).json({
         message: 'Book added successfully',
-        list,
+        requiredList,
+        optionalLists,
       });
     } catch (error) {
       console.log(error);
       await client.query('ROLLBACK');
-      const targetList =
-        req.body?.list.charAt(0).toUpperCase() + req.body?.list.slice(1);
       return res.status(500).json({
-        error: `Error adding book to ${targetList} list.`,
+        error: `Error Adding Book to List(s).`,
       });
     } finally {
       client.release();

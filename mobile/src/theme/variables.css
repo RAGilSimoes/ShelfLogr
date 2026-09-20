@@ -8,12 +8,13 @@ http://ionicframework.com/docs/theming/ */
 
 .custom-isbn-alert .alert-title {
   font-weight: 700;
-  color: #222;
+  color: var(--ion-color-primary);
 }
 
 .custom-isbn-alert .alert-message {
   font-size: 0.95rem;
-  color: #666;
+  color: white;
+  white-space: pre-line !important;
 }
 
 .alert-isbn-input {

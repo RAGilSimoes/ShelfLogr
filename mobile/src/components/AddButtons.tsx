@@ -6,7 +6,7 @@ import {
   IonSelectOption,
 } from '@ionic/react';
 
-import { book, bookmark } from 'ionicons/icons';
+import { book } from 'ionicons/icons';
 
 import styles from './AddButtons.module.css';
 
@@ -15,35 +15,45 @@ import { useState } from 'react';
 import { useUserLists } from '../queryOptions/useUserLists';
 
 const AddButtons: React.FC<{
-  onAddBook: (requiredList: string, optionalLists?: Array<string>) => void;
+  onAddBook: (
+    requiredList: string,
+    formattedListNames: Array<string>,
+    optionalLists?: Array<string>,
+  ) => void;
 }> = ({ onAddBook }) => {
   const [isAddAlertOpen, setIsAddAlertOpen] = useState<boolean>(false);
 
-  const listsNames = useUserLists();
+  const listsNamesQuery = useUserLists();
 
   const [requiredListID, setRequiredListID] = useState<string>('');
   const [requiredListName, setRequiredListName] = useState<string>('');
 
   const [optionalListsID, setOptionalListsID] = useState<string[]>([]);
-  const [optionalListsName, setOptionalListsName] = useState<string[]>([]);
 
-  if (listsNames.isSuccess) {
+  if (listsNamesQuery.isSuccess) {
     const lists: Array<{
       id: string;
       name: string;
       is_system: boolean;
       quantity: number;
-    }> = listsNames.data.lists;
+    }> = listsNamesQuery.data.lists;
 
     const systemLists = lists.filter((list) => list.is_system === true);
     const extraLists = lists.filter((list) => list.is_system === false);
+
+    const extraListsNames = extraLists
+      .filter((item) => optionalListsID.includes(item.id))
+      .map((item) => item.name);
+
+    const listsNamesArray = [requiredListName, ...extraListsNames];
 
     return (
       <>
         <IonAlert
           isOpen={isAddAlertOpen}
           header={'Confirm Action'}
-          message={`Are you sure you want to add this book to the following lists?`}
+          message={`Are you sure you want to add this book to the following lists?\n\n
+            ${listsNamesArray.map((item) => '• ' + item).join('\n')}`}
           cssClass="custom-isbn-alert"
           buttons={[
             {
@@ -56,7 +66,7 @@ const AddButtons: React.FC<{
               role: 'confirm',
               cssClass: 'alert-confirm-button',
               handler: () => {
-                onAddBook(requiredListID, optionalListsID);
+                onAddBook(requiredListID, listsNamesArray, optionalListsID);
               },
             },
           ]}
@@ -70,10 +80,14 @@ const AddButtons: React.FC<{
           placeholder="List To Add"
           interfaceOptions={{ header: 'Choose A List' }}
           onIonChange={(e) => {
+            const listName = systemLists.find(
+              (list) => list.id === e.detail.value,
+            )!.name;
+
+            const formattedName =
+              listName.charAt(0).toUpperCase() + listName.slice(1);
             setRequiredListID(e.detail.value);
-            setRequiredListName(
-              systemLists.find((list) => list.id === e.detail.value)!.name,
-            );
+            setRequiredListName(formattedName);
           }}
           label="Status"
           multiple={false}

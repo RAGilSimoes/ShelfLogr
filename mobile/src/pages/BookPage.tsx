@@ -13,18 +13,17 @@ import StatusFeedback from '../components/StatusFeedback';
 import BookInfo from '../components/BookInfo';
 import { bookInfo } from '@shelflogr/shared';
 
-import { useHistory, useLocation } from 'react-router';
+import { useLocation } from 'react-router';
 
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
 
-import fetchUserListsNames from '../queryOptions/bookPageQueries';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import api from '../services/api.service';
 import useAuthStore from '../store/useAuthStore';
 import { useRef } from 'react';
 
 const BookPage: React.FC = () => {
-  const history = useHistory();
   const location = useLocation<{
     information: { book: bookInfo; category?: string; list?: string };
   }>();
@@ -34,6 +33,8 @@ const BookPage: React.FC = () => {
   const queryClient = useQueryClient();
 
   const bookInformation = useRef(location.state?.information);
+
+  const [formattedListNames, setFormattedListNames] = useState<string[]>([]);
 
   const addBookToList = useMutation({
     mutationFn: (content: {
@@ -46,6 +47,9 @@ const BookPage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ['userBook'],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['userLists', userID],
       });
       queryClient.invalidateQueries({
         queryKey: ['trendingCategoryBooks', userID],
@@ -63,18 +67,13 @@ const BookPage: React.FC = () => {
   if (bookInformation.current || addBookToList.isSuccess) {
     const bookInfo =
       bookInformation.current?.book || addBookToList.variables?.book;
-    const addList =
-      bookInformation.current?.list ||
-      addBookToList.variables?.requiredList ||
-      '';
-    const formattedListName = addList
-      ? addList.charAt(0).toUpperCase() + addList.slice(1)
-      : '';
 
     const handleBookAdd = (
       requiredList: string,
+      formattedListNames: Array<string>,
       optionalLists?: Array<string>,
     ) => {
+      setFormattedListNames(formattedListNames);
       addBookToList.mutate({
         book: bookInfo,
         requiredList,
@@ -94,7 +93,9 @@ const BookPage: React.FC = () => {
         <IonContent fullscreen>
           {addBookToList.isPending ? (
             <LoadSpinner
-              message={`Adding book to ${formattedListName} List ...`}
+              message={`Adding Book To \n\n ${formattedListNames
+                .map((item) => '• ' + item)
+                .join('\n')} \n\n ...`}
               fullScreen={true}
             />
           ) : (
@@ -104,10 +105,10 @@ const BookPage: React.FC = () => {
                 <StatusFeedback
                   successMessage={
                     bookInformation.current?.list
-                      ? 'You already have this book'
-                      : 'Book added successfully'
+                      ? 'You Already Have This Book'
+                      : 'Book Added Successfully'
                   }
-                  list={formattedListName}
+                  list={formattedListNames}
                 />
               ) : (
                 <AddButtons onAddBook={handleBookAdd} />

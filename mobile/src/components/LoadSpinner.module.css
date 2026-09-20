@@ -4,9 +4,11 @@
   justify-content: center;
   align-items: center;
   gap: 0.5rem;
-  height: 100vh;
-  width: 100vw;
+  height: 100%;
+  width: 100%;
   background-color: var(--ion-background-color);
+  white-space: pre-line;
+  text-align: center;
 }
 
 .reduced {
@@ -20,4 +22,5 @@
   height: 50%;
   width: 100%;
   background-color: var(--ion-background-color);
+  white-space: pre-line;
 }

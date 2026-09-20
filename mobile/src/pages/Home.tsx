@@ -23,12 +23,8 @@ import BookSwiper from '../components/BookSwiper';
 
 import { useQuery } from '@tanstack/react-query';
 import fetchTrendingBooksRecommendation from '../queryOptions/homeQueries';
-import { fetchUserLists } from '../queryOptions/loginQueries';
 
-import {
-  useUserLists,
-  getUserListsOptions,
-} from '../queryOptions/useUserLists';
+import { getUserListsOptions } from '../queryOptions/useUserLists';
 
 import useAuthStore from '../store/useAuthStore';
 import { bookInfo } from '@shelflogr/shared';
