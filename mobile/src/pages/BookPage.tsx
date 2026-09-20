@@ -116,10 +116,11 @@ const BookPage: React.FC = () => {
                       : 'Book Added Successfully'
                   }
                   list={
-                    bookLists ||
-                    (bookInformation.current?.list
-                      ? [bookInformation.current.list]
-                      : formattedListNames)
+                    addBookToList.isSuccess
+                      ? formattedListNames
+                      : bookLists && bookLists.length > 0
+                      ? bookLists
+                      : [bookInformation.current.list!]
                   }
                 />
               ) : (
