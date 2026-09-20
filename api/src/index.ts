@@ -283,7 +283,10 @@ app.get(
     try {
       const { id } = req.token;
 
-      let lists: { reading: Array<bookInfo>; wish: Array<bookInfo> } = {
+      let lists: {
+        reading: Array<{ book: bookInfo; lists: Array<string> }>;
+        wish: Array<{ book: bookInfo; lists: Array<string> }>;
+      } = {
         reading: [],
         wish: [],
       };
@@ -293,7 +296,8 @@ app.get(
       const getBookLists = `SELECT ul.name as "listName",
             b.*, 
             COALESCE((ARRAY_AGG(c.name) FILTER (WHERE bc.main = true))[1], '') as "mainCategory",
-            COALESCE(ARRAY_AGG(c.name) FILTER (WHERE bc.main = false), '{}') as categories 
+            COALESCE(ARRAY_AGG(c.name) FILTER (WHERE bc.main = false), '{}') as categories,
+            (SELECT COALESCE(ARRAY_AGG(all_ul.name), '{}') FROM list_books all_lb JOIN user_list all_ul ON all_ul.id = all_lb.list_id WHERE all_lb.book_id = b.id AND all_ul.user_id = $1) AS lists
             FROM "list_books" lb 
             JOIN user_list ul ON ul.id = lb.list_id
             JOIN book b ON b.id = lb.book_id
@@ -307,12 +311,14 @@ app.get(
         .then((result: any) =>
           result.rows.forEach((index: any) => {
             const listName = index.listName;
+            const bookLists = index.lists;
             delete index.listName;
+            delete index.lists;
 
             if (listName === 'reading') {
-              lists.reading.push(index);
+              lists.reading.push({ book: index, lists: bookLists });
             } else if (listName === 'wish') {
-              lists.wish.push(index);
+              lists.wish.push({ book: index, lists: bookLists });
             }
           }),
         );

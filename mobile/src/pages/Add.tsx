@@ -174,21 +174,21 @@ const Add: React.FC = () => {
   const showAddToListsButton =
     bookInfoQuery.isSuccess &&
     bookInfoQuery.data.book &&
-    bookInfoQuery.data.currentStatus === undefined &&
+    bookInfoQuery.data.list === null &&
     addBookToList.isIdle;
 
   const showAlreadyHasBook =
     bookInfoQuery.isSuccess &&
     bookInfoQuery.data.book &&
-    bookInfoQuery.data.currentStatus !== undefined;
+    bookInfoQuery.data.list !== null;
 
   let list;
   let successMessage;
 
   if (bookInfoQuery.isSuccess && addBookToList.isIdle) {
     list =
-      bookInfoQuery.data.currentStatus.charAt(0).toUpperCase() +
-      bookInfoQuery.data.currentStatus.slice(1);
+      bookInfoQuery.data.list.charAt(0).toUpperCase() +
+      bookInfoQuery.data.list.slice(1);
     successMessage = 'You already added this book!';
   } else if (addBookToList.isSuccess) {
     list =
@@ -304,7 +304,10 @@ const Add: React.FC = () => {
                 </>
               )) ||
                 ((showAlreadyHasBook || addBookToList.isSuccess) && (
-                  <StatusFeedback successMessage={successMessage} list={list} />
+                  <StatusFeedback
+                    successMessage={successMessage}
+                    list={[list]}
+                  />
                 ))}
               <IonButton
                 expand="block"

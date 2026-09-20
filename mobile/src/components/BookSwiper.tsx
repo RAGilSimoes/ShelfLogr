@@ -10,7 +10,11 @@ import BookCard from './BookCard';
 import { useHistory } from 'react-router';
 
 const BookSwiper: React.FC<{
-  books: Array<{ book: bookInfo; currentStatus: string | null }>;
+  books: Array<{
+    book: bookInfo;
+    bookLists: Array<string>;
+    list: string | null;
+  }>;
 }> = ({ books }) => {
   const history = useHistory();
   return (
@@ -23,7 +27,11 @@ const BookSwiper: React.FC<{
       >
         {books.map(
           (
-            info: { book: bookInfo; currentStatus: string | null },
+            info: {
+              book: bookInfo;
+              bookLists: Array<string>;
+              list: string | null;
+            },
             index: number,
           ) => {
             return (

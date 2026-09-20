@@ -73,7 +73,10 @@ const Home: React.FC = () => {
     refetchOnWindowFocus: false,
     select(data: {
       category?: string;
-      lists: { reading: Array<bookInfo>; wish: Array<bookInfo> };
+      lists: {
+        reading: Array<{ book: bookInfo; lists: Array<string> }>;
+        wish: Array<{ book: bookInfo; lists: Array<string> }>;
+      };
     }) {
       let listName =
         data.lists.reading.length > 0
@@ -91,44 +94,59 @@ const Home: React.FC = () => {
       if (listName && list) {
         if (activeBookID === undefined) {
           const ind: number = Math.floor(Math.random() * list.length);
-          const book = list[ind];
+          const item = list[ind];
 
-          return { category: data.category, book: book, list: listName };
+          return {
+            category: data.category,
+            book: item.book,
+            bookLists: item.lists,
+            list: listName,
+          };
         } else {
           const backupList =
             listName === 'reading' ? data.lists.wish : data.lists.reading;
           const backupListName = listName === 'reading' ? 'wish' : 'reading';
 
-          let book;
+          let item: { book: bookInfo; lists: Array<string> };
 
-          book = list.find((book) => activeBookID === book.id);
+          item = list.find((item) => activeBookID === item.book.id)!;
 
-          if (!book) {
-            book = backupList.find((book) => activeBookID === book.id);
-
-            if (book) {
+          if (!item) {
+            item = backupList.find((item) => activeBookID === item.book.id)!;
+            if (item) {
               listName = backupListName;
               list = backupList;
             }
           }
 
-          if (book) {
+          if (item) {
             return {
               category: data.category,
-              book: book,
+              book: item.book,
+              bookLists: item.lists,
               list: listName,
             };
           } else {
             const ind: number = Math.floor(Math.random() * list.length);
-            const book = list[ind];
+            const item = list[ind];
 
-            return { category: data.category, book: book, list: listName };
+            return {
+              category: data.category,
+              book: item.book,
+              bookLists: item.lists,
+              list: listName,
+            };
           }
         }
       } else if (data.category !== null) {
-        return { category: data.category, book: null, list: null };
+        return {
+          category: data.category,
+          book: null,
+          bookLists: null,
+          list: null,
+        };
       } else {
-        return { category: null, book: null, list: null };
+        return { category: null, book: null, bookLists: null, list: null };
       }
     },
   });

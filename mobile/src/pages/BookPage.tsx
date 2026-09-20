@@ -25,7 +25,12 @@ import { useRef } from 'react';
 
 const BookPage: React.FC = () => {
   const location = useLocation<{
-    information: { book: bookInfo; category?: string; list?: string };
+    information: {
+      book: bookInfo;
+      bookLists: Array<string>;
+      category?: string;
+      list?: string;
+    };
   }>();
 
   const userID = useAuthStore().userID;
@@ -68,6 +73,8 @@ const BookPage: React.FC = () => {
     const bookInfo =
       bookInformation.current?.book || addBookToList.variables?.book;
 
+    const bookLists = bookInformation.current?.bookLists;
+
     const handleBookAdd = (
       requiredList: string,
       formattedListNames: Array<string>,
@@ -101,14 +108,19 @@ const BookPage: React.FC = () => {
           ) : (
             <>
               <BookInfo bookInfo={bookInfo} detailed={true} />
-              {bookInformation.current.list || addBookToList.isSuccess ? (
+              {bookInformation.current?.list || addBookToList.isSuccess ? (
                 <StatusFeedback
                   successMessage={
                     bookInformation.current?.list
                       ? 'You Already Have This Book'
                       : 'Book Added Successfully'
                   }
-                  list={formattedListNames}
+                  list={
+                    bookLists ||
+                    (bookInformation.current?.list
+                      ? [bookInformation.current.list]
+                      : formattedListNames)
+                  }
                 />
               ) : (
                 <AddButtons onAddBook={handleBookAdd} />

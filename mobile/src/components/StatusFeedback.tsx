@@ -9,7 +9,7 @@ import styles from './StatusFeedback.module.css';
 
 const StatusFeedback: React.FC<{
   successMessage: string;
-  list: Array<string>;
+  list: Array<string> | [];
 }> = ({ successMessage, list }) => {
   return (
     <>
@@ -17,7 +17,11 @@ const StatusFeedback: React.FC<{
         <IonCardHeader className={styles.successHeader}>
           <IonCardTitle>
             List(s):<br></br>
-            {list.map((item) => '• ' + item).join('\n')}
+            {list
+              .map(
+                (item) => '• ' + item.charAt(0).toUpperCase() + item.slice(1),
+              )
+              .join('\n')}
           </IonCardTitle>
           <IonCardSubtitle className={styles.successTitle}>
             {successMessage}

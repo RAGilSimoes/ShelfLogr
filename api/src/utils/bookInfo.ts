@@ -7,7 +7,11 @@ import { pool } from '../db.js';
 export async function fetchDatabaseBook(
   isbn: string,
   userID: string,
-): Promise<{ book: bookInfo; currentStatus: string | null } | null> {
+): Promise<{
+  book: bookInfo;
+  bookLists: Array<string>;
+  list: string | null;
+} | null> {
   try {
     const { rows: bookExists } = await pool.query(
       `SELECT 
@@ -23,21 +27,25 @@ export async function fetchDatabaseBook(
     );
 
     if (bookExists.length > 0) {
-      const book: bookInfo = bookExists[0];
+      const book = bookExists[0];
 
       const bookID = book.id;
 
-      const { rows: status } = await pool.query(
-        'SELECT ul.name as status FROM user_list ul JOIN list_books lb ON ul.id=lb.list_id WHERE ul.user_id = $1 AND lb.book_id = $2 AND ul.is_system=true',
+      const { rows: lists } = await pool.query(
+        'SELECT ul.name, ul.is_system FROM user_list ul JOIN list_books lb ON ul.id=lb.list_id WHERE ul.user_id = $1 AND lb.book_id = $2;',
         [userID, bookID],
       );
 
-      if (status.length > 0) {
-        const currentStatus = status[0].status;
-        return { book, currentStatus };
+      if (lists.length > 0) {
+        const list = lists.find(
+          (item: { name: string; is_system: boolean }) => item.is_system,
+        )?.name;
+
+        const bookLists = lists.map((item) => item.name);
+        return { book, bookLists, list };
       }
 
-      return { book, currentStatus: null };
+      return { book, bookLists: [], list: null };
     } else {
       return null;
     }
@@ -176,15 +184,16 @@ export async function fetchNYTTrendingBooks(id: string): Promise<any> {
 
   const top10ReadyBooks = readyBooks.slice(0, 10);
 
-  let books: Array<{ book: Partial<bookInfo>; currentStatus: string | null }> =
-    [];
+  let books: Array<{
+    book: Partial<bookInfo>;
+    bookLists?: Array<string> | null;
+    list: string | null;
+  }> = [];
 
   for (const book of top10ReadyBooks) {
     if (books.length === 5) break;
 
-    const result:
-      | string
-      | { book: Partial<bookInfo>; currentStatus: string | null } =
+    const result: string | { book: Partial<bookInfo>; list: string | null } =
       await fetchEntireBookInfo(book.isbns[0]?.isbn13, id);
 
     if (typeof result !== 'string') {
@@ -239,7 +248,11 @@ export async function fetchGoogleTrendingBooks(
 
       if (isbn && (!blackList || !blackList.includes(isbn))) {
         const formatted:
-          | { book: Partial<bookInfo>; currentStatus?: string | null }
+          | {
+              book: Partial<bookInfo>;
+              bookLists?: Array<string> | null;
+              list?: string | null;
+            }
           | string = await fetchEntireBookInfo(isbn, id);
 
         if (typeof formatted !== 'string') {
@@ -328,14 +341,22 @@ export async function addBookToDB(info: Partial<bookInfo>) {
 export async function fetchEntireBookInfo(
   isbn: string,
   id: string,
-): Promise<{ book: Partial<bookInfo>; currentStatus: string | null } | string> {
+): Promise<
+  | {
+      book: Partial<bookInfo>;
+      bookLists: Array<string> | null;
+      list: string | null;
+    }
+  | string
+> {
   try {
     const bookInfoDatabase = await fetchDatabaseBook(isbn, id);
 
     if (bookInfoDatabase) {
       return {
         book: bookInfoDatabase.book,
-        currentStatus: bookInfoDatabase.currentStatus,
+        bookLists: bookInfoDatabase.bookLists,
+        list: bookInfoDatabase.list,
       };
     }
 
@@ -349,7 +370,7 @@ export async function fetchEntireBookInfo(
       }
       await addBookToDB(fallbackBook);
 
-      return { book: fallbackBook, currentStatus: null };
+      return { book: fallbackBook, bookLists: null, list: null };
     } else if (googleResponse?.emptyFields.length !== 0) {
       const fallbackBook = await fetchOpenLibraryBook(isbn);
 
@@ -368,7 +389,7 @@ export async function fetchEntireBookInfo(
 
     await addBookToDB(googleResponse.cleanBookInfo);
 
-    return { book: googleResponse.cleanBookInfo, currentStatus: null };
+    return { book: googleResponse.cleanBookInfo, bookLists: null, list: null };
   } catch (error) {
     console.error('Error getting Book Information:', error);
     return 'Error getting book information.';
