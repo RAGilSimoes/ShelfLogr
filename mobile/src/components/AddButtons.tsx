@@ -14,6 +14,8 @@ import { useState } from 'react';
 
 import { useUserLists } from '../queryOptions/useUserLists';
 
+import CompletedBookForm from './CompletedBookForm';
+
 const AddButtons: React.FC<{
   onAddBook: (
     requiredList: string,
@@ -111,6 +113,8 @@ const AddButtons: React.FC<{
             },
           )}
         </IonSelect>
+
+        {requiredListName === 'Completed' && <CompletedBookForm />}
 
         {extraLists.length > 0 && (
           <IonSelect
