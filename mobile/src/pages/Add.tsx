@@ -40,7 +40,6 @@ const Add: React.FC = () => {
   const [displayErrorMessage, setDisplayErrorMessage] =
     useState<boolean>(false);
   const [isScanAlertOpen, setIsScanAlertOpen] = useState<boolean>(false);
-  const [listToAdd, setListToAdd] = useState<string>('');
 
   const [tempIsbn, setTempIsbn] = useState<number>(0);
   const [finalIsbn, setFinalIsbn] = useState<string>('');
@@ -49,11 +48,12 @@ const Add: React.FC = () => {
 
   const userID = useAuthStore().userID;
 
+  const [formattedListNames, setFormattedListNames] = useState<string[]>([]);
+
   useIonViewWillLeave(() => {
     setErrorMessage('');
     setDisplayErrorMessage(false);
     setIsScanAlertOpen(false);
-    setListToAdd('');
 
     queryClient.removeQueries({
       queryKey: ['bookInfoISBN', userID, finalIsbn],
@@ -143,12 +143,19 @@ const Add: React.FC = () => {
   });
 
   const addBookToList = useMutation({
-    mutationFn: (content: { book: bookInfo; list: string }) => {
+    mutationFn: (content: {
+      book: bookInfo;
+      requiredList: string;
+      optionalLists?: Array<string>;
+    }) => {
       return api.post('/add-book-to-list', content);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: [['userBook']],
+        queryKey: ['userBook'],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['userLists', userID],
       });
       queryClient.invalidateQueries({
         queryKey: ['trendingCategoryBooks', userID],
@@ -163,11 +170,16 @@ const Add: React.FC = () => {
     },
   });
 
-  const handleBookAdd = (list: string) => {
-    setListToAdd(list);
+  const handleBookAdd = (
+    requiredList: string,
+    formattedListNames: Array<string>,
+    optionalLists?: Array<string>,
+  ) => {
+    setFormattedListNames(formattedListNames);
     addBookToList.mutate({
       book: bookInfoQuery.data.book,
-      list: list,
+      requiredList,
+      optionalLists,
     });
   };
 
@@ -182,20 +194,12 @@ const Add: React.FC = () => {
     bookInfoQuery.data.book &&
     bookInfoQuery.data.list !== null;
 
-  let list;
-  let successMessage;
-
-  if (bookInfoQuery.isSuccess && addBookToList.isIdle) {
-    list =
-      bookInfoQuery.data.list.charAt(0).toUpperCase() +
-      bookInfoQuery.data.list.slice(1);
-    successMessage = 'You already added this book!';
-  } else if (addBookToList.isSuccess) {
-    list =
-      addBookToList.variables.list.charAt(0).toUpperCase() +
-      addBookToList.variables.list.slice(1);
-    successMessage = addBookToList.data.data.message;
-  }
+  const successMessage =
+    bookInfoQuery.isSuccess && bookInfoQuery.data.list
+      ? 'You already added this book!'
+      : addBookToList.isSuccess
+      ? addBookToList.data.data.message
+      : '';
 
   return (
     <IonPage>
@@ -279,10 +283,12 @@ const Add: React.FC = () => {
           <LoadSpinner
             message={
               bookInfoQuery.isFetching
-                ? `Getting book info...`
-                : `Adding book to ${
-                    listToAdd.charAt(0).toUpperCase() + listToAdd.slice(1)
-                  } List ...`
+                ? 'Getting Book Info...'
+                : addBookToList.isPending
+                ? `Adding Book To \n\n ${formattedListNames
+                    .map((item) => '• ' + item)
+                    .join('\n')} \n\n ...`
+                : ''
             }
             fullScreen={true}
           />
@@ -306,7 +312,14 @@ const Add: React.FC = () => {
                 ((showAlreadyHasBook || addBookToList.isSuccess) && (
                   <StatusFeedback
                     successMessage={successMessage}
-                    list={[list]}
+                    list={
+                      addBookToList.isSuccess
+                        ? formattedListNames
+                        : bookInfoQuery.data.bookLists &&
+                          bookInfoQuery.data.bookLists.length > 0
+                        ? bookInfoQuery.data.bookLists
+                        : [bookInfoQuery.data.list]
+                    }
                   />
                 ))}
               <IonButton
