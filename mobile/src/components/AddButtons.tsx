@@ -113,7 +113,7 @@ const AddButtons: React.FC<{
 
         <div className={styles.dividerDiv}>
           <hr className={styles.divider} />
-          SHELFS
+          LISTS
           <hr className={styles.divider} />
         </div>
 
@@ -130,6 +130,14 @@ const AddButtons: React.FC<{
                 listName.charAt(0).toUpperCase() + listName.slice(1);
               setRequiredListID(e.detail.value);
               setRequiredListName(formattedName);
+
+              if (formattedName !== 'Completed')
+                setReviewData({
+                  rating: 0,
+                  display: '',
+                  liked: false,
+                  review: null,
+                });
             }}
             label="Status"
             multiple={false}

@@ -66,6 +66,7 @@ const CompletedBookForm: React.FC<{
         <div className={styles.stars}>
           <div className={styles.starsDiv}>{starsDiv}</div>
           <IonRange
+            value={starsRating}
             aria-label="Stars Rating"
             ticks={true}
             snaps={true}
