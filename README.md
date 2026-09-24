@@ -16,6 +16,15 @@ To add books to your profile, simply scan the book's barcode!
 </div>
 
 <div align="center">
+  <h1>Book Page</h1>
+  
+  <img src="./media/bookPage/lists.png" alt="Display Lists" width="220" />
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="./media/bookPage/reviewForm.png" alt="Review Form" width="220" />
+  
+</div>
+
+<div align="center">
   <h1>Adding a Book to your Lists</h1>
   
   <img src="./media/addPage/addPage.png" alt="Add Page Screen" width="220" />
@@ -32,7 +41,9 @@ To add books to your profile, simply scan the book's barcode!
 
 Login and Register implemented. User can scan a Book's barcode to fetch book's info, and receives visual feedback if already in one of their lists. If not, gives the option to add to one.
 
-Home Page Implemented. Fetches book in user's Reading or Wishlist, if exists. Fetches trending books from Google Books API according to user's most read category, or trending books from New York Times API if no info is available from the user _(Updated: 10/09/2026)_
+Home Page Implemented. Fetches book in user's Reading or Wishlist, if exists. Fetches trending books from Google Books API according to user's most read category, or trending books from New York Times API if no info is available from the user
+
+Book Page displays the info from the book and, if the user already added the book, it displays the lists where the book is added, otherwise, it displays options on lists where the user can add. If the user wants to add to the 'Completed' list, it displays a form for the review _(Updated: 24/09/2026)_
 
 ---
 
@@ -83,6 +94,9 @@ The user accesses the "Add Book" page, opens the scanner, and scans a barcode. T
 **3. Home Page:**
 User enters the app and receives a suggestion from the books he is reading, or from his wishlist (if available and they aren't currently reading any). If user has any completed and liked book, the API gets the main category if available, and fetches books from that category to recommend to the user. If not, does the same but from the NYT API and with no specific category.
 
+**4. Book Page:**
+When the user enters the page from the book, it displays the book info and the current state of the book, according to the database. If the book is already added, it displays the lists, otherwise, allows the user to add to one or multiple lists. If the user wants to add to the 'Completed' list, displays a review form
+
 ---
 
 ## Challenges so far
@@ -114,6 +128,8 @@ User enters the app and receives a suggestion from the books he is reading, or f
 5. **Allow user to retry:** Implement a button to allow the user to retry the fetching for recommendations
 
 6. **Cache and Global Storage:** Implement Tanstack Query and Zustand for cache and global storage, respectively. Eliminated prop drilling between components while making server cache and global state reliably accessible app-wide.
+
+7. **User Lists:** The user has 3 default lists: reading, wish and completed. One book can only be in one of the 3 default lists. The user can have custom lists, where the book can be in many as the user wants
 
 ---
 

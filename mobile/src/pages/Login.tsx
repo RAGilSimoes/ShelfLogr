@@ -28,7 +28,14 @@ import styles from './Login.module.css';
 import useAuthStore from '../store/useAuthStore';
 
 import { useQueryClient } from '@tanstack/react-query';
-import fetchUserLists from '../queryOptions/loginQueries';
+import { fetchUserLists } from '../queryOptions/loginQueries';
+
+import {
+  useUserLists,
+  getUserListsOptions,
+  getUserListsNamesOptions,
+} from '../queryOptions/useUserLists';
+import { jwtDecode } from 'jwt-decode';
 
 const Login: React.FC = () => {
   const history = useHistory();
@@ -119,10 +126,12 @@ const Login: React.FC = () => {
         const token = response.data.token;
         updateAuthToken(token);
 
-        queryClient.prefetchQuery({
-          queryKey: ['userBook', useAuthStore.getState().userID],
-          queryFn: () => fetchUserLists(),
-        });
+        const decodedToken: { id: string; email: string; name: string } =
+          jwtDecode(token);
+
+        queryClient.prefetchQuery(getUserListsOptions(decodedToken.id));
+
+        queryClient.prefetchQuery(getUserListsNamesOptions(decodedToken.id));
 
         setShowError(false);
         setErrorMessage('');

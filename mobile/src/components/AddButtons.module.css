@@ -1,0 +1,25 @@
+.dividerDiv {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  justify-content: center;
+  align-items: center;
+  font-weight: bolder;
+  font-size: larger;
+}
+
+.divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.18);
+  margin: 24px 16px 16px 16px;
+  border: none;
+  width: -webkit-fill-available;
+}
+
+.listsSelect {
+  --ion-item-background: #1c1c1e;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 14px;
+  overflow: hidden;
+  padding: 5px;
+}

@@ -4,10 +4,6 @@ import {
   IonPage,
   IonToast,
   IonGrid,
-  IonCard,
-  IonCardHeader,
-  IonCardSubtitle,
-  IonCardTitle,
   useIonViewWillLeave,
   IonIcon,
   IonAlert,
@@ -26,13 +22,9 @@ import api from '../services/api.service';
 
 import LoadSpinner from '../components/LoadSpinner';
 import BookInfo from '../components/BookInfo';
+import StatusFeedback from '../components/StatusFeedback';
 
-import {
-  book,
-  bookmark,
-  checkmarkCircleOutline,
-  barcodeOutline,
-} from 'ionicons/icons';
+import { barcodeOutline } from 'ionicons/icons';
 
 import { bookInfo } from '@shelflogr/shared';
 
@@ -41,14 +33,13 @@ import DOMPurify from 'dompurify';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import fetchBookInfo from '../queryOptions/addQueries';
 import useAuthStore from '../store/useAuthStore';
+import AddButtons from '../components/AddButtons';
 
 const Add: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [displayErrorMessage, setDisplayErrorMessage] =
     useState<boolean>(false);
   const [isScanAlertOpen, setIsScanAlertOpen] = useState<boolean>(false);
-  const [listToAdd, setListToAdd] = useState<string>('');
-  const [isAddAlertOpen, setIsAddAlertOpen] = useState<boolean>(false);
 
   const [tempIsbn, setTempIsbn] = useState<number>(0);
   const [finalIsbn, setFinalIsbn] = useState<string>('');
@@ -57,15 +48,15 @@ const Add: React.FC = () => {
 
   const userID = useAuthStore().userID;
 
+  const [formattedListNames, setFormattedListNames] = useState<string[]>([]);
+
   useIonViewWillLeave(() => {
     setErrorMessage('');
     setDisplayErrorMessage(false);
     setIsScanAlertOpen(false);
-    setListToAdd('');
-    setIsAddAlertOpen(false);
 
     queryClient.removeQueries({
-      queryKey: ['bookInfoISBN', finalIsbn, userID],
+      queryKey: ['bookInfoISBN', userID, finalIsbn],
     });
     addBookToList.reset();
 
@@ -133,7 +124,7 @@ const Add: React.FC = () => {
   };
 
   const bookInfoQuery = useQuery({
-    queryKey: ['bookInfoISBN', finalIsbn, userID],
+    queryKey: ['bookInfoISBN', userID, finalIsbn],
     queryFn: () => fetchBookInfo(finalIsbn),
     enabled: finalIsbn !== '',
     select(data) {
@@ -152,21 +143,76 @@ const Add: React.FC = () => {
   });
 
   const addBookToList = useMutation({
-    mutationFn: (content: { book: bookInfo; list: string }) => {
+    mutationFn: (content: {
+      book: bookInfo;
+      requiredList: string;
+      reviewData: {
+        rating: number;
+        display: string;
+        liked: boolean;
+        review: string | null;
+      } | null;
+      optionalLists: Array<string> | null;
+    }) => {
       return api.post('/add-book-to-list', content);
     },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['userBook'],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['userLists', userID],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['trendingCategoryBooks', userID],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['trendingBooks', userID],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['bookInfoISBN', userID],
+      });
+      useAuthStore.getState().removeActiveBookRecommendationID();
+    },
   });
+
+  const handleBookAdd = (
+    requiredList: string,
+    formattedListNames: Array<string>,
+    reviewData: {
+      rating: number;
+      display: string;
+      liked: boolean;
+      review: string | null;
+    } | null,
+    optionalLists: Array<string> | null,
+  ) => {
+    setFormattedListNames(formattedListNames);
+    addBookToList.mutate({
+      book: bookInfoQuery.data.book,
+      requiredList,
+      reviewData,
+      optionalLists,
+    });
+  };
 
   const showAddToListsButton =
     bookInfoQuery.isSuccess &&
     bookInfoQuery.data.book &&
-    bookInfoQuery.data.currentStatus === undefined &&
+    bookInfoQuery.data.list === null &&
     addBookToList.isIdle;
 
   const showAlreadyHasBook =
     bookInfoQuery.isSuccess &&
     bookInfoQuery.data.book &&
-    bookInfoQuery.data.currentStatus !== undefined;
+    bookInfoQuery.data.list !== null;
+
+  const successMessage =
+    bookInfoQuery.isSuccess && bookInfoQuery.data.list
+      ? 'You already added this book!'
+      : addBookToList.isSuccess
+      ? addBookToList.data.data.message
+      : '';
 
   return (
     <IonPage>
@@ -195,14 +241,10 @@ const Add: React.FC = () => {
         ></IonToast>
 
         <IonAlert
-          isOpen={isScanAlertOpen || isAddAlertOpen}
-          header={isScanAlertOpen ? 'ISBN Detected' : 'Confirm Action'}
+          isOpen={isScanAlertOpen}
+          header={'ISBN Detected'}
           message={
-            isScanAlertOpen
-              ? 'Confirm if the displayed ISBN matches the one from the book'
-              : `Are you sure you want to add this book to your ${
-                  listToAdd.charAt(0).toUpperCase() + listToAdd.slice(1)
-                } List?`
+            'Confirm if the displayed ISBN matches the one from the book'
           }
           cssClass="custom-isbn-alert"
           inputs={
@@ -222,52 +264,30 @@ const Add: React.FC = () => {
                 ]
               : []
           }
-          buttons={
-            isScanAlertOpen
-              ? [
-                  {
-                    text: 'Cancel',
-                    role: 'cancel',
-                    cssClass: 'alert-cancel-button',
-                  },
-                  {
-                    text: 'Get Info',
-                    role: 'confirm',
-                    cssClass: 'alert-confirm-button',
-                    handler: (alertData) => {
-                      const selectedIsbn = String(
-                        alertData.isbnField || tempIsbn,
-                      ).trim();
-                      if (selectedIsbn) {
-                        setIsScanAlertOpen(false);
-                        if (selectedIsbn === finalIsbn) bookInfoQuery.refetch();
-                        else setFinalIsbn(selectedIsbn);
-                      }
-                    },
-                  },
-                ]
-              : [
-                  {
-                    text: 'Cancel',
-                    role: 'cancel',
-                    cssClass: 'alert-cancel-button',
-                  },
-                  {
-                    text: 'Confirm',
-                    role: 'confirm',
-                    cssClass: 'alert-confirm-button',
-                    handler: () => {
-                      addBookToList.mutate({
-                        book: bookInfoQuery.data.book,
-                        list: listToAdd,
-                      });
-                    },
-                  },
-                ]
-          }
+          buttons={[
+            {
+              text: 'Cancel',
+              role: 'cancel',
+              cssClass: 'alert-cancel-button',
+            },
+            {
+              text: 'Get Info',
+              role: 'confirm',
+              cssClass: 'alert-confirm-button',
+              handler: (alertData) => {
+                const selectedIsbn = String(
+                  alertData.isbnField || tempIsbn,
+                ).trim();
+                if (selectedIsbn) {
+                  setIsScanAlertOpen(false);
+                  if (selectedIsbn === finalIsbn) bookInfoQuery.refetch();
+                  else setFinalIsbn(selectedIsbn);
+                }
+              },
+            },
+          ]}
           onDidDismiss={() => {
             setIsScanAlertOpen(false);
-            setIsAddAlertOpen(false);
           }}
           className={styles.alert}
         ></IonAlert>
@@ -276,10 +296,12 @@ const Add: React.FC = () => {
           <LoadSpinner
             message={
               bookInfoQuery.isFetching
-                ? `Getting book info...`
-                : `Adding book to ${
-                    listToAdd.charAt(0).toUpperCase() + listToAdd.slice(1)
-                  } List ...`
+                ? 'Getting Book Info...'
+                : addBookToList.isPending
+                ? `Adding Book To \n\n ${formattedListNames
+                    .map((item) => '• ' + item)
+                    .join('\n')} \n\n ...`
+                : ''
             }
             fullScreen={true}
           />
@@ -297,81 +319,21 @@ const Add: React.FC = () => {
               )}
               {(showAddToListsButton && (
                 <>
-                  <IonButton
-                    expand="block"
-                    shape="round"
-                    size="default"
-                    onClick={() => {
-                      setListToAdd('completed');
-                      setIsAddAlertOpen(true);
-                    }}
-                    className="ion-margin-top"
-                    color="primary"
-                  >
-                    Add to Completed List{' '}
-                    <IonIcon slot="end" icon={book}></IonIcon>
-                  </IonButton>
-                  <IonButton
-                    expand="block"
-                    shape="round"
-                    size="default"
-                    onClick={() => {
-                      setListToAdd('reading');
-                      setIsAddAlertOpen(true);
-                    }}
-                    className="ion-margin-top"
-                    color="primary"
-                  >
-                    Add to Reading List{' '}
-                    <IonIcon slot="end" icon={book}></IonIcon>
-                  </IonButton>
-                  <IonButton
-                    expand="block"
-                    shape="round"
-                    size="default"
-                    onClick={() => {
-                      setListToAdd('wish');
-                      setIsAddAlertOpen(true);
-                    }}
-                    className="ion-margin-top"
-                    color="tertiary"
-                  >
-                    Add to Wish List
-                    <IonIcon slot="end" icon={bookmark}></IonIcon>
-                  </IonButton>
+                  <AddButtons onAddBook={handleBookAdd} />
                 </>
               )) ||
                 ((showAlreadyHasBook || addBookToList.isSuccess) && (
-                  <>
-                    <IonCard color="success">
-                      <IonCardHeader className={styles.successHeader}>
-                        <IonCardSubtitle className={styles.successTitle}>
-                          <IonIcon icon={checkmarkCircleOutline} />
-                          {bookInfoQuery.isSuccess && addBookToList.isIdle
-                            ? 'You already added this book!'
-                            : addBookToList.isSuccess
-                            ? addBookToList.data.data.message
-                            : ''}
-                        </IonCardSubtitle>
-                        <IonCardTitle>
-                          It's in your{' '}
-                          <strong>
-                            {bookInfoQuery.isSuccess && addBookToList.isIdle
-                              ? bookInfoQuery.data.currentStatus
-                                  .charAt(0)
-                                  .toUpperCase() +
-                                bookInfoQuery.data.currentStatus.slice(1)
-                              : addBookToList.isSuccess
-                              ? listToAdd.charAt(0).toUpperCase() +
-                                listToAdd.slice(1)
-                              : ''}{' '}
-                            List
-                          </strong>
-                          .
-                        </IonCardTitle>
-                      </IonCardHeader>
-                    </IonCard>
-                  </>
+                  <StatusFeedback
+                    successMessage={successMessage}
+                    list={
+                      addBookToList.isSuccess
+                        ? formattedListNames
+                        : bookInfoQuery.data.bookLists &&
+                          bookInfoQuery.data.bookLists.length > 0
+                        ? bookInfoQuery.data.bookLists
+                        : [bookInfoQuery.data.list]
+                    }
+                  />
                 ))}
               <IonButton
                 expand="block"

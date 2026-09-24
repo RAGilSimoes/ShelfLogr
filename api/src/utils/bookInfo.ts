@@ -7,7 +7,11 @@ import { pool } from '../db.js';
 export async function fetchDatabaseBook(
   isbn: string,
   userID: string,
-): Promise<{ book: bookInfo; currentStatus?: string | null } | null> {
+): Promise<{
+  book: bookInfo;
+  bookLists: Array<string>;
+  list: string | null;
+} | null> {
   try {
     const { rows: bookExists } = await pool.query(
       `SELECT 
@@ -23,21 +27,25 @@ export async function fetchDatabaseBook(
     );
 
     if (bookExists.length > 0) {
-      const book: bookInfo = bookExists[0];
+      const book = bookExists[0];
 
       const bookID = book.id;
 
-      const { rows: status } = await pool.query(
-        'SELECT status FROM user_books WHERE user_id = $1 AND book_id = $2',
+      const { rows: lists } = await pool.query(
+        'SELECT ul.name, ul.is_system FROM user_list ul JOIN list_books lb ON ul.id=lb.list_id WHERE ul.user_id = $1 AND lb.book_id = $2;',
         [userID, bookID],
       );
 
-      if (status.length > 0) {
-        const currentStatus = status[0].status;
-        return { book, currentStatus };
+      if (lists.length > 0) {
+        const list = lists.find(
+          (item: { name: string; is_system: boolean }) => item.is_system,
+        )?.name;
+
+        const bookLists = lists.map((item) => item.name);
+        return { book, bookLists, list };
       }
 
-      return { book };
+      return { book, bookLists: [], list: null };
     } else {
       return null;
     }
@@ -51,67 +59,84 @@ export async function fetchGoogleBook(isbn: string): Promise<{
   cleanBookInfo: bookInfo;
   emptyFields: Array<string>;
 } | null> {
-  const responseID = await fetch(
-    `https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}&key=${process.env.BOOKS_API_KEY}`,
-  );
+  try {
+    const responseID = await fetch(
+      `https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}&key=${process.env.BOOKS_API_KEY}`,
+    );
 
-  const data = await responseID.json();
+    if (!responseID.ok) return null;
 
-  if (!data.items || data.items.length === 0) {
+    const data = await responseID.json();
+
+    if (!data.items || data.items.length === 0) {
+      return null;
+    }
+
+    const bookID = data.items[0].id;
+
+    const responseBookInfo = await fetch(
+      `https://www.googleapis.com/books/v1/volumes/${bookID}?key=${process.env.BOOKS_API_KEY}`,
+    );
+
+    if (!responseBookInfo.ok) return null;
+
+    const bookData = await responseBookInfo.json();
+
+    if (!bookData || Object.keys(bookData).length === 0) {
+      return null;
+    }
+
+    const rawGoogleData = bookData.volumeInfo;
+
+    const cleanBookInfo: bookInfo = formatGoogleBook(rawGoogleData, isbn);
+
+    const emptyFields = [];
+
+    for (const [key, value] of Object.entries(cleanBookInfo)) {
+      if (
+        (key === 'categories' && value.length === 0) ||
+        (key === 'imageLinks' && value.thumbnail === '')
+      ) {
+        emptyFields.push(key);
+      }
+      if (value === '') {
+        emptyFields.push(key);
+      }
+    }
+
+    return { cleanBookInfo, emptyFields };
+  } catch (error) {
     return null;
   }
-
-  const bookID = data.items[0].id;
-
-  const responseBookInfo = await fetch(
-    `https://www.googleapis.com/books/v1/volumes/${bookID}?key=${process.env.BOOKS_API_KEY}`,
-  );
-
-  const bookData = await responseBookInfo.json();
-
-  if (!bookData || Object.keys(bookData).length === 0) {
-    return null;
-  }
-
-  const rawGoogleData = bookData.volumeInfo;
-
-  const cleanBookInfo: bookInfo = formatGoogleBook(rawGoogleData, isbn);
-
-  const emptyFields = [];
-
-  for (const [key, value] of Object.entries(cleanBookInfo)) {
-    if (
-      (key === 'categories' && value.length === 0) ||
-      (key === 'imageLinks' && value.thumbnail === '')
-    ) {
-      emptyFields.push(key);
-    }
-    if (value === '') {
-      emptyFields.push(key);
-    }
-  }
-
-  return { cleanBookInfo, emptyFields };
 }
 
 export async function fetchOpenLibraryBook(
   isbn: string,
 ): Promise<Partial<bookInfo> | null> {
-  const response = await fetch(
-    `https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`,
-  );
+  try {
+    const response = await fetch(
+      `https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`,
+      {
+        headers: { 'User-Agent': 'Shelflogr' },
+      },
+    );
 
-  const data = await response.json();
+    if (!response.ok) return null;
 
-  if (!data || Object.keys(data).length === 0) {
+    const data = await response.json();
+
+    if (!data || Object.keys(data).length === 0) {
+      return null;
+    }
+
+    const bookData = data[`ISBN:${isbn}`];
+
+    const cleanBookInfo: bookInfo = formatOpenLibraryBook(bookData, isbn);
+
+    return cleanBookInfo;
+  } catch (error) {
     return null;
   }
-
-  const bookData = data[`ISBN:${isbn}`];
-
-  const cleanBookInfo: bookInfo = formatOpenLibraryBook(bookData, isbn);
-
-  return cleanBookInfo;
 }
 
 export async function getAllUserBooks(
@@ -120,7 +145,7 @@ export async function getAllUserBooks(
   try {
     const isbns: Array<string> = [];
     const { rows: status } = await pool.query(
-      'SELECT b.isbn FROM book b JOIN user_books ub ON b.id=ub.book_id WHERE ub.user_id=$1',
+      'SELECT DISTINCT b.isbn FROM book b JOIN list_books lb ON b.id=lb.book_id JOIN user_list ul ON lb.list_id=ul.id WHERE ul.user_id=$1',
       [id],
     );
 
@@ -157,17 +182,24 @@ export async function fetchNYTTrendingBooks(id: string): Promise<any> {
     return book;
   });
 
-  const top5ReadyBooks = readyBooks.slice(0, 5);
+  const top10ReadyBooks = readyBooks.slice(0, 10);
 
-  const bookPromises = top5ReadyBooks.map((book: any) => {
-    return fetchEntireBookInfo(book.isbns[0]?.isbn13, id);
-  });
+  let books: Array<{
+    book: Partial<bookInfo>;
+    bookLists?: Array<string> | null;
+    list: string | null;
+  }> = [];
 
-  const hydratedBooks = await Promise.all(bookPromises);
+  for (const book of top10ReadyBooks) {
+    if (books.length === 5) break;
 
-  const books = hydratedBooks
-    .filter((book) => book !== null && typeof book !== 'string')
-    .map((item) => (item.book ? item.book : item));
+    const result: string | { book: Partial<bookInfo>; list: string | null } =
+      await fetchEntireBookInfo(book.isbns[0]?.isbn13, id);
+
+    if (typeof result !== 'string') {
+      books.push(result);
+    }
+  }
 
   return books;
 }
@@ -216,16 +248,15 @@ export async function fetchGoogleTrendingBooks(
 
       if (isbn && (!blackList || !blackList.includes(isbn))) {
         const formatted:
-          | Partial<bookInfo>
-          | { book: Partial<bookInfo>; currentStatus?: string | null }
+          | {
+              book: Partial<bookInfo>;
+              bookLists?: Array<string> | null;
+              list?: string | null;
+            }
           | string = await fetchEntireBookInfo(isbn, id);
 
         if (typeof formatted !== 'string') {
-          if ('book' in formatted) {
-            validBooks.push(formatted.book);
-          } else {
-            validBooks.push(formatted);
-          }
+          validBooks.push(formatted);
         } else {
           continue;
         }
@@ -311,15 +342,22 @@ export async function fetchEntireBookInfo(
   isbn: string,
   id: string,
 ): Promise<
-  | Partial<bookInfo>
-  | { book: Partial<bookInfo>; currentStatus?: string | null }
+  | {
+      book: Partial<bookInfo>;
+      bookLists: Array<string> | null;
+      list: string | null;
+    }
   | string
 > {
   try {
     const bookInfoDatabase = await fetchDatabaseBook(isbn, id);
 
     if (bookInfoDatabase) {
-      return bookInfoDatabase;
+      return {
+        book: bookInfoDatabase.book,
+        bookLists: bookInfoDatabase.bookLists,
+        list: bookInfoDatabase.list,
+      };
     }
 
     let googleResponse = await fetchGoogleBook(isbn);
@@ -332,7 +370,7 @@ export async function fetchEntireBookInfo(
       }
       await addBookToDB(fallbackBook);
 
-      return fallbackBook;
+      return { book: fallbackBook, bookLists: null, list: null };
     } else if (googleResponse?.emptyFields.length !== 0) {
       const fallbackBook = await fetchOpenLibraryBook(isbn);
 
@@ -351,7 +389,7 @@ export async function fetchEntireBookInfo(
 
     await addBookToDB(googleResponse.cleanBookInfo);
 
-    return googleResponse.cleanBookInfo;
+    return { book: googleResponse.cleanBookInfo, bookLists: null, list: null };
   } catch (error) {
     console.error('Error getting Book Information:', error);
     return 'Error getting book information.';

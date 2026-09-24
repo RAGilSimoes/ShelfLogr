@@ -2,29 +2,23 @@ import { create } from 'zustand';
 
 import { setToken, removeToken } from '../services/auth.service';
 import { jwtDecode } from 'jwt-decode';
-import { bookInfo } from '@shelflogr/shared';
 
 type State = {
   jwt: string;
   username: string;
   userID: string;
   email: string;
-  activeBook: bookInfo | undefined;
-  list: string;
-  category: string;
+  activeBookID: string | undefined;
 };
 
 type Action = {
-  updateActiveBookRecommendation: (
-    books: Array<bookInfo>,
-    list: string,
-    category?: string,
-  ) => void;
+  updateActiveBookRecommendationID: (id: State['activeBookID']) => void;
   updateJWT: (jwt: State['jwt']) => void;
   updateUserName: (username: State['username']) => void;
   updateUserID: (userID: State['userID']) => void;
   updateEmail: (email: State['email']) => void;
-  removeInformation: (jwt: '', username: '', userID: '', email: '') => void;
+  removeInformation: () => void;
+  removeActiveBookRecommendationID: () => void;
 };
 
 const useAuthStore = create<State & Action>()((set) => ({
@@ -32,20 +26,10 @@ const useAuthStore = create<State & Action>()((set) => ({
   username: '',
   userID: '',
   email: '',
-  activeBook: undefined,
-  list: '',
-  category: '',
+  activeBookID: undefined,
 
-  updateActiveBookRecommendation: function (books, list, category) {
-    const index = Math.floor(Math.random() * books.length);
-    const chosenInfo = {
-      activeBook: books[index],
-      list: list,
-      category: category,
-    };
-    set(() => chosenInfo);
-
-    return chosenInfo;
+  updateActiveBookRecommendationID: function (id) {
+    set(() => ({ activeBookID: id }));
   },
 
   updateJWT: function (jwt) {
@@ -71,10 +55,12 @@ const useAuthStore = create<State & Action>()((set) => ({
       username: '',
       userID: '',
       email: '',
-      activeBook: undefined,
-      list: '',
-      category: '',
+      activeBookID: undefined,
     });
+  },
+
+  removeActiveBookRecommendationID: function () {
+    set({ activeBookID: undefined });
   },
 }));
 

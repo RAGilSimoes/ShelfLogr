@@ -1,0 +1,82 @@
+.completedForm {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  gap: 0.75rem;
+}
+
+.card {
+  background-color: rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  padding: 16px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  gap: 1.5rem;
+}
+
+.cardHeader {
+  padding: 0px;
+}
+
+.title {
+  font-weight: bolder;
+  font-size: large;
+  width: 100%;
+  text-align: center;
+  padding: 0px;
+}
+
+.stars {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  align-items: center;
+}
+
+.starsDiv {
+  width: 100%;
+  color: #ffb800;
+  font-size: 1.5rem;
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.activeStar {
+  opacity: 1;
+}
+
+.disabledStar {
+  opacity: 0.25;
+}
+
+.range {
+  width: 75%;
+  --padding-top: 0;
+  --padding-bottom: 0;
+}
+
+.review {
+  width: 100%;
+  border-radius: 10px;
+  --background: rgba(255, 255, 255, 0.06);
+  --highlight-height: 0;
+  --inner-border-width: 0;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+.display {
+  border-radius: 12px;
+  height: fit-content;
+  --background: rgba(255, 255, 255, 0.1);
+}
+
+.display ion-segment-button {
+  --indicator-color: var(--ion-color-primary) !important;
+  --color-checked: #ffffff !important;
+}

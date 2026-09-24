@@ -46,6 +46,8 @@ import api from './services/api.service';
 import { useHistory, useLocation } from 'react-router-dom';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 
+import useAuthStore from './store/useAuthStore';
+
 setupIonicReact();
 
 const AppRouter: React.FC = () => {
@@ -83,6 +85,8 @@ const AppRouter: React.FC = () => {
             const response = await api.get('/refresh-token');
             setToken(response.data.token);
           }
+
+          useAuthStore.getState().updateJWT(token);
 
           if (isPublicPath) {
             history.replace('/app/home');

@@ -3,29 +3,26 @@ import type { Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import bcrypt from 'bcrypt';
+import rateLimit from 'express-rate-limit';
 
 import { pool } from './db.js';
 
-import {
-  generateToken,
-  verifyToken,
-  decodeToken,
-} from './services/jwt.service.js';
-import type { JwtPayload } from 'jsonwebtoken';
+import { generateToken } from './services/jwt.service.js';
 
 import { verifyAuthorization } from './middlewares/auth.middleware.js';
 import type { bookInfo } from '@shelflogr/shared';
 import {
-  fetchGoogleBook,
-  fetchOpenLibraryBook,
-  fetchDatabaseBook,
-  addBookToDB,
   fetchNYTTrendingBooks,
   fetchEntireBookInfo,
   fetchGoogleTrendingBooks,
 } from './utils/bookInfo.js';
 
 dotenv.config();
+
+// const authLimiter = rateLimit({
+//   windowMs: 1 * 60 * 1000,
+//   max: 10000,
+// });
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -100,35 +97,53 @@ app.post('/api/register', async (req: Request, res: Response) => {
   try {
     const { email, username, password } = req.body;
 
-    const { rows: emailResult } = await pool.query(
-      'SELECT * FROM "user" WHERE email = $1',
-      [email],
-    );
-
-    if (emailResult.length !== 0) {
-      return res.status(409).json({ error: 'Email already in use.' });
-    }
-
-    const { rows: usernameResult } = await pool.query(
-      'SELECT * FROM "user" WHERE name = $1',
-      [username],
-    );
-
-    if (usernameResult.length !== 0) {
-      return res.status(409).json({ error: 'Username already in use.' });
-    }
-
     const saltRounds = 10;
 
-    const encryptedPassword = await bcrypt.hash(password, saltRounds);
-    const { rows: insertResult } = await pool.query(
-      'INSERT INTO "user"(name, email, password) VALUES ($1, $2, $3) RETURNING id',
-      [username, email, encryptedPassword],
-    );
+    const client = await pool.connect();
 
-    const token = generateToken(insertResult[0]!.id, email, username);
+    try {
+      await client.query('BEGIN');
 
-    return res.status(200).json({ message: 'Success', token });
+      const encryptedPassword = await bcrypt.hash(password, saltRounds);
+      const { rows: insertResult } = await client.query(
+        'INSERT INTO "user"(name, email, password) VALUES ($1, $2, $3) RETURNING id',
+        [username, email, encryptedPassword],
+      );
+
+      const userID = insertResult[0]!.id;
+
+      const token = generateToken(userID, email, username);
+
+      const createDefaultTablesQuery =
+        "INSERT INTO user_list(user_id, name, is_system) VALUES ($1,'reading',true),($1,'wish',true),($1,'completed',true)";
+
+      await client.query(createDefaultTablesQuery, [userID]);
+
+      await client.query('COMMIT');
+
+      return res.status(201).json({ message: 'Success', token });
+    } catch (error: any) {
+      const errorCode = error.code;
+      console.error(error);
+
+      await client.query('ROLLBACK').catch(() => {});
+
+      if (errorCode === '23505') {
+        const detail: string = error.detail;
+        const local = detail.includes('name');
+
+        const message = local
+          ? 'Username already in use'
+          : 'Email already in use';
+        return res.status(409).json({ error: message });
+      } else {
+        return res
+          .status(500)
+          .json({ error: 'Internal error processing registration' });
+      }
+    } finally {
+      client.release();
+    }
   } catch (error) {
     console.error(error);
     return res
@@ -164,17 +179,29 @@ app.post(
     const client = await pool.connect();
     try {
       const { id } = req.token;
-      const { book, list } = req.body;
+      const { book, requiredList, reviewData, optionalLists } = req.body;
 
       const bookID = book.id;
 
       const userID = id;
 
       await client.query('BEGIN');
-      const insertBookUserRelation =
-        'INSERT INTO "user_books"(user_id, book_id, status) VALUES($1,$2,$3) ON CONFLICT (user_id, book_id) DO UPDATE SET status = EXCLUDED.status';
 
-      await client.query(insertBookUserRelation, [userID, bookID, list]);
+      const deleteRequiredListRelation =
+        'DELETE FROM list_books WHERE list_books.book_id=$1 AND list_books.list_id IN (SELECT id FROM user_list WHERE user_list.user_id=$2 AND user_list.is_system = true)';
+
+      await client.query(deleteRequiredListRelation, [bookID, userID]);
+
+      const insertBookList =
+        'INSERT INTO list_books(list_id, book_id) VALUES($1,$2) ON CONFLICT DO NOTHING;';
+
+      await client.query(insertBookList, [requiredList, bookID]);
+
+      if (optionalLists && optionalLists.length > 0) {
+        for (const optionalList of optionalLists) {
+          await client.query(insertBookList, [optionalList, bookID]);
+        }
+      }
 
       const getCategoryID = 'SELECT id FROM categories WHERE name=$1';
 
@@ -211,20 +238,64 @@ app.post(
         }
       }
 
+      const insertUserReview =
+        'INSERT INTO "user_reviews"(user_id, book_id, rating, review, display, liked) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT (user_id, book_id) DO UPDATE SET rating = EXCLUDED.rating, review = EXCLUDED.review, display = EXCLUDED.display, liked = EXCLUDED.liked, updated_at = CURRENT_TIMESTAMP;';
+
+      if (reviewData) {
+        const parsedReviewData: {
+          rating: number;
+          display: string;
+          liked: boolean;
+          review: string | null;
+        } = reviewData;
+
+        const displayInsert =
+          parsedReviewData.display === 'public' ? true : false;
+
+        await client.query(insertUserReview, [
+          userID,
+          bookID,
+          parsedReviewData.rating,
+          parsedReviewData.review || null,
+          displayInsert,
+          parsedReviewData.liked,
+        ]);
+      }
+
       await client.query('COMMIT');
       return res.status(200).json({
         message: 'Book added successfully',
+        requiredList,
+        optionalLists,
       });
     } catch (error) {
       console.log(error);
       await client.query('ROLLBACK');
-      const targetList =
-        req.body?.list.charAt(0).toUpperCase() + req.body?.list.slice(1);
       return res.status(500).json({
-        error: `Error adding book to ${targetList} list.`,
+        error: `Error Adding Book to List(s).`,
       });
     } finally {
       client.release();
+    }
+  },
+);
+
+app.get(
+  '/api/user/lists-names',
+  verifyAuthorization(false),
+  async (req: Request, res: Response) => {
+    try {
+      const { id } = req.token;
+
+      const getBookListsNamesQuery =
+        'SELECT ul.id, ul.name, ul.is_system, COUNT(lb.book_id)::int as quantity FROM "user_list" ul LEFT JOIN "list_books" lb ON ul.id = lb.list_id WHERE ul.user_id=$1 GROUP BY ul.id, ul.is_system ORDER BY ul.is_system DESC, ul.name ASC;';
+
+      const { rows: lists } = await pool.query(getBookListsNamesQuery, [id]);
+
+      return res.status(200).json({ lists });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ error: "Couldn't get user lists." });
     }
   },
 );
@@ -236,60 +307,67 @@ app.get(
     try {
       const { id } = req.token;
 
-      const getBookLists = `SELECT b.* as book, 
-            COALESCE((ARRAY_AGG(c.name) FILTER (WHERE bc.main = true))[1], '') as "mainCategory",
-            COALESCE(ARRAY_AGG(c.name) FILTER (WHERE bc.main = false), '{}') as categories 
-            FROM "user_books" ub 
-            JOIN book b ON b.id = ub.book_id
-            LEFT JOIN book_category bc ON b.id = bc.book_id
-            LEFT JOIN categories c ON bc.category_id = c.id
-            WHERE ub.user_id = $1 AND ub.status = $2
-            GROUP BY b.id;`;
-
-      const bookStatusOptions = ['reading', 'wish', 'completed'];
-
-      const { rows: readingList } = await pool.query(getBookLists, [
-        id,
-        bookStatusOptions[0],
-      ]);
-
-      let lists: { reading: Array<bookInfo>; wish: Array<bookInfo> } = {
+      let lists: {
+        reading: Array<{ book: bookInfo; lists: Array<string> }>;
+        wish: Array<{ book: bookInfo; lists: Array<string> }>;
+      } = {
         reading: [],
         wish: [],
       };
 
-      if (readingList.length > 0) {
-        lists.reading = readingList;
-      }
+      const defaultLists = ['reading', 'wish', 'completed'];
 
-      const { rows: wishList } = await pool.query(getBookLists, [
-        id,
-        bookStatusOptions[1],
-      ]);
+      const getBookLists = `SELECT ul.name as "listName",
+            b.*, 
+            COALESCE((ARRAY_AGG(c.name) FILTER (WHERE bc.main = true))[1], '') as "mainCategory",
+            COALESCE(ARRAY_AGG(c.name) FILTER (WHERE bc.main = false), '{}') as categories,
+            (SELECT COALESCE(ARRAY_AGG(all_ul.name), '{}') FROM list_books all_lb JOIN user_list all_ul ON all_ul.id = all_lb.list_id WHERE all_lb.book_id = b.id AND all_ul.user_id = $1) AS lists
+            FROM "list_books" lb 
+            JOIN user_list ul ON ul.id = lb.list_id
+            JOIN book b ON b.id = lb.book_id
+            LEFT JOIN book_category bc ON b.id = bc.book_id
+            LEFT JOIN categories c ON bc.category_id = c.id
+            WHERE ul.user_id=$1 AND ul.name = ANY($2)
+            GROUP BY b.id, ul.name;`;
 
-      if (wishList.length > 0) {
-        lists.wish = wishList;
-      }
+      await pool
+        .query(getBookLists, [id, defaultLists.slice(0, 2)])
+        .then((result: any) =>
+          result.rows.forEach((index: any) => {
+            const listName = index.listName;
+            const bookLists = index.lists;
+            delete index.listName;
+            delete index.lists;
+
+            if (listName === 'reading') {
+              lists.reading.push({ book: index, lists: bookLists });
+            } else if (listName === 'wish') {
+              lists.wish.push({ book: index, lists: bookLists });
+            }
+          }),
+        );
 
       const getTopCategoryQuery = `
             SELECT c.name as "topCategory"
-            FROM user_books ub
-            JOIN book_category bc ON ub.book_id = bc.book_id
+            FROM list_books lb
+            JOIN user_list ul ON ul.id=lb.list_id
+            JOIN book_category bc ON lb.book_id = bc.book_id
             JOIN categories c ON bc.category_id = c.id
-            WHERE ub.user_id = $1 
-              AND ub.status = $2 
-              AND ub.liked = true 
+            JOIN user_reviews ur ON ur.book_id = lb.book_id
+            WHERE ur.user_id = $1
               AND bc.main = true
+              AND ur.liked = true
+              AND ul.user_id = $1
+              AND ul.name = 'completed'
             GROUP BY c.name
             ORDER BY COUNT(c.name) DESC
             LIMIT 1;
           `;
 
-      let category;
+      let category = null;
 
       let { rows: topCategoryRow } = await pool.query(getTopCategoryQuery, [
         id,
-        bookStatusOptions[2],
       ]);
 
       if (topCategoryRow.length > 0) category = topCategoryRow[0].topCategory;
