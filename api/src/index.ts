@@ -179,7 +179,7 @@ app.post(
     const client = await pool.connect();
     try {
       const { id } = req.token;
-      const { book, requiredList, optionalLists } = req.body;
+      const { book, requiredList, reviewData, optionalLists } = req.body;
 
       const bookID = book.id;
 
@@ -236,6 +236,30 @@ app.post(
             ]);
           }
         }
+      }
+
+      const insertUserReview =
+        'INSERT INTO "user_reviews"(user_id, book_id, rating, review, display, liked) VALUES($1,$2,$3,$4,$5,$6);';
+
+      if (reviewData) {
+        const parsedReviewData: {
+          rating: number;
+          display: string;
+          liked: boolean;
+          review: string | null;
+        } = reviewData;
+
+        const displayInsert =
+          parsedReviewData.display === 'public' ? true : false;
+
+        await client.query(insertUserReview, [
+          userID,
+          bookID,
+          parsedReviewData.rating,
+          parsedReviewData.review,
+          displayInsert,
+          parsedReviewData.liked,
+        ]);
       }
 
       await client.query('COMMIT');

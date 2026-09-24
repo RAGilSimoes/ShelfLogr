@@ -72,6 +72,11 @@ const AddButtons: React.FC<{
       setReviewData({ rating, display, liked, review });
     };
 
+    const disabledButton =
+      requiredListID === '' ||
+      (requiredListName === 'Completed' &&
+        (reviewData.rating === 0 || reviewData.display === ''));
+
     return (
       <>
         <IonAlert
@@ -196,7 +201,7 @@ const AddButtons: React.FC<{
           }}
           className="ion-margin-top ion-margin-bottom"
           color="primary"
-          disabled={requiredListID === ''}
+          disabled={disabledButton}
         >
           Add Book To List <IonIcon slot="end" icon={book}></IonIcon>
         </IonButton>
