@@ -239,7 +239,7 @@ app.post(
       }
 
       const insertUserReview =
-        'INSERT INTO "user_reviews"(user_id, book_id, rating, review, display, liked) VALUES($1,$2,$3,$4,$5,$6);';
+        'INSERT INTO "user_reviews"(user_id, book_id, rating, review, display, liked) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT (user_id, book_id) DO UPDATE SET rating = EXCLUDED.rating, review = EXCLUDED.review, display = EXCLUDED.display, liked = EXCLUDED.liked, updated_at = CURRENT_TIMESTAMP;';
 
       if (reviewData) {
         const parsedReviewData: {
@@ -256,7 +256,7 @@ app.post(
           userID,
           bookID,
           parsedReviewData.rating,
-          parsedReviewData.review,
+          parsedReviewData.review || null,
           displayInsert,
           parsedReviewData.liked,
         ]);
