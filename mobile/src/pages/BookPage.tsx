@@ -45,7 +45,13 @@ const BookPage: React.FC = () => {
     mutationFn: (content: {
       book: bookInfo;
       requiredList: string;
-      optionalLists?: Array<string>;
+      reviewData: {
+        rating: number;
+        display: string;
+        liked: boolean;
+        review: string | null;
+      } | null;
+      optionalLists: Array<string> | null;
     }) => {
       return api.post('/add-book-to-list', content);
     },
@@ -78,12 +84,19 @@ const BookPage: React.FC = () => {
     const handleBookAdd = (
       requiredList: string,
       formattedListNames: Array<string>,
-      optionalLists?: Array<string>,
+      reviewData: {
+        rating: number;
+        display: string;
+        liked: boolean;
+        review: string | null;
+      } | null,
+      optionalLists: Array<string> | null,
     ) => {
       setFormattedListNames(formattedListNames);
       addBookToList.mutate({
         book: bookInfo,
         requiredList,
+        reviewData,
         optionalLists,
       });
     };

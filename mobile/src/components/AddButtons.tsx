@@ -4,6 +4,7 @@ import {
   IonButton,
   IonSelect,
   IonSelectOption,
+  IonList,
 } from '@ionic/react';
 
 import { book } from 'ionicons/icons';
@@ -20,7 +21,13 @@ const AddButtons: React.FC<{
   onAddBook: (
     requiredList: string,
     formattedListNames: Array<string>,
-    optionalLists?: Array<string>,
+    reviewData: {
+      rating: number;
+      display: string;
+      liked: boolean;
+      review: string | null;
+    } | null,
+    optionalLists: Array<string> | null,
   ) => void;
 }> = ({ onAddBook }) => {
   const [isAddAlertOpen, setIsAddAlertOpen] = useState<boolean>(false);
@@ -31,6 +38,13 @@ const AddButtons: React.FC<{
   const [requiredListName, setRequiredListName] = useState<string>('');
 
   const [optionalListsID, setOptionalListsID] = useState<string[]>([]);
+
+  const [reviewData, setReviewData] = useState<{
+    rating: number;
+    display: string;
+    liked: boolean;
+    review: string | null;
+  }>({ rating: 0, display: '', liked: false, review: null });
 
   if (listsNamesQuery.isSuccess) {
     const lists: Array<{
@@ -48,6 +62,15 @@ const AddButtons: React.FC<{
       .map((item) => item.name);
 
     const listsNamesArray = [requiredListName, ...extraListsNames];
+
+    const handleReviewAdd = (
+      rating: number,
+      display: string,
+      liked: boolean,
+      review: string | null,
+    ) => {
+      setReviewData({ rating, display, liked, review });
+    };
 
     return (
       <>
@@ -68,7 +91,12 @@ const AddButtons: React.FC<{
               role: 'confirm',
               cssClass: 'alert-confirm-button',
               handler: () => {
-                onAddBook(requiredListID, listsNamesArray, optionalListsID);
+                onAddBook(
+                  requiredListID,
+                  listsNamesArray,
+                  requiredListName === 'Completed' ? reviewData : null,
+                  optionalListsID,
+                );
               },
             },
           ]}
@@ -78,56 +106,31 @@ const AddButtons: React.FC<{
           className={styles.alert}
         ></IonAlert>
 
-        <IonSelect
-          placeholder="List To Add"
-          interfaceOptions={{ header: 'Choose A List' }}
-          onIonChange={(e) => {
-            const listName = systemLists.find(
-              (list) => list.id === e.detail.value,
-            )!.name;
+        <div className={styles.dividerDiv}>
+          <hr className={styles.divider} />
+          SHELFS
+          <hr className={styles.divider} />
+        </div>
 
-            const formattedName =
-              listName.charAt(0).toUpperCase() + listName.slice(1);
-            setRequiredListID(e.detail.value);
-            setRequiredListName(formattedName);
-          }}
-          label="Status"
-          multiple={false}
-          value={requiredListID}
-        >
-          {systemLists.map(
-            (
-              list: {
-                id: string;
-                name: string;
-                is_system: boolean;
-                quantity: number;
-              },
-              index: number,
-            ) => {
-              return (
-                <IonSelectOption key={index} value={list.id}>
-                  {list.name.charAt(0).toUpperCase() + list.name.slice(1)}
-                </IonSelectOption>
-              );
-            },
-          )}
-        </IonSelect>
-
-        {requiredListName === 'Completed' && <CompletedBookForm />}
-
-        {extraLists.length > 0 && (
+        <IonList inset={true} className={styles.listsSelect}>
           <IonSelect
-            placeholder="Extra List(s)"
-            interfaceOptions={{ header: 'Choose The List(s)' }}
+            placeholder="List To Add"
+            interfaceOptions={{ header: 'Choose A List' }}
             onIonChange={(e) => {
-              setOptionalListsID(e.detail.value);
+              const listName = systemLists.find(
+                (list) => list.id === e.detail.value,
+              )!.name;
+
+              const formattedName =
+                listName.charAt(0).toUpperCase() + listName.slice(1);
+              setRequiredListID(e.detail.value);
+              setRequiredListName(formattedName);
             }}
-            label="Optional Lists"
-            multiple={true}
-            value={optionalListsID}
+            label="Status"
+            multiple={false}
+            value={requiredListID}
           >
-            {extraLists.map(
+            {systemLists.map(
               (
                 list: {
                   id: string;
@@ -145,6 +148,43 @@ const AddButtons: React.FC<{
               },
             )}
           </IonSelect>
+        </IonList>
+
+        {requiredListName === 'Completed' && (
+          <CompletedBookForm onReviewChange={handleReviewAdd} />
+        )}
+
+        {extraLists.length > 0 && (
+          <IonList inset={true} className={styles.listsSelect}>
+            <IonSelect
+              placeholder="Extra List(s)"
+              interfaceOptions={{ header: 'Choose The List(s)' }}
+              onIonChange={(e) => {
+                setOptionalListsID(e.detail.value);
+              }}
+              label="Optional Lists"
+              multiple={true}
+              value={optionalListsID}
+            >
+              {extraLists.map(
+                (
+                  list: {
+                    id: string;
+                    name: string;
+                    is_system: boolean;
+                    quantity: number;
+                  },
+                  index: number,
+                ) => {
+                  return (
+                    <IonSelectOption key={index} value={list.id}>
+                      {list.name.charAt(0).toUpperCase() + list.name.slice(1)}
+                    </IonSelectOption>
+                  );
+                },
+              )}
+            </IonSelect>
+          </IonList>
         )}
 
         <IonButton
@@ -154,7 +194,7 @@ const AddButtons: React.FC<{
           onClick={() => {
             setIsAddAlertOpen(true);
           }}
-          className="ion-margin-top"
+          className="ion-margin-top ion-margin-bottom"
           color="primary"
           disabled={requiredListID === ''}
         >
