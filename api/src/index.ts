@@ -383,6 +383,32 @@ app.get(
 );
 
 app.get(
+  '/api/user/profile',
+  verifyAuthorization(false),
+  async (req: Request, res: Response) => {
+    try {
+      const { id } = req.token;
+
+      const profileInfoQuery =
+        'SELECT name, email,updated_at,created_at FROM "user" WHERE id=$1;';
+
+      const { rows } = await pool.query(profileInfoQuery, [id]);
+
+      if (rows.length > 0) {
+        return res.status(200).json({ info: rows[0] });
+      } else {
+        return res.status(404).json({ error: 'User not found.' });
+      }
+    } catch (error) {
+      console.error('Database query failed:', error);
+      return res
+        .status(500)
+        .json({ error: 'Error getting profile informations.' });
+    }
+  },
+);
+
+app.get(
   '/api/books/trending',
   verifyAuthorization(false),
   async (req: Request, res: Response) => {

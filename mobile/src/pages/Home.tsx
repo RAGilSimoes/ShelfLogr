@@ -240,7 +240,7 @@ const Home: React.FC = () => {
 
           {activeBookQuery.isSuccess &&
             activeBookQuery.data?.category !== null &&
-            (trendingCategoryBookQuery.isLoading ? (
+            (trendingCategoryBookQuery.isFetching ? (
               <LoadSpinner
                 message={`Getting Recommendations about ${
                   activeBookQuery.data?.category || 'Your Favorite Book'
@@ -290,7 +290,7 @@ const Home: React.FC = () => {
               </div>
             ))}
 
-          {trendingBookQuery.isLoading ? (
+          {trendingBookQuery.isFetching ? (
             <LoadSpinner
               message={`Getting Trending Books`}
               fullScreen={false}
