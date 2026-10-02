@@ -53,24 +53,23 @@ const Tabs: React.FC = () => {
       </IonRouterOutlet>
       <IonTabBar slot="bottom">
         <IonTabButton tab="home" href={path + '/home'}>
-          <IonIcon aria-hidden="true" icon={home} />
-          <IonLabel>Home</IonLabel>
+          <IonIcon aria-hidden="true" aria-label="Home Page" icon={home} />
         </IonTabButton>
         <IonTabButton tab="search" href={path + '/search'}>
-          <IonIcon aria-hidden="true" icon={search} />
-          <IonLabel>Search</IonLabel>
+          <IonIcon aria-hidden="true" aria-label="Search Page" icon={search} />
         </IonTabButton>
         <IonTabButton tab="add" href={path + '/add'}>
-          <IonIcon aria-hidden="true" icon={addCircle} />
-          <IonLabel>Add</IonLabel>
+          <IonIcon aria-hidden="true" aria-label="Add Page" icon={addCircle} />
         </IonTabButton>
         <IonTabButton tab="chatbot" href={path + '/chatbot'}>
-          <IonIcon aria-hidden="true" icon={chatbubbles} />
-          <IonLabel>ChatBot</IonLabel>
+          <IonIcon
+            aria-hidden="true"
+            aria-label="ChatBot Page"
+            icon={chatbubbles}
+          />
         </IonTabButton>
         <IonTabButton tab="profile" href={path + '/profile'}>
-          <IonIcon aria-hidden="true" icon={person} />
-          <IonLabel>Profile</IonLabel>
+          <IonIcon aria-hidden="true" aria-label="Profile Page" icon={person} />
         </IonTabButton>
       </IonTabBar>
     </IonTabs>
