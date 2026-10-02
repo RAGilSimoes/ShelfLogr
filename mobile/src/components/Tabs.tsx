@@ -17,6 +17,7 @@ import Add from '../pages/Add';
 import Profile from '../pages/Profile';
 import ChatBot from '../pages/ChatBot';
 import BookPage from '../pages/BookPage';
+import Settings from '../pages/SettingsPage';
 
 const Tabs: React.FC = () => {
   const match = useRouteMatch();
@@ -39,6 +40,9 @@ const Tabs: React.FC = () => {
         </Route>
         <Route exact path={path + '/profile'}>
           <Profile />
+        </Route>
+        <Route exact path={path + '/settings'}>
+          <Settings />
         </Route>
         <Route exact path={path + '/book'}>
           <BookPage />
