@@ -35,6 +35,7 @@ const Profile: React.FC = () => {
         email: string;
         updated_at: string;
         created_at: string;
+        number_reviews: number;
       };
     }) {
       const createdAt = new Date(data.info.created_at);
@@ -51,6 +52,7 @@ const Profile: React.FC = () => {
         email: data.info.email,
         updated_at: new Date(data.info.updated_at),
         created_at: formattedCreatedAtString,
+        number_reviews: data.info.number_reviews,
       };
     },
   });
@@ -80,21 +82,26 @@ const Profile: React.FC = () => {
                 <hr></hr>
 
                 {userLists.length > 0 && (
-                  <div className={styles.systemListsDiv}>
-                    {userLists
-                      .filter((item) => item.is_system === true)
-                      .map((item) => {
-                        return (
-                          <div className={styles.systemListInfo}>
-                            <strong className={styles.systemListQuantity}>
-                              {item.quantity}
-                            </strong>
-                            <span className={styles.systemListName}>
-                              {item.name}
-                            </span>
-                          </div>
-                        );
-                      })}
+                  <div className={styles.systemInfo}>
+                    <div className={styles.systemListsInfo}>
+                      <strong className={styles.systemListsQuantity}>
+                        {userLists
+                          .filter((item) => item.is_system)
+                          .reduce((sum, item) => {
+                            return sum + item.quantity;
+                          }, 0)}
+                      </strong>
+                      <span className={styles.systemListsText}>Nº Books</span>
+                    </div>
+
+                    <div className={styles.systemReviewsInfo}>
+                      <strong className={styles.systemReviewsQuantity}>
+                        {profileInfoQuery.data.number_reviews}
+                      </strong>
+                      <span className={styles.systemReviewsText}>
+                        Nº Reviews
+                      </span>
+                    </div>
                   </div>
                 )}
               </UserCard>

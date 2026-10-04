@@ -22,24 +22,26 @@ hr {
   height: 1px;
   background: rgba(255, 255, 255, 0.1);
   width: 100%;
-  margin: 8px 0;
+  margin: 0;
 }
 
-.systemListsDiv {
+.systemInfo {
   width: 100%;
   display: flex;
   flex-direction: row;
   justify-content: space-between;
 }
 
-.systemListInfo {
+.systemListsInfo,
+.systemReviewsInfo {
   display: flex;
   flex-direction: column;
   align-items: center;
   flex: 1;
 }
 
-.systemListQuantity {
+.systemListsQuantity,
+.systemReviewsQuantity {
   font-size: 1.5rem;
   line-height: 1;
   color: white;
@@ -47,7 +49,8 @@ hr {
   font-weight: 700;
 }
 
-.systemListName {
+.systemListsText,
+.systemReviewsText {
   font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
