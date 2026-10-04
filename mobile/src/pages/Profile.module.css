@@ -25,23 +25,23 @@ hr {
   margin: 0;
 }
 
-.systemInfo {
+.userInfo {
   width: 100%;
   display: flex;
   flex-direction: row;
   justify-content: space-between;
 }
 
-.systemListsInfo,
-.systemReviewsInfo {
+.userListsInfo,
+.userReviewsInfo {
   display: flex;
   flex-direction: column;
   align-items: center;
   flex: 1;
 }
 
-.systemListsQuantity,
-.systemReviewsQuantity {
+.userListsQuantity,
+.userReviewsQuantity {
   font-size: 1.5rem;
   line-height: 1;
   color: white;
@@ -49,12 +49,21 @@ hr {
   font-weight: 700;
 }
 
-.systemListsText,
-.systemReviewsText {
+.userListsText,
+.userReviewsText {
   font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: rgba(255, 255, 255, 0.55);
   font-weight: 600;
   margin: 0;
+}
+
+.systemListsDiv,
+.customListsDiv {
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+  border: 1px solid red;
+  border-radius: 14px;
 }

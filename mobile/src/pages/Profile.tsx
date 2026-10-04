@@ -1,4 +1,12 @@
-import { IonContent, IonPage, IonButton, IonIcon, IonGrid } from '@ionic/react';
+import {
+  IonContent,
+  IonPage,
+  IonButton,
+  IonIcon,
+  IonGrid,
+  IonList,
+  IonItem,
+} from '@ionic/react';
 import { cog } from 'ionicons/icons';
 
 import styles from './Profile.module.css';
@@ -82,29 +90,55 @@ const Profile: React.FC = () => {
                 <hr></hr>
 
                 {userLists.length > 0 && (
-                  <div className={styles.systemInfo}>
-                    <div className={styles.systemListsInfo}>
-                      <strong className={styles.systemListsQuantity}>
+                  <div className={styles.userInfo}>
+                    <div className={styles.userListsInfo}>
+                      <strong className={styles.userListsQuantity}>
                         {userLists
                           .filter((item) => item.is_system)
                           .reduce((sum, item) => {
                             return sum + item.quantity;
                           }, 0)}
                       </strong>
-                      <span className={styles.systemListsText}>Nº Books</span>
+                      <span className={styles.userListsText}>Nº Books</span>
                     </div>
 
-                    <div className={styles.systemReviewsInfo}>
-                      <strong className={styles.systemReviewsQuantity}>
+                    <div className={styles.userReviewsInfo}>
+                      <strong className={styles.userReviewsQuantity}>
                         {profileInfoQuery.data.number_reviews}
                       </strong>
-                      <span className={styles.systemReviewsText}>
-                        Nº Reviews
-                      </span>
+                      <span className={styles.userReviewsText}>Nº Reviews</span>
                     </div>
                   </div>
                 )}
               </UserCard>
+              <div className={styles.systemListsDiv}>
+                <h1>Default Lists</h1>
+                <IonList inset={true}>
+                  {userLists
+                    .filter((list) => list.is_system)
+                    .map((list, index) => {
+                      return (
+                        <IonItem button={true} key={index}>
+                          {list.name}
+                        </IonItem>
+                      );
+                    })}
+                </IonList>
+              </div>
+              <div className={styles.customListsDiv}>
+                <h1>Custom Lists</h1>
+                <IonList inset={true}>
+                  {userLists
+                    .filter((list) => !list.is_system)
+                    .map((list, index) => {
+                      return (
+                        <IonItem button={true} key={index}>
+                          {list.name}
+                        </IonItem>
+                      );
+                    })}
+                </IonList>
+              </div>
             </IonGrid>
           </>
         ) : (
