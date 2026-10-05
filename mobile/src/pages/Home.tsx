@@ -70,7 +70,6 @@ const Home: React.FC = () => {
 
   const activeBookQuery = useQuery({
     ...getUserListsOptions(userID),
-    refetchOnWindowFocus: false,
     select(data: {
       category?: string;
       lists: {
@@ -165,14 +164,12 @@ const Home: React.FC = () => {
     enabled:
       activeBookQuery.status === 'success' &&
       activeBookQuery.data.category !== null,
-    refetchOnWindowFocus: false,
   });
 
   const trendingBookQuery = useQuery({
     queryKey: ['trendingBooks', userID],
     queryFn: () => fetchTrendingBooksRecommendation(undefined),
     enabled: activeBookQuery.status === 'success',
-    refetchOnWindowFocus: false,
   });
 
   return (

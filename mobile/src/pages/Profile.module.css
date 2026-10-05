@@ -98,10 +98,15 @@
   --min-height: 48px;
 }
 
-.shelfIcon {
+.shelfIcon,
+.reviewIcon {
   font-size: 1.35rem;
   color: var(--ion-color-primary);
   margin-right: 12px;
+}
+
+.reviewIcon {
+  color: #ffb800;
 }
 
 .shelfName {
@@ -136,7 +141,8 @@
   --inner-padding-end: 0;
 }
 
-.accordionHeaderLabel {
+.accordionHeaderLabel,
+.reviewsHeaderLabel {
   font-size: 0.85rem;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.6);

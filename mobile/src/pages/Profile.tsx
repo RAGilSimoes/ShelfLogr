@@ -15,7 +15,7 @@ import {
   IonCardHeader,
   IonCardTitle,
 } from '@ionic/react';
-import { cog, book, bookmark, checkmarkCircle } from 'ionicons/icons';
+import { cog, book, bookmark, checkmarkCircle, star } from 'ionicons/icons';
 
 import styles from './Profile.module.css';
 
@@ -210,6 +210,27 @@ const Profile: React.FC = () => {
                       </IonAccordionGroup>
                     </>
                   )}
+                </IonCardContent>
+              </IonCard>
+
+              <IonCard className={styles.card}>
+                <IonCardContent>
+                  <IonItem
+                    button={true}
+                    detail={true}
+                    className={styles.shelfItem}
+                    lines="none"
+                  >
+                    <IonIcon
+                      icon={star}
+                      slot="start"
+                      className={styles.reviewIcon}
+                    ></IonIcon>
+                    <IonLabel className={styles.shelfName}>My Reviews</IonLabel>
+                    <IonBadge slot="end" className={styles.shelfBadge}>
+                      {profileInfoQuery.data.number_reviews}
+                    </IonBadge>
+                  </IonItem>
                 </IonCardContent>
               </IonCard>
             </IonGrid>
