@@ -390,7 +390,7 @@ app.get(
       const { id } = req.token;
 
       const profileInfoQuery =
-        'SELECT name, email, updated_at, created_at, (SELECT COUNT(*) FROM "user_reviews" WHERE user_id=$1) as number_reviews FROM "user" WHERE id=$1;';
+        'SELECT name, email, updated_at, created_at, (SELECT COUNT(*)::int FROM "user_reviews" WHERE user_id=$1) as number_reviews FROM "user" WHERE id=$1;';
 
       const { rows } = await pool.query(profileInfoQuery, [id]);
 

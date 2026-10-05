@@ -6,8 +6,16 @@ import {
   IonGrid,
   IonList,
   IonItem,
+  IonAccordionGroup,
+  IonAccordion,
+  IonLabel,
+  IonBadge,
+  IonCard,
+  IonCardContent,
+  IonCardHeader,
+  IonCardTitle,
 } from '@ionic/react';
-import { cog } from 'ionicons/icons';
+import { cog, book, bookmark, checkmarkCircle } from 'ionicons/icons';
 
 import styles from './Profile.module.css';
 
@@ -111,34 +119,99 @@ const Profile: React.FC = () => {
                   </div>
                 )}
               </UserCard>
-              <div className={styles.systemListsDiv}>
-                <h1>Default Lists</h1>
-                <IonList inset={true}>
-                  {userLists
-                    .filter((list) => list.is_system)
-                    .map((list, index) => {
-                      return (
-                        <IonItem button={true} key={index}>
-                          {list.name}
-                        </IonItem>
-                      );
-                    })}
-                </IonList>
-              </div>
-              <div className={styles.customListsDiv}>
-                <h1>Custom Lists</h1>
-                <IonList inset={true}>
-                  {userLists
-                    .filter((list) => !list.is_system)
-                    .map((list, index) => {
-                      return (
-                        <IonItem button={true} key={index}>
-                          {list.name}
-                        </IonItem>
-                      );
-                    })}
-                </IonList>
-              </div>
+
+              <IonCard className={styles.card}>
+                <IonCardHeader className={styles.shelvesHeader}>
+                  <IonCardTitle className={styles.shelvesTitle}>
+                    My Shelves
+                  </IonCardTitle>
+                </IonCardHeader>
+                <IonCardContent className={styles.shelvesContent}>
+                  <IonList lines="full" className={styles.shelfList}>
+                    {userLists
+                      .filter((list) => list.is_system)
+                      .map((list, index) => {
+                        const icon =
+                          list.name === 'reading'
+                            ? book
+                            : list.name === 'wish'
+                            ? bookmark
+                            : checkmarkCircle;
+                        return (
+                          <IonItem
+                            button={true}
+                            key={index}
+                            detail={true}
+                            className={styles.shelfItem}
+                          >
+                            <IonIcon
+                              icon={icon}
+                              slot="start"
+                              className={styles.shelfIcon}
+                            ></IonIcon>
+                            <IonLabel className={styles.shelfName}>
+                              {list.name}
+                            </IonLabel>
+                            <IonBadge slot="end" className={styles.shelfBadge}>
+                              {list.quantity}
+                            </IonBadge>
+                          </IonItem>
+                        );
+                      })}
+                  </IonList>
+
+                  {userLists.some((list) => !list.is_system) && (
+                    <>
+                      <hr className={styles.divider}></hr>
+
+                      <IonAccordionGroup className={styles.accordionGroup}>
+                        <IonAccordion
+                          value="first"
+                          className={styles.accordion}
+                        >
+                          <IonItem
+                            slot="header"
+                            className={styles.accordionHeader}
+                          >
+                            <IonLabel className={styles.accordionHeaderLabel}>
+                              Custom Lists
+                            </IonLabel>
+                          </IonItem>
+                          <div
+                            slot="content"
+                            className={styles.accordionContent}
+                          >
+                            <IonList className={styles.shelfList}>
+                              {userLists
+                                .filter((list) => !list.is_system)
+                                .map((list) => {
+                                  return (
+                                    <IonItem
+                                      button={true}
+                                      key={list.id}
+                                      detail={true}
+                                      className={styles.shelfItem}
+                                    >
+                                      <IonLabel className={styles.shelfName}>
+                                        {list.name}
+                                      </IonLabel>
+                                      <IonBadge
+                                        slot="end"
+                                        className={styles.shelfBadge}
+                                      >
+                                        {list.quantity}
+                                      </IonBadge>
+                                    </IonItem>
+                                  );
+                                })}
+                            </IonList>
+                          </div>
+                        </IonAccordion>
+                      </IonAccordionGroup>
+                    </>
+                  )}
+                </IonCardContent>
+              </IonCard>
             </IonGrid>
           </>
         ) : (
