@@ -39,7 +39,7 @@ const BookSwiper: React.FC<{
                 <div
                   className={styles.cardContainer}
                   onClick={() => {
-                    history.push(`/app/book`, {
+                    history.push(`/app/book/${info.book.id}`, {
                       information: info,
                     });
                   }}

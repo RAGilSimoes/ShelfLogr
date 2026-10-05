@@ -30,7 +30,10 @@ import fetchUserProfileInfo from '../queryOptions/profilePageQueries';
 
 import useAuthStore from '../store/useAuthStore';
 
+import { useHistory } from 'react-router';
+
 const Profile: React.FC = () => {
+  const history = useHistory();
   const userListsQuery = useUserLists();
 
   let userLists: Array<{
@@ -130,7 +133,7 @@ const Profile: React.FC = () => {
                   <IonList lines="full" className={styles.shelfList}>
                     {userLists
                       .filter((list) => list.is_system)
-                      .map((list, index) => {
+                      .map((list) => {
                         const icon =
                           list.name === 'reading'
                             ? book
@@ -140,9 +143,14 @@ const Profile: React.FC = () => {
                         return (
                           <IonItem
                             button={true}
-                            key={index}
+                            key={list.id}
                             detail={true}
                             className={styles.shelfItem}
+                            onClick={() => {
+                              history.push(`/app/list/${list.id}`, {
+                                information: list,
+                              });
+                            }}
                           >
                             <IonIcon
                               icon={icon}
@@ -191,6 +199,11 @@ const Profile: React.FC = () => {
                                       key={list.id}
                                       detail={true}
                                       className={styles.shelfItem}
+                                      onClick={() => {
+                                        history.push(`/app/list/${list.id}`, {
+                                          information: list,
+                                        });
+                                      }}
                                     >
                                       <IonLabel className={styles.shelfName}>
                                         {list.name}
@@ -220,6 +233,9 @@ const Profile: React.FC = () => {
                     detail={true}
                     className={styles.shelfItem}
                     lines="none"
+                    onClick={() => {
+                      history.push(`/app/reviews`);
+                    }}
                   >
                     <IonIcon
                       icon={star}

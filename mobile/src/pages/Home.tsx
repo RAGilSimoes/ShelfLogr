@@ -220,7 +220,7 @@ const Home: React.FC = () => {
                 </h3>
                 <div
                   onClick={() => {
-                    history.push(`/app/book`, {
+                    history.push(`/app/book/${activeBookQuery.data.book?.id}`, {
                       information: activeBookQuery.data,
                     });
                   }}

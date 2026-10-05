@@ -18,6 +18,8 @@ import Profile from '../pages/Profile';
 import ChatBot from '../pages/ChatBot';
 import BookPage from '../pages/BookPage';
 import Settings from '../pages/SettingsPage';
+import ListPage from '../pages/ListPage';
+import ReviewsPage from '../pages/ReviewsPage';
 
 const Tabs: React.FC = () => {
   const match = useRouteMatch();
@@ -41,10 +43,16 @@ const Tabs: React.FC = () => {
         <Route exact path={path + '/profile'}>
           <Profile />
         </Route>
+        <Route exact path={path + '/list/:id'}>
+          <ListPage />
+        </Route>
+        <Route exact path={path + '/reviews'}>
+          <ReviewsPage />
+        </Route>
         <Route exact path={path + '/settings'}>
           <Settings />
         </Route>
-        <Route exact path={path + '/book'}>
+        <Route exact path={path + '/book/:id'}>
           <BookPage />
         </Route>
         <Route exact path={path}>
