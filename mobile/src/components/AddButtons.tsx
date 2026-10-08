@@ -75,7 +75,9 @@ const AddButtons: React.FC<{
     const disabledButton =
       requiredListID === '' ||
       (requiredListName === 'Completed' &&
-        (reviewData.rating === 0 || reviewData.display === ''));
+        (reviewData.rating < 0 ||
+          reviewData.rating > 5 ||
+          reviewData.display === ''));
 
     return (
       <>

@@ -28,7 +28,7 @@ const CompletedBookForm: React.FC<{
 }> = ({ onReviewChange }) => {
   const maxReviewSize = 300;
 
-  const [starsRating, setStarsRating] = useState<number>(1);
+  const [starsRating, setStarsRating] = useState<number>(0);
 
   const displayOptions: Array<string> = ['public', 'private'];
   const [display, setDisplay] = useState<string>(displayOptions[0]);
@@ -70,7 +70,7 @@ const CompletedBookForm: React.FC<{
             aria-label="Stars Rating"
             ticks={true}
             snaps={true}
-            min={1}
+            min={0}
             max={5}
             onIonChange={({ detail }) => {
               setStarsRating(detail.value.valueOf() as number);
