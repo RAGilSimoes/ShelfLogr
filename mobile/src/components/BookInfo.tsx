@@ -22,7 +22,7 @@ const BookInfo: React.FC<{
         </h3>
 
         <div className={styles.description}>
-          {bookInfo.description ? (
+          {bookInfo.description && bookInfo.description.length > 0 ? (
             <div
               dangerouslySetInnerHTML={{
                 __html: bookInfo.description,

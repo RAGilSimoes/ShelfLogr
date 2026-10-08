@@ -409,6 +409,52 @@ app.get(
 );
 
 app.get(
+  '/api/user/reviews',
+  verifyAuthorization(false),
+  async (req: Request, res: Response) => {
+    try {
+      const { id } = req.token;
+
+      const getReviewsQuery = `SELECT rating, review, updated_at, display, created_at, liked, (
+        SELECT
+        json_build_object(
+          'id', b.id,
+          'isbn', b.isbn,
+          'title', b.title,
+          'cover', b.cover,
+          'authors', b.authors,
+          'publisher', b.publisher,
+          'description', b.description,
+          'publishedDate', b."publishedDate",
+          'pageCount', b."pageCount",
+          'language', b.language,
+          'added_at', b.added_at,
+          'mainCategory', COALESCE((ARRAY_AGG(c.name) FILTER (WHERE bc.main = true))[1], ''),
+          'categories', COALESCE(ARRAY_AGG(c.name) FILTER (WHERE bc.main = false), '{}')
+        ) 
+          FROM "book" b
+          LEFT JOIN book_category bc ON b.id = bc.book_id
+          LEFT JOIN categories c ON bc.category_id = c.id
+          WHERE b.id = ur.book_id
+          GROUP BY b.id
+    ) as book
+    FROM "user_reviews" ur
+    WHERE ur.user_id=$1
+    ORDER BY ur.updated_at DESC;`;
+
+      const { rows } = await pool.query(getReviewsQuery, [id]);
+
+      if (rows) {
+        return res.status(200).json({ reviews: rows });
+      }
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ error: 'Error getting your reviews' });
+    }
+  },
+);
+
+app.get(
   '/api/books/trending',
   verifyAuthorization(false),
   async (req: Request, res: Response) => {
