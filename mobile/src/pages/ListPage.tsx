@@ -13,7 +13,14 @@ import './ListPage.module.css';
 import { useLocation } from 'react-router';
 
 const ListPage: React.FC = () => {
-  const location: any = useLocation();
+  const location: any = useLocation().state;
+
+  const information: {
+    id: string;
+    is_system: boolean;
+    name: string;
+    quantity: number;
+  } = location.information;
 
   return (
     <IonPage>
@@ -22,6 +29,11 @@ const ListPage: React.FC = () => {
           <IonButtons slot="start">
             <IonBackButton defaultHref="/app/profile"></IonBackButton>
           </IonButtons>
+          <IonTitle>
+            {information.name.charAt(0).toUpperCase() +
+              information.name.slice(1)}{' '}
+            List
+          </IonTitle>
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
