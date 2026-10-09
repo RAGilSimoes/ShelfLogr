@@ -21,6 +21,8 @@ import {
   IonList,
 } from '@ionic/react';
 
+import { useEffect, useState } from 'react';
+
 import LoadSpinner from '../components/LoadSpinner';
 
 import { useQuery } from '@tanstack/react-query';
@@ -47,6 +49,25 @@ import {
 const ReviewsPage: React.FC = () => {
   const userID = useAuthStore((state) => state.userID);
 
+  const defaultValues: {
+    rating: number;
+    display: string;
+    searchFilter: string;
+    orderBy: string;
+  } = { rating: -1, display: 'all', searchFilter: '', orderBy: 'recent' };
+
+  const [ratingFilter, setRatingFilter] = useState<number>(
+    defaultValues.rating,
+  );
+  const [displayFilter, setDisplayFilter] = useState<string>(
+    defaultValues.display,
+  );
+  const [searchFilter, setSearchFilter] = useState<string>(
+    defaultValues.searchFilter,
+  );
+
+  const [orderBy, setOrderBy] = useState<string>(defaultValues.orderBy);
+
   const reviewsQuery = useQuery({
     queryKey: ['userReviews', userID],
     queryFn: () => fetchUserReviews(),
@@ -67,20 +88,53 @@ const ReviewsPage: React.FC = () => {
 
   const maxStarRating = 5;
 
-  const getStarsChips = () => {
-    const starsChips = [];
+  const getStarsButtons = () => {
+    const starsButtons = [];
+
+    starsButtons.push(
+      <IonButton
+        onClick={() => {
+          setRatingFilter(defaultValues.rating);
+        }}
+        className={
+          ratingFilter === -1
+            ? styles.activeRatingBtn
+            : styles.inactiveRatingBtn
+        }
+      >
+        All
+      </IonButton>,
+    );
 
     for (let index = 0; index <= maxStarRating; index++) {
-      starsChips.push(
-        <IonChip key={index} color="warning">
+      starsButtons.push(
+        <IonButton
+          key={index}
+          onClick={() => setRatingFilter(index)}
+          className={
+            ratingFilter === index
+              ? styles.activeRatingBtn
+              : styles.inactiveRatingBtn
+          }
+        >
           <IonLabel>{index}</IonLabel>
           <IonIcon icon={star}></IonIcon>
-        </IonChip>,
+        </IonButton>,
       );
     }
 
-    return starsChips;
+    return starsButtons;
   };
+
+  const filteredReviews = reviewsQuery.data?.filter((item) => {
+    const display = item.display ? 'public' : 'private';
+
+    return (
+      (ratingFilter === -1 || item.rating === ratingFilter) &&
+      (displayFilter === 'all' || display === displayFilter) &&
+      item.book.title.toLowerCase().includes(searchFilter.toLocaleLowerCase())
+    );
+  });
 
   return (
     <IonPage>
@@ -99,7 +153,7 @@ const ReviewsPage: React.FC = () => {
           <>
             <div className={styles.filterCard}>
               <IonAccordionGroup>
-                <IonAccordion value="first">
+                <IonAccordion>
                   <IonItem slot="header" className={styles.accordionHeader}>
                     <IonLabel>Filter & Order By...</IonLabel>
                     <IonIcon slot="start" icon={optionsOutline}></IonIcon>
@@ -107,21 +161,49 @@ const ReviewsPage: React.FC = () => {
                   <div slot="content" className={styles.accordionContent}>
                     <IonList className={styles.filterList}>
                       <IonItem className={styles.ratingRow}>
-                        <IonChip>All</IonChip>
-                        {getStarsChips()}
+                        {getStarsButtons()}
                       </IonItem>
 
                       <IonItem className={styles.segmentRow}>
-                        <IonSegment value="all">
-                          <IonSegmentButton value="all" layout="icon-start">
+                        <IonSegment value={displayFilter}>
+                          <IonSegmentButton
+                            value="all"
+                            layout="icon-start"
+                            onClick={() =>
+                              setDisplayFilter(defaultValues.display)
+                            }
+                            className={
+                              displayFilter === 'all'
+                                ? styles.activeSegmentBtn
+                                : ''
+                            }
+                          >
                             <IonIcon icon={albumsOutline}></IonIcon>
                             <IonLabel>All</IonLabel>
                           </IonSegmentButton>
-                          <IonSegmentButton value="public" layout="icon-start">
+                          <IonSegmentButton
+                            value="public"
+                            layout="icon-start"
+                            onClick={() => setDisplayFilter('public')}
+                            className={
+                              displayFilter === 'public'
+                                ? styles.activeSegmentBtn
+                                : ''
+                            }
+                          >
                             <IonIcon icon={globe}></IonIcon>
                             <IonLabel>Public</IonLabel>
                           </IonSegmentButton>
-                          <IonSegmentButton value="private" layout="icon-start">
+                          <IonSegmentButton
+                            value="private"
+                            layout="icon-start"
+                            onClick={() => setDisplayFilter('private')}
+                            className={
+                              displayFilter === 'private'
+                                ? styles.activeSegmentBtn
+                                : ''
+                            }
+                          >
                             <IonIcon icon={lockClosed}></IonIcon>
                             <IonLabel>Private</IonLabel>
                           </IonSegmentButton>
@@ -129,7 +211,14 @@ const ReviewsPage: React.FC = () => {
                       </IonItem>
 
                       <IonItem className={styles.searchRow}>
-                        <IonSearchbar></IonSearchbar>
+                        <IonSearchbar
+                          debounce={100}
+                          value={searchFilter}
+                          onIonInput={(event) => {
+                            setSearchFilter(event.target.value!);
+                          }}
+                          showClearButton="focus"
+                        ></IonSearchbar>
                       </IonItem>
 
                       <IonSelect
@@ -137,6 +226,10 @@ const ReviewsPage: React.FC = () => {
                         labelPlacement="start"
                         className={styles.sortRow}
                         interface="action-sheet"
+                        value={orderBy}
+                        onIonChange={(event) => {
+                          setOrderBy(event.target.value);
+                        }}
                       >
                         <IonIcon
                           icon={swapVerticalOutline}
@@ -168,23 +261,37 @@ const ReviewsPage: React.FC = () => {
               </IonAccordionGroup>
             </div>
 
-            {reviewsQuery.data && reviewsQuery.data.length > 0
-              ? reviewsQuery.data.map((item) => {
+            {reviewsQuery.data && reviewsQuery.data.length > 0 ? (
+              filteredReviews && filteredReviews.length > 0 ? (
+                filteredReviews?.map((item) => {
                   return <ReviewCard info={item} key={item.book.id} />;
                 })
-              : reviewsQuery.data.length === 0 && (
-                  <div className={styles.emptyContainer}>
-                    <IonIcon
-                      icon={chatbubbleEllipsesOutline}
-                      className={styles.emptyIcon}
-                    />
-                    <h3 className={styles.emptyTitle}>No Reviews Yet</h3>
-                    <p className={styles.emptySubtitle}>
-                      When you share your thoughts on a book, your evaluations
-                      will appear here.
-                    </p>
-                  </div>
-                )}
+              ) : (
+                <div className={styles.emptyContainer}>
+                  <IonIcon
+                    icon={chatbubbleEllipsesOutline}
+                    className={styles.emptyIcon}
+                  />
+                  <h3 className={styles.emptyTitle}>
+                    No Reviews Match The Filters
+                  </h3>
+                </div>
+              )
+            ) : (
+              reviewsQuery.data.length === 0 && (
+                <div className={styles.emptyContainer}>
+                  <IonIcon
+                    icon={chatbubbleEllipsesOutline}
+                    className={styles.emptyIcon}
+                  />
+                  <h3 className={styles.emptyTitle}>No Reviews Yet</h3>
+                  <p className={styles.emptySubtitle}>
+                    When you share your thoughts on a book, your evaluations
+                    will appear here.
+                  </p>
+                </div>
+              )
+            )}
           </>
         ) : (
           <div className={styles.emptyContainer}>

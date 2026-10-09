@@ -96,38 +96,84 @@
   display: none;
 }
 
-.ratingRow ion-chip {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: rgba(255, 255, 255, 0.85);
-  font-size: 0.82rem;
-  font-weight: 600;
+.ratingRow ion-button {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
   flex-shrink: 0;
+  margin: 0 2px;
 }
 
-.ratingRow ion-chip ion-icon {
+.ratingRow ion-button ion-icon {
   color: #ffb800;
   margin-left: 2px;
 }
 
+.inactiveRatingBtn {
+  --background: rgba(var(--ion-text-color-rgb, 255, 255, 255), 0.06);
+  --color: rgba(var(--ion-text-color-rgb, 255, 255, 255), 0.8);
+  --border-color: rgba(var(--ion-text-color-rgb, 255, 255, 255), 0.15);
+  --border-width: 1px;
+  --border-style: solid;
+  --border-radius: 18px;
+  --box-shadow: none;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.inactiveRatingBtn ion-icon {
+  color: #ffb800;
+  margin-left: 3px;
+  font-size: 0.95rem;
+}
+
+.activeRatingBtn {
+  --background: var(--ion-color-primary, #3880ff);
+  --color: #ffffff;
+  --border-color: transparent;
+  --border-width: 0;
+  --border-radius: 18px;
+  --box-shadow: 0 4px 12px rgba(56, 128, 255, 0.45);
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+.activeRatingBtn ion-icon {
+  color: #ffffff;
+  margin-left: 3px;
+  font-size: 0.95rem;
+}
+
 .segmentRow ion-segment {
   background: rgba(var(--ion-text-color-rgb, 255, 255, 255), 0.06);
-  border-radius: 12px;
-  padding: 2px;
+  border: 1px solid rgba(var(--ion-text-color-rgb, 255, 255, 255), 0.08);
+  border-radius: 14px;
+  padding: 3px;
 }
 
 .segmentRow ion-segment-button {
-  --color: rgba(var(--ion-text-color-rgb, 255, 255, 255), 0.6);
-  --color-checked: var(--ion-text-color);
-  --indicator-color: rgba(var(--ion-text-color-rgb, 255, 255, 255), 0.14);
-  font-size: 0.8rem;
-  font-weight: 600;
-  min-height: 36px;
+  --color: rgba(var(--ion-text-color-rgb, 255, 255, 255), 0.5);
+  font-size: 0.82rem;
+  font-weight: 500;
+  min-height: 38px;
+  border-radius: 11px;
 }
 
 .segmentRow ion-segment-button ion-icon {
   font-size: 1rem;
-  margin-right: 4px;
+  margin-right: 6px;
+  opacity: 0.6;
+}
+
+.segmentRow ion-segment-button.activeSegmentBtn {
+  --color-checked: #ffffff;
+  --indicator-color: var(--ion-color-primary, #3880ff);
+  --indicator-box-shadow: 0 4px 12px rgba(56, 128, 255, 0.35);
+  font-weight: 700;
+}
+
+.segmentRow ion-segment-button.activeSegmentBtn ion-icon {
+  opacity: 1;
+  color: #ffffff;
 }
 
 .searchRow ion-searchbar {
