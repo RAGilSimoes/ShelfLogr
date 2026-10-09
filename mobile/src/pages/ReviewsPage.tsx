@@ -126,15 +126,74 @@ const ReviewsPage: React.FC = () => {
     return starsButtons;
   };
 
-  const filteredReviews = reviewsQuery.data?.filter((item) => {
-    const display = item.display ? 'public' : 'private';
+  const filteredReviews = reviewsQuery.data
+    ?.filter((item) => {
+      const display = item.display ? 'public' : 'private';
 
-    return (
-      (ratingFilter === -1 || item.rating === ratingFilter) &&
-      (displayFilter === 'all' || display === displayFilter) &&
-      item.book.title.toLowerCase().includes(searchFilter.toLocaleLowerCase())
+      return (
+        (ratingFilter === -1 || item.rating === ratingFilter) &&
+        (displayFilter === 'all' || display === displayFilter) &&
+        item.book.title.toLowerCase().includes(searchFilter.toLocaleLowerCase())
+      );
+    })
+    .sort(
+      (
+        a: {
+          book: bookInfo;
+          created_at: string;
+          display: boolean;
+          liked: boolean;
+          rating: number;
+          review: string;
+          updated_at: string;
+        },
+        b: {
+          book: bookInfo;
+          created_at: string;
+          display: boolean;
+          liked: boolean;
+          rating: number;
+          review: string;
+          updated_at: string;
+        },
+      ) => {
+        switch (orderBy) {
+          case 'recent': {
+            const dateA = new Date(a.updated_at).getTime();
+            const dateB = new Date(b.updated_at).getTime();
+
+            return dateB - dateA;
+          }
+
+          case 'oldest': {
+            const dateA = new Date(a.updated_at).getTime();
+            const dateB = new Date(b.updated_at).getTime();
+
+            return dateA - dateB;
+          }
+
+          case 'best': {
+            return b.rating - a.rating;
+          }
+
+          case 'worst': {
+            return a.rating - b.rating;
+          }
+
+          case 'ascending': {
+            return a.book.title.localeCompare(b.book.title);
+          }
+
+          case 'descending': {
+            return b.book.title.localeCompare(a.book.title);
+          }
+
+          default: {
+            return 0;
+          }
+        }
+      },
     );
-  });
 
   return (
     <IonPage>
@@ -239,9 +298,7 @@ const ReviewsPage: React.FC = () => {
                         <IonSelectOption value="recent">
                           Most Recent
                         </IonSelectOption>
-                        <IonSelectOption value="older">
-                          Most Older
-                        </IonSelectOption>
+                        <IonSelectOption value="oldest">Oldest</IonSelectOption>
                         <IonSelectOption value="best">
                           Best Classified
                         </IonSelectOption>
