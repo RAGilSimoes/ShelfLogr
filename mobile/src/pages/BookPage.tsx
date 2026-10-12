@@ -23,6 +23,8 @@ import api from '../services/api.service';
 import useAuthStore from '../store/useAuthStore';
 import { useRef } from 'react';
 
+import getQueryKeys from '../queryOptions/queryKeys';
+
 const BookPage: React.FC = () => {
   const location = useLocation<{
     information: {
@@ -56,21 +58,13 @@ const BookPage: React.FC = () => {
       return api.post('/add-book-to-list', content);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['userBook'],
+      const queryKeys = getQueryKeys(userID);
+      queryKeys.forEach((queryKey) => {
+        queryClient.invalidateQueries({
+          queryKey,
+        });
       });
-      queryClient.invalidateQueries({
-        queryKey: ['userLists', userID],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['trendingCategoryBooks', userID],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['trendingBooks', userID],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['bookInfoISBN', userID],
-      });
+
       useAuthStore.getState().removeActiveBookRecommendationID();
     },
   });

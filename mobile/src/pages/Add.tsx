@@ -35,6 +35,8 @@ import fetchBookInfo from '../queryOptions/addQueries';
 import useAuthStore from '../store/useAuthStore';
 import AddButtons from '../components/AddButtons';
 
+import getQueryKeys from '../queryOptions/queryKeys';
+
 const Add: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [displayErrorMessage, setDisplayErrorMessage] =
@@ -46,7 +48,7 @@ const Add: React.FC = () => {
 
   const queryClient = useQueryClient();
 
-  const userID = useAuthStore().userID;
+  const userID = useAuthStore((state) => state.userID);
 
   const [formattedListNames, setFormattedListNames] = useState<string[]>([]);
 
@@ -157,21 +159,13 @@ const Add: React.FC = () => {
       return api.post('/add-book-to-list', content);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['userBook'],
+      const queryKeys = getQueryKeys(userID);
+      queryKeys.forEach((queryKey) => {
+        queryClient.invalidateQueries({
+          queryKey,
+        });
       });
-      queryClient.invalidateQueries({
-        queryKey: ['userLists', userID],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['trendingCategoryBooks', userID],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['trendingBooks', userID],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['bookInfoISBN', userID],
-      });
+
       useAuthStore.getState().removeActiveBookRecommendationID();
     },
   });

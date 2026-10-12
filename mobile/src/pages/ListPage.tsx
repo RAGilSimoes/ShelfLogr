@@ -23,13 +23,17 @@ import BookCard from '../components/BookCard';
 
 import { useHistory, useParams } from 'react-router';
 
+import { useEffect, useState } from 'react';
+
 const ListPage: React.FC = () => {
   const userID = useAuthStore((state) => state.userID);
   const location: any = useLocation().state;
 
+  const [listName, setListName] = useState<string>('');
+
   const history = useHistory();
 
-  const { id } = useParams<{ id: string }>();
+  const { id: listID } = useParams<{ id: string }>();
 
   const information: {
     id: string;
@@ -38,11 +42,14 @@ const ListPage: React.FC = () => {
     quantity: number;
   } = location?.information;
 
+  useEffect(() => {
+    if (information) setListName(information.name);
+  }, []);
+
   const listBooksQuery = useQuery({
-    queryKey: ['userList', userID, id],
-    queryFn: () => fetchListBooks(id),
+    queryKey: ['userList', userID, listID],
+    queryFn: () => fetchListBooks(listID),
     select(data) {
-      console.log(data.books);
       return data.books;
     },
   });
@@ -55,9 +62,7 @@ const ListPage: React.FC = () => {
             <IonBackButton defaultHref="/app/profile"></IonBackButton>
           </IonButtons>
           <IonTitle>
-            {information?.name?.charAt(0).toUpperCase() +
-              information?.name?.slice(1) || ''}{' '}
-            List
+            {listName.charAt(0).toUpperCase() + listName.slice(1) || ''} List
           </IonTitle>
         </IonToolbar>
       </IonHeader>
