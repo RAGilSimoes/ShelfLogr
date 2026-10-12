@@ -383,6 +383,42 @@ app.get(
 );
 
 app.get(
+  '/api/user/list/:id',
+  verifyAuthorization(false),
+  async (req: Request, res: Response) => {
+    try {
+      const { id } = req.token;
+      const listID: string = req.params.id as string;
+
+      const getBooksQuery = `SELECT 
+        b.*, 
+        COALESCE((ARRAY_AGG(c.name) FILTER (WHERE bc.main = true))[1], '') as "mainCategory",
+        COALESCE(ARRAY_AGG(c.name) FILTER (WHERE bc.main = false), '{}') as categories,
+        (SELECT COALESCE(ARRAY_AGG(all_ul.name), '{}') FROM list_books all_lb JOIN user_list all_ul ON all_ul.id = all_lb.list_id WHERE all_lb.book_id = b.id AND all_ul.user_id = $2) AS "bookLists",
+        (SELECT all_ul.name FROM list_books all_lb JOIN user_list all_ul ON all_ul.id = all_lb.list_id WHERE all_lb.book_id = b.id AND all_ul.user_id = $2 AND all_ul.is_system = true LIMIT 1) AS "list"
+    FROM "book" b
+    LEFT JOIN book_category bc ON b.id = bc.book_id
+    LEFT JOIN categories c ON bc.category_id = c.id
+    LEFT JOIN list_books lb ON b.id = lb.book_id
+    LEFT JOIN user_list ul ON ul.id = lb.list_id
+    WHERE lb.list_id = $1 AND ul.user_id = $2
+    GROUP BY b.id;`;
+
+      const { rows } = await pool.query(getBooksQuery, [listID, id]);
+
+      if (rows) {
+        return res.status(200).json({ books: rows });
+      }
+    } catch (error) {
+      console.log(error);
+      return res
+        .status(500)
+        .json({ error: 'Error getting the books from this list' });
+    }
+  },
+);
+
+app.get(
   '/api/user/profile',
   verifyAuthorization(false),
   async (req: Request, res: Response) => {

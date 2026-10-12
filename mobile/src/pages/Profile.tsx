@@ -41,7 +41,7 @@ const Profile: React.FC = () => {
     name: string;
     is_system: boolean;
     quantity: number;
-  }> = userListsQuery.isSuccess ? userListsQuery.data.lists : {};
+  }> = userListsQuery.isSuccess ? userListsQuery.data.lists : [];
 
   const userID = useAuthStore((state) => state.userID);
 
