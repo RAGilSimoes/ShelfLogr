@@ -16,6 +16,7 @@ import {
   IonCardHeader,
   IonCardTitle,
   IonIcon,
+  IonToast,
 } from '@ionic/react';
 
 import UserCard from '../components/UserCard';
@@ -52,6 +53,17 @@ const Settings: React.FC = () => {
 
   const [isLogOutAlertOpen, setIsLogOutAlertOpen] = useState<boolean>(false);
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState<boolean>(false);
+
+  const [toastMessage, setToastMessage] = useState<string>('');
+  const [displayErrorToast, setDisplayErrorToast] = useState<boolean>(false);
+  const [displaySuccessToast, setDisplaySuccessToast] =
+    useState<boolean>(false);
+
+  const clearCache = () => {
+    queryClient.clear();
+    setToastMessage('Cache cleared successfully.');
+    setDisplaySuccessToast(true);
+  };
 
   const logOut = async () => {
     useAuthStore.getState().removeInformation();
@@ -111,6 +123,23 @@ const Settings: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
+        <IonToast
+          trigger="open-toast"
+          message={toastMessage}
+          duration={5000}
+          isOpen={displayErrorToast || displaySuccessToast}
+          onDidDismiss={() => {
+            displayErrorToast
+              ? setDisplayErrorToast(false)
+              : setDisplaySuccessToast(false);
+            setToastMessage('');
+          }}
+          className={`${styles.customToast} ${
+            displayErrorToast ? styles.errorToast : styles.successToast
+          }`}
+          position="top"
+        ></IonToast>
+
         <IonAlert
           isOpen={isLogOutAlertOpen || isDeleteAlertOpen}
           header={'Confirm Action'}
@@ -187,7 +216,11 @@ const Settings: React.FC = () => {
 
                 <IonCardContent className={styles.generalContent}>
                   <IonList lines="full" className={styles.generalList}>
-                    <IonItem detail={true} button={true}>
+                    <IonItem
+                      detail={true}
+                      button={true}
+                      onClick={() => clearCache()}
+                    >
                       <IonIcon icon={trashBinOutline} slot="start"></IonIcon>
                       Clear Cache
                     </IonItem>
