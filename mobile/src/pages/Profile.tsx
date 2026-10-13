@@ -98,7 +98,7 @@ const Profile: React.FC = () => {
 
             <IonGrid>
               <UserCard userInfo={profileInfoQuery.data}>
-                <hr></hr>
+                <hr className={styles.divider}></hr>
 
                 {userLists.length > 0 && (
                   <div className={styles.userInfo}>
