@@ -1,0 +1,46 @@
+.emptyContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 60px 24px;
+  min-height: 60vh;
+}
+
+.emptyIcon {
+  font-size: 3.8rem;
+  color: rgba(255, 255, 255, 0.2);
+  margin-bottom: 16px;
+}
+
+.emptyTitle {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 8px 0;
+}
+
+.emptySubtitle {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.5);
+  line-height: 1.45;
+  max-width: 280px;
+  margin: 0;
+}
+
+.errorIcon {
+  font-size: 3.8rem;
+  color: var(--ion-color-danger, #eb445a);
+  opacity: 0.85;
+  margin-bottom: 16px;
+}
+
+.retryBtn {
+  margin-top: 24px;
+  --border-radius: 20px;
+  --color: #ffffff;
+  --border-color: rgba(255, 255, 255, 0.25);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
