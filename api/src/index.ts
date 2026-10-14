@@ -152,6 +152,29 @@ app.post('/api/register', async (req: Request, res: Response) => {
   }
 });
 
+app.delete(
+  '/api/user/delete-account',
+  verifyAuthorization(false),
+  async (req: Request, res: Response) => {
+    try {
+      const { id } = req.token;
+
+      const deleteUserQuery = 'DELETE FROM "user" WHERE id=$1';
+
+      const { rows } = await pool.query(deleteUserQuery, [id]);
+
+      if (rows) {
+        return res
+          .status(200)
+          .json({ message: 'Account deleted successfully.' });
+      }
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ error: 'Error deleting account. ' });
+    }
+  },
+);
+
 app.get(
   '/api/get-book-info/:isbn',
   verifyAuthorization(false),

@@ -34,6 +34,8 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import fetchUserProfileInfo from '../queryOptions/profilePageQueries';
 
+import api from '../services/api.service';
+
 import {
   closeCircleOutline,
   informationCircleOutline,
@@ -44,6 +46,7 @@ import {
   personOutline,
   trashBinOutline,
 } from 'ionicons/icons';
+import LoadSpinner from '../components/LoadSpinner';
 
 const Settings: React.FC = () => {
   const queryClient = useQueryClient();
@@ -57,6 +60,9 @@ const Settings: React.FC = () => {
   const [toastMessage, setToastMessage] = useState<string>('');
   const [displayErrorToast, setDisplayErrorToast] = useState<boolean>(false);
   const [displaySuccessToast, setDisplaySuccessToast] =
+    useState<boolean>(false);
+
+  const [isSpinnerDeleteOpen, setIsSpinnerDeleteOpen] =
     useState<boolean>(false);
 
   const clearCache = () => {
@@ -74,11 +80,23 @@ const Settings: React.FC = () => {
   };
 
   const deleteAccount = async () => {
-    useAuthStore.getState().removeInformation();
-    queryClient.clear();
-    history.replace('/login', {
-      message: 'Account deleted.',
-    });
+    setIsSpinnerDeleteOpen(true);
+    try {
+      const response = await api.delete('/user/delete-account');
+
+      if (response.status === 200) {
+        useAuthStore.getState().removeInformation();
+        queryClient.clear();
+        history.replace('/login', {
+          message: response.data.message,
+        });
+      }
+    } catch (error) {
+      setDisplayErrorToast(true);
+      setToastMessage('Error deleting account');
+    } finally {
+      setIsSpinnerDeleteOpen(false);
+    }
   };
 
   const profileInfoQuery = useQuery({
@@ -172,117 +190,124 @@ const Settings: React.FC = () => {
           className={styles.alert}
         ></IonAlert>
 
-        <IonGrid>
-          {profileInfoQuery.isSuccess && profileInfoQuery.data ? (
-            <>
-              <UserCard userInfo={profileInfoQuery.data}>
-                <span className={styles.emailContainer}>
-                  <IonIcon icon={mailOutline}></IonIcon>
-                  {profileInfoQuery.data.email}
-                </span>
-              </UserCard>
+        {isSpinnerDeleteOpen ? (
+          <LoadSpinner message={'Deleting your account...'} fullScreen={true} />
+        ) : (
+          <IonGrid>
+            {profileInfoQuery.isSuccess && profileInfoQuery.data ? (
+              <>
+                <UserCard userInfo={profileInfoQuery.data}>
+                  <span className={styles.emailContainer}>
+                    <IonIcon icon={mailOutline}></IonIcon>
+                    {profileInfoQuery.data.email}
+                  </span>
+                </UserCard>
 
-              <IonCard className={styles.card}>
-                <IonCardHeader className={styles.accountHeader}>
-                  <IonCardTitle className={styles.accountTitle}>
-                    Account
-                  </IonCardTitle>
-                </IonCardHeader>
+                <IonCard className={styles.card}>
+                  <IonCardHeader className={styles.accountHeader}>
+                    <IonCardTitle className={styles.accountTitle}>
+                      Account
+                    </IonCardTitle>
+                  </IonCardHeader>
 
-                <IonCardContent className={styles.accountContent}>
-                  <IonList lines="full" className={styles.accountList}>
-                    <IonItem detail={true} button={true}>
-                      <IonIcon icon={personOutline} slot="start"></IonIcon>Edit
-                      Profile Info
-                    </IonItem>
-                    <IonItem detail={true} button={true}>
-                      <IonIcon icon={lockClosedOutline} slot="start"></IonIcon>
-                      Change Password
-                    </IonItem>
-                    <IonItem detail={true} button={true}>
-                      <IonIcon icon={libraryOutline} slot="start"></IonIcon>Edit
-                      Shelves Info
-                    </IonItem>
-                  </IonList>
-                </IonCardContent>
-              </IonCard>
+                  <IonCardContent className={styles.accountContent}>
+                    <IonList lines="full" className={styles.accountList}>
+                      <IonItem detail={true} button={true}>
+                        <IonIcon icon={personOutline} slot="start"></IonIcon>
+                        Edit Profile Info
+                      </IonItem>
+                      <IonItem detail={true} button={true}>
+                        <IonIcon
+                          icon={lockClosedOutline}
+                          slot="start"
+                        ></IonIcon>
+                        Change Password
+                      </IonItem>
+                      <IonItem detail={true} button={true}>
+                        <IonIcon icon={libraryOutline} slot="start"></IonIcon>
+                        Edit Shelves Info
+                      </IonItem>
+                    </IonList>
+                  </IonCardContent>
+                </IonCard>
 
-              <IonCard className={styles.card}>
-                <IonCardHeader className={styles.generalHeader}>
-                  <IonCardTitle className={styles.generalTitle}>
-                    General
-                  </IonCardTitle>
-                </IonCardHeader>
+                <IonCard className={styles.card}>
+                  <IonCardHeader className={styles.generalHeader}>
+                    <IonCardTitle className={styles.generalTitle}>
+                      General
+                    </IonCardTitle>
+                  </IonCardHeader>
 
-                <IonCardContent className={styles.generalContent}>
-                  <IonList lines="full" className={styles.generalList}>
-                    <IonItem
-                      detail={true}
-                      button={true}
-                      onClick={() => clearCache()}
-                    >
-                      <IonIcon icon={trashBinOutline} slot="start"></IonIcon>
-                      Clear Cache
-                    </IonItem>
-                    <IonItem detail={true} button={true}>
-                      <IonIcon
-                        icon={informationCircleOutline}
-                        slot="start"
-                      ></IonIcon>
-                      APP Info
-                    </IonItem>
-                  </IonList>
-                </IonCardContent>
-              </IonCard>
+                  <IonCardContent className={styles.generalContent}>
+                    <IonList lines="full" className={styles.generalList}>
+                      <IonItem
+                        detail={true}
+                        button={true}
+                        onClick={() => clearCache()}
+                      >
+                        <IonIcon icon={trashBinOutline} slot="start"></IonIcon>
+                        Clear Cache
+                      </IonItem>
+                      <IonItem detail={true} button={true}>
+                        <IonIcon
+                          icon={informationCircleOutline}
+                          slot="start"
+                        ></IonIcon>
+                        APP Info
+                      </IonItem>
+                    </IonList>
+                  </IonCardContent>
+                </IonCard>
 
-              <IonCard className={styles.cardDanger}>
-                <IonCardHeader className={styles.dangerHeader}>
-                  <IonCardTitle className={styles.dangerTitle}>
-                    <strong>Danger Zone</strong>
-                  </IonCardTitle>
-                </IonCardHeader>
+                <IonCard className={styles.cardDanger}>
+                  <IonCardHeader className={styles.dangerHeader}>
+                    <IonCardTitle className={styles.dangerTitle}>
+                      <strong>Danger Zone</strong>
+                    </IonCardTitle>
+                  </IonCardHeader>
 
-                <IonCardContent className={styles.dangerContent}>
-                  <IonList lines="full" className={styles.dangerList}>
-                    <IonItem
-                      detail={true}
-                      button={true}
-                      className={styles.dangerItem}
-                      onClick={() => setIsLogOutAlertOpen(true)}
-                    >
-                      <IonIcon
-                        icon={logOutOutline}
-                        slot="start"
-                        className={styles.dangerIcon}
-                      ></IonIcon>
-                      <IonLabel className={styles.dangerLabel}>
-                        Log Out
-                      </IonLabel>
-                    </IonItem>
-                    <IonItem
-                      detail={true}
-                      button={true}
-                      className={styles.dangerItem}
-                      onClick={() => setIsDeleteAlertOpen(true)}
-                    >
-                      <IonIcon
-                        icon={closeCircleOutline}
-                        slot="start"
-                        className={styles.dangerIcon}
-                      ></IonIcon>
-                      <IonLabel className={styles.dangerLabel}>
-                        Delete Account
-                      </IonLabel>
-                    </IonItem>
-                  </IonList>
-                </IonCardContent>
-              </IonCard>
-            </>
-          ) : (
-            <p>Ola</p>
-          )}
-          <IonCard></IonCard>
-        </IonGrid>
+                  <IonCardContent className={styles.dangerContent}>
+                    <IonList lines="full" className={styles.dangerList}>
+                      <IonItem
+                        detail={true}
+                        button={true}
+                        className={styles.dangerItem}
+                        onClick={() => setIsLogOutAlertOpen(true)}
+                      >
+                        <IonIcon
+                          icon={logOutOutline}
+                          slot="start"
+                          className={styles.dangerIcon}
+                        ></IonIcon>
+                        <IonLabel className={styles.dangerLabel}>
+                          Log Out
+                        </IonLabel>
+                      </IonItem>
+                      <IonItem
+                        detail={true}
+                        button={true}
+                        className={styles.dangerItem}
+                        onClick={() => setIsDeleteAlertOpen(true)}
+                      >
+                        <IonIcon
+                          icon={closeCircleOutline}
+                          slot="start"
+                          className={styles.dangerIcon}
+                        ></IonIcon>
+                        <IonLabel className={styles.dangerLabel}>
+                          Delete Account
+                        </IonLabel>
+                      </IonItem>
+                    </IonList>
+                  </IonCardContent>
+                </IonCard>
+              </>
+            ) : (
+              <p>Ola</p>
+            )}
+            <IonCard></IonCard>
+          </IonGrid>
+        )}
       </IonContent>
     </IonPage>
   );

@@ -208,132 +208,136 @@ const ReviewsPage: React.FC = () => {
       <IonContent fullscreen>
         {reviewsQuery.isFetching ? (
           <LoadSpinner message={'Fetching Your Reviews...'} fullScreen={true} />
-        ) : reviewsQuery.isSuccess && reviewsQuery.data.length > 0 ? (
+        ) : reviewsQuery.isSuccess && reviewsQuery.data ? (
           <>
-            <div className={styles.filterCard}>
-              <IonAccordionGroup>
-                <IonAccordion>
-                  <IonItem slot="header" className={styles.accordionHeader}>
-                    <IonLabel>Filter & Order By...</IonLabel>
-                    <IonIcon slot="start" icon={optionsOutline}></IonIcon>
-                  </IonItem>
-                  <div slot="content" className={styles.accordionContent}>
-                    <IonList className={styles.filterList}>
-                      <IonItem className={styles.ratingRow}>
-                        {getStarsButtons()}
+            {reviewsQuery.data.length > 0 ? (
+              <>
+                <div className={styles.filterCard}>
+                  <IonAccordionGroup>
+                    <IonAccordion>
+                      <IonItem slot="header" className={styles.accordionHeader}>
+                        <IonLabel>Filter & Order By...</IonLabel>
+                        <IonIcon slot="start" icon={optionsOutline}></IonIcon>
                       </IonItem>
+                      <div slot="content" className={styles.accordionContent}>
+                        <IonList className={styles.filterList}>
+                          <IonItem className={styles.ratingRow}>
+                            {getStarsButtons()}
+                          </IonItem>
 
-                      <IonItem className={styles.segmentRow}>
-                        <IonSegment value={displayFilter}>
-                          <IonSegmentButton
-                            value="all"
-                            layout="icon-start"
-                            onClick={() =>
-                              setDisplayFilter(defaultValues.display)
-                            }
-                            className={
-                              displayFilter === 'all'
-                                ? styles.activeSegmentBtn
-                                : ''
-                            }
+                          <IonItem className={styles.segmentRow}>
+                            <IonSegment value={displayFilter}>
+                              <IonSegmentButton
+                                value="all"
+                                layout="icon-start"
+                                onClick={() =>
+                                  setDisplayFilter(defaultValues.display)
+                                }
+                                className={
+                                  displayFilter === 'all'
+                                    ? styles.activeSegmentBtn
+                                    : ''
+                                }
+                              >
+                                <IonIcon icon={albumsOutline}></IonIcon>
+                                <IonLabel>All</IonLabel>
+                              </IonSegmentButton>
+                              <IonSegmentButton
+                                value="public"
+                                layout="icon-start"
+                                onClick={() => setDisplayFilter('public')}
+                                className={
+                                  displayFilter === 'public'
+                                    ? styles.activeSegmentBtn
+                                    : ''
+                                }
+                              >
+                                <IonIcon icon={globe}></IonIcon>
+                                <IonLabel>Public</IonLabel>
+                              </IonSegmentButton>
+                              <IonSegmentButton
+                                value="private"
+                                layout="icon-start"
+                                onClick={() => setDisplayFilter('private')}
+                                className={
+                                  displayFilter === 'private'
+                                    ? styles.activeSegmentBtn
+                                    : ''
+                                }
+                              >
+                                <IonIcon icon={lockClosed}></IonIcon>
+                                <IonLabel>Private</IonLabel>
+                              </IonSegmentButton>
+                            </IonSegment>
+                          </IonItem>
+
+                          <IonItem className={styles.searchRow}>
+                            <IonSearchbar
+                              debounce={100}
+                              value={searchFilter}
+                              onIonInput={(event) => {
+                                setSearchFilter(event.target.value!);
+                              }}
+                              showClearButton="focus"
+                            ></IonSearchbar>
+                          </IonItem>
+
+                          <IonSelect
+                            label="Order By..."
+                            labelPlacement="start"
+                            className={styles.sortRow}
+                            interface="action-sheet"
+                            value={orderBy}
+                            onIonChange={(event) => {
+                              setOrderBy(event.target.value);
+                            }}
                           >
-                            <IonIcon icon={albumsOutline}></IonIcon>
-                            <IonLabel>All</IonLabel>
-                          </IonSegmentButton>
-                          <IonSegmentButton
-                            value="public"
-                            layout="icon-start"
-                            onClick={() => setDisplayFilter('public')}
-                            className={
-                              displayFilter === 'public'
-                                ? styles.activeSegmentBtn
-                                : ''
-                            }
-                          >
-                            <IonIcon icon={globe}></IonIcon>
-                            <IonLabel>Public</IonLabel>
-                          </IonSegmentButton>
-                          <IonSegmentButton
-                            value="private"
-                            layout="icon-start"
-                            onClick={() => setDisplayFilter('private')}
-                            className={
-                              displayFilter === 'private'
-                                ? styles.activeSegmentBtn
-                                : ''
-                            }
-                          >
-                            <IonIcon icon={lockClosed}></IonIcon>
-                            <IonLabel>Private</IonLabel>
-                          </IonSegmentButton>
-                        </IonSegment>
-                      </IonItem>
-
-                      <IonItem className={styles.searchRow}>
-                        <IonSearchbar
-                          debounce={100}
-                          value={searchFilter}
-                          onIonInput={(event) => {
-                            setSearchFilter(event.target.value!);
-                          }}
-                          showClearButton="focus"
-                        ></IonSearchbar>
-                      </IonItem>
-
-                      <IonSelect
-                        label="Order By..."
-                        labelPlacement="start"
-                        className={styles.sortRow}
-                        interface="action-sheet"
-                        value={orderBy}
-                        onIonChange={(event) => {
-                          setOrderBy(event.target.value);
-                        }}
-                      >
-                        <IonIcon
-                          icon={swapVerticalOutline}
-                          slot="start"
-                          aria-hidden={true}
-                        ></IonIcon>
-                        <IonSelectOption value="recent">
-                          Most Recent
-                        </IonSelectOption>
-                        <IonSelectOption value="oldest">Oldest</IonSelectOption>
-                        <IonSelectOption value="best">
-                          Best Classified
-                        </IonSelectOption>
-                        <IonSelectOption value="worst">
-                          Worst Classified
-                        </IonSelectOption>
-                        <IonSelectOption value="ascending">
-                          Ascending Title
-                        </IonSelectOption>
-                        <IonSelectOption value="descending">
-                          Descending Title
-                        </IonSelectOption>
-                      </IonSelect>
-                    </IonList>
-                  </div>
-                </IonAccordion>
-              </IonAccordionGroup>
-            </div>
-
-            {reviewsQuery.data && reviewsQuery.data.length > 0 ? (
-              filteredReviews && filteredReviews.length > 0 ? (
-                filteredReviews?.map((item) => {
-                  return <ReviewCard info={item} key={item.book.id} />;
-                })
-              ) : (
-                <div className={styles.emptyContainer}>
-                  <IonIcon
-                    icon={chatbubbleEllipsesOutline}
-                    className={styles.emptyIcon}
-                  />
-                  <h3 className={styles.emptyTitle}>
-                    No Reviews Match The Filters
-                  </h3>
+                            <IonIcon
+                              icon={swapVerticalOutline}
+                              slot="start"
+                              aria-hidden={true}
+                            ></IonIcon>
+                            <IonSelectOption value="recent">
+                              Most Recent
+                            </IonSelectOption>
+                            <IonSelectOption value="oldest">
+                              Oldest
+                            </IonSelectOption>
+                            <IonSelectOption value="best">
+                              Best Classified
+                            </IonSelectOption>
+                            <IonSelectOption value="worst">
+                              Worst Classified
+                            </IonSelectOption>
+                            <IonSelectOption value="ascending">
+                              Ascending Title
+                            </IonSelectOption>
+                            <IonSelectOption value="descending">
+                              Descending Title
+                            </IonSelectOption>
+                          </IonSelect>
+                        </IonList>
+                      </div>
+                    </IonAccordion>
+                  </IonAccordionGroup>
                 </div>
-              )
+
+                {filteredReviews && filteredReviews.length > 0 ? (
+                  filteredReviews?.map((item) => {
+                    return <ReviewCard info={item} key={item.book.id} />;
+                  })
+                ) : (
+                  <div className={styles.emptyContainer}>
+                    <IonIcon
+                      icon={chatbubbleEllipsesOutline}
+                      className={styles.emptyIcon}
+                    />
+                    <h3 className={styles.emptyTitle}>
+                      No Reviews Match The Filters
+                    </h3>
+                  </div>
+                )}
+              </>
             ) : (
               reviewsQuery.data.length === 0 && (
                 <div className={styles.emptyContainer}>
