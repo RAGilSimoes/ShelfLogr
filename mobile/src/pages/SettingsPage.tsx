@@ -17,6 +17,8 @@ import {
   IonCardTitle,
   IonIcon,
   IonToast,
+  IonModal,
+  IonButton,
 } from '@ionic/react';
 
 import UserCard from '../components/UserCard';
@@ -64,6 +66,26 @@ const Settings: React.FC = () => {
 
   const [isSpinnerDeleteOpen, setIsSpinnerDeleteOpen] =
     useState<boolean>(false);
+
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+
+  const modalAvailableTypes = {
+    default: 'default',
+    profile: 'profile',
+    password: 'password',
+    shelves: 'shelves',
+  };
+
+  const modalAvailableTitles: Record<string, string> = {
+    default: '',
+    profile: 'Edit Profile Info',
+    password: 'Change Password',
+    shelves: 'Edit Shelves Info',
+  };
+
+  const [modalType, setModalType] = useState<string>(
+    modalAvailableTypes.default,
+  );
 
   const clearCache = () => {
     queryClient.clear();
@@ -144,7 +166,7 @@ const Settings: React.FC = () => {
         <IonToast
           trigger="open-toast"
           message={toastMessage}
-          duration={5000}
+          duration={2500}
           isOpen={displayErrorToast || displaySuccessToast}
           onDidDismiss={() => {
             displayErrorToast
@@ -190,6 +212,31 @@ const Settings: React.FC = () => {
           className={styles.alert}
         ></IonAlert>
 
+        <IonModal
+          isOpen={isModalOpen}
+          onDidDismiss={() => {
+            setIsModalOpen(false);
+            setModalType(modalAvailableTypes.default);
+          }}
+        >
+          <IonHeader>
+            <IonToolbar>
+              <IonTitle>{modalAvailableTitles[modalType]}</IonTitle>
+              <IonButtons slot="start">
+                <IonButton
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    setModalType(modalAvailableTypes.default);
+                  }}
+                >
+                  Close
+                </IonButton>
+              </IonButtons>
+            </IonToolbar>
+          </IonHeader>
+          <IonContent></IonContent>
+        </IonModal>
+
         {isSpinnerDeleteOpen ? (
           <LoadSpinner message={'Deleting your account...'} fullScreen={true} />
         ) : (
@@ -212,18 +259,39 @@ const Settings: React.FC = () => {
 
                   <IonCardContent className={styles.accountContent}>
                     <IonList lines="full" className={styles.accountList}>
-                      <IonItem detail={true} button={true}>
+                      <IonItem
+                        detail={true}
+                        button={true}
+                        onClick={() => {
+                          setIsModalOpen(true);
+                          setModalType(modalAvailableTypes.profile);
+                        }}
+                      >
                         <IonIcon icon={personOutline} slot="start"></IonIcon>
                         Edit Profile Info
                       </IonItem>
-                      <IonItem detail={true} button={true}>
+                      <IonItem
+                        detail={true}
+                        button={true}
+                        onClick={() => {
+                          setIsModalOpen(true);
+                          setModalType(modalAvailableTypes.password);
+                        }}
+                      >
                         <IonIcon
                           icon={lockClosedOutline}
                           slot="start"
                         ></IonIcon>
                         Change Password
                       </IonItem>
-                      <IonItem detail={true} button={true}>
+                      <IonItem
+                        detail={true}
+                        button={true}
+                        onClick={() => {
+                          setIsModalOpen(true);
+                          setModalType(modalAvailableTypes.shelves);
+                        }}
+                      >
                         <IonIcon icon={libraryOutline} slot="start"></IonIcon>
                         Edit Shelves Info
                       </IonItem>
