@@ -50,6 +50,10 @@ import {
 } from 'ionicons/icons';
 import LoadSpinner from '../components/LoadSpinner';
 
+import EditProfileForm from '../components/EditProfileForm';
+import EditShelvesForm from '../components/EditShelvesForm';
+import ChangePasswordForm from '../components/ChangePasswordForm';
+
 const Settings: React.FC = () => {
   const queryClient = useQueryClient();
   const history = useHistory();
@@ -212,31 +216,6 @@ const Settings: React.FC = () => {
           className={styles.alert}
         ></IonAlert>
 
-        <IonModal
-          isOpen={isModalOpen}
-          onDidDismiss={() => {
-            setIsModalOpen(false);
-            setModalType(modalAvailableTypes.default);
-          }}
-        >
-          <IonHeader>
-            <IonToolbar>
-              <IonTitle>{modalAvailableTitles[modalType]}</IonTitle>
-              <IonButtons slot="start">
-                <IonButton
-                  onClick={() => {
-                    setIsModalOpen(false);
-                    setModalType(modalAvailableTypes.default);
-                  }}
-                >
-                  Close
-                </IonButton>
-              </IonButtons>
-            </IonToolbar>
-          </IonHeader>
-          <IonContent></IonContent>
-        </IonModal>
-
         {isSpinnerDeleteOpen ? (
           <LoadSpinner message={'Deleting your account...'} fullScreen={true} />
         ) : (
@@ -377,6 +356,56 @@ const Settings: React.FC = () => {
           </IonGrid>
         )}
       </IonContent>
+      <IonModal
+        isOpen={isModalOpen}
+        onDidDismiss={() => {
+          setIsModalOpen(false);
+          setModalType(modalAvailableTypes.default);
+        }}
+        breakpoints={
+          modalType === modalAvailableTypes.shelves
+            ? [0, 0.55, 0.85, 1]
+            : [0, 0.55]
+        }
+        initialBreakpoint={0.55}
+        handle={true}
+      >
+        <IonHeader>
+          <IonToolbar>
+            <IonTitle>{modalAvailableTitles[modalType]}</IonTitle>
+            <IonButtons slot="start">
+              <IonButton
+                onClick={() => {
+                  setIsModalOpen(false);
+                  setModalType(modalAvailableTypes.default);
+                }}
+              >
+                Close
+              </IonButton>
+            </IonButtons>
+          </IonToolbar>
+        </IonHeader>
+        <IonContent>
+          {modalType === modalAvailableTypes.profile ? (
+            <EditProfileForm
+              onClose={() => setIsModalOpen(false)}
+              profile={{
+                name: profileInfoQuery.data?.name ?? '',
+                email: profileInfoQuery.data?.email ?? '',
+              }}
+              onSuccess={(message: string) => {
+                setDisplaySuccessToast(true);
+                setToastMessage(message);
+                setIsModalOpen(false);
+              }}
+            />
+          ) : modalType === modalAvailableTypes.password ? (
+            <ChangePasswordForm onClose={() => setIsModalOpen(false)} />
+          ) : modalType === modalAvailableTypes.shelves ? (
+            <EditShelvesForm onClose={() => setIsModalOpen(false)} />
+          ) : null}
+        </IonContent>
+      </IonModal>
     </IonPage>
   );
 };

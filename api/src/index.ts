@@ -467,6 +467,53 @@ app.get(
   },
 );
 
+app.put(
+  '/api/user/edit-profile',
+  verifyAuthorization(false),
+  async (req: Request, res: Response) => {
+    try {
+      const { id } = req.token;
+
+      const { email, username } = req.body;
+
+      const updateProfileQuery =
+        'UPDATE "user" SET name=$1, email=$2, updated_at=CURRENT_TIMESTAMP WHERE id=$3 RETURNING id;';
+
+      const { rows } = await pool.query(updateProfileQuery, [
+        username,
+        email,
+        id,
+      ]);
+
+      if (rows.length > 0) {
+        const newToken = generateToken(id, email, username);
+        return res
+          .status(200)
+          .json({ token: newToken, message: 'Profile updated successfully' });
+      } else {
+        return res.status(404).json({ error: 'User not found.' });
+      }
+    } catch (error: any) {
+      const errorCode = error.code;
+      console.error(error);
+
+      if (errorCode === '23505') {
+        const detail: string = error.detail;
+        const local = detail.includes('name');
+
+        const message = local
+          ? 'Username already in use'
+          : 'Email already in use';
+        return res.status(409).json({ error: message });
+      } else {
+        return res
+          .status(500)
+          .json({ error: 'Internal error processing registration' });
+      }
+    }
+  },
+);
+
 app.get(
   '/api/user/reviews',
   verifyAuthorization(false),
