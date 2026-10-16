@@ -107,7 +107,7 @@ const EditProfileForm: React.FC<{
     };
 
     try {
-      const response = await api.put('/user/edit-profile', body);
+      const response = await api.patch('/user/edit-profile', body);
 
       const status = response.status;
 
@@ -213,7 +213,6 @@ const EditProfileForm: React.FC<{
               className={styles.button}
             >
               Save Changes
-              <IonIcon slot="end" icon={saveOutline}></IonIcon>
             </IonButton>
           </form>
         </div>

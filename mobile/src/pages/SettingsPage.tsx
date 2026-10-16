@@ -363,11 +363,14 @@ const Settings: React.FC = () => {
           setModalType(modalAvailableTypes.default);
         }}
         breakpoints={
-          modalType === modalAvailableTypes.shelves
+          modalType === modalAvailableTypes.shelves ||
+          modalType === modalAvailableTypes.password
             ? [0, 0.55, 0.85, 1]
-            : [0, 0.55]
+            : [0, 0.68]
         }
-        initialBreakpoint={0.55}
+        initialBreakpoint={
+          modalType === modalAvailableTypes.shelves ? 0.85 : 0.68
+        }
         handle={true}
       >
         <IonHeader>
@@ -400,7 +403,14 @@ const Settings: React.FC = () => {
               }}
             />
           ) : modalType === modalAvailableTypes.password ? (
-            <ChangePasswordForm onClose={() => setIsModalOpen(false)} />
+            <ChangePasswordForm
+              onClose={() => setIsModalOpen(false)}
+              onSuccess={(message: string) => {
+                setDisplaySuccessToast(true);
+                setToastMessage(message);
+                setIsModalOpen(false);
+              }}
+            />
           ) : modalType === modalAvailableTypes.shelves ? (
             <EditShelvesForm onClose={() => setIsModalOpen(false)} />
           ) : null}

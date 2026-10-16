@@ -26,6 +26,7 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const saltRounds = 10;
 
 // Middlewares
 app.use(cors());
@@ -96,8 +97,6 @@ app.post('/api/login', async (req: Request, res: Response) => {
 app.post('/api/register', async (req: Request, res: Response) => {
   try {
     const { email, username, password } = req.body;
-
-    const saltRounds = 10;
 
     const client = await pool.connect();
 
@@ -467,7 +466,7 @@ app.get(
   },
 );
 
-app.put(
+app.patch(
   '/api/user/edit-profile',
   verifyAuthorization(false),
   async (req: Request, res: Response) => {
@@ -510,6 +509,58 @@ app.put(
           .status(500)
           .json({ error: 'Internal error processing registration' });
       }
+    }
+  },
+);
+
+app.patch(
+  '/api/user/edit-password',
+  verifyAuthorization(false),
+  async (req: Request, res: Response) => {
+    try {
+      const { id } = req.token;
+
+      const { oldPassword, password } = req.body;
+
+      const getProfilePasswordQuery =
+        'SELECT password FROM "user" WHERE id=$1;';
+
+      const { rows: oldPasswordResults } = await pool.query(
+        getProfilePasswordQuery,
+        [id],
+      );
+
+      if (oldPasswordResults.length > 0) {
+        const oldPasswordMatch = await bcrypt.compare(
+          oldPassword,
+          oldPasswordResults[0].password,
+        );
+
+        if (oldPasswordMatch) {
+          const encryptedNewPassword = await bcrypt.hash(password, saltRounds);
+
+          const updatePasswordQuery =
+            'UPDATE "user" SET password=$1, updated_at=CURRENT_TIMESTAMP WHERE id=$2 RETURNING id;';
+
+          const { rows: insertPasswordResult } = await pool.query(
+            updatePasswordQuery,
+            [encryptedNewPassword, id],
+          );
+
+          if (insertPasswordResult.length > 0) {
+            return res
+              .status(200)
+              .json({ message: 'Password updated successfully' });
+          }
+        } else {
+          return res.status(400).json({ error: `Incorrect current password` });
+        }
+      } else {
+        return res.status(404).json({ error: 'User not found' });
+      }
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ error: 'Error updating password' });
     }
   },
 );
