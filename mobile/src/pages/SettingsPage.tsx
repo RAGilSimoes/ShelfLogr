@@ -412,7 +412,14 @@ const Settings: React.FC = () => {
               }}
             />
           ) : modalType === modalAvailableTypes.shelves ? (
-            <EditShelvesForm onClose={() => setIsModalOpen(false)} />
+            <EditShelvesForm
+              onClose={() => setIsModalOpen(false)}
+              onSuccess={(message: string) => {
+                setDisplaySuccessToast(true);
+                setToastMessage(message);
+                setIsModalOpen(false);
+              }}
+            />
           ) : null}
         </IonContent>
       </IonModal>

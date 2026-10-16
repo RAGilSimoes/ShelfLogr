@@ -15,7 +15,14 @@ import { useState } from 'react';
 
 import { useUserLists } from '../queryOptions/useUserLists';
 
-const EditShelvesForm: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+const EditShelvesForm: React.FC<{
+  onClose: () => void;
+  onSuccess: (message: string) => void;
+}> = ({ onClose, onSuccess }) => {
+  const listsNamesQuery = useUserLists();
+
+  if (listsNamesQuery.isSuccess) console.log(listsNamesQuery.data);
+
   return <p>Olá</p>;
 };
 
