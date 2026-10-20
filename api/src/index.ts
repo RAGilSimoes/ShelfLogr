@@ -505,10 +505,72 @@ app.patch(
           : 'Email already in use';
         return res.status(409).json({ error: message });
       } else {
-        return res
-          .status(500)
-          .json({ error: 'Internal error processing registration' });
+        return res.status(500).json({ error: 'Error editing profile' });
       }
+    }
+  },
+);
+
+app.patch(
+  '/api/user/edit-list',
+  verifyAuthorization(false),
+  async (req: Request, res: Response) => {
+    try {
+      const { id } = req.token;
+
+      const { name, listID } = req.body;
+
+      const updateListNameQuery =
+        'UPDATE "user_list" SET name=$1 WHERE id=$2 AND user_id=$3 RETURNING id;';
+
+      const { rows } = await pool.query(updateListNameQuery, [
+        name,
+        listID,
+        id,
+      ]);
+
+      if (rows.length > 0) {
+        return res.status(200).json({ message: 'List updated successfully' });
+      } else {
+        return res.status(404).json({ error: 'List not found.' });
+      }
+    } catch (error: any) {
+      const errorCode = error.code;
+      console.error(error);
+
+      if (errorCode === '23505') {
+        return res
+          .status(409)
+          .json({ error: 'A shelf with that name already exists' });
+      } else {
+        return res.status(500).json({ error: 'Error updating list' });
+      }
+    }
+  },
+);
+
+app.delete(
+  '/api/user/delete-list/:id',
+  verifyAuthorization(false),
+  async (req: Request, res: Response) => {
+    try {
+      const { id } = req.token;
+
+      const listID: string = req.params.id as string;
+
+      const deleteListQuery =
+        'DELETE FROM "user_list" WHERE id=$1 AND user_id=$2 AND is_system=false RETURNING id;';
+
+      const { rows } = await pool.query(deleteListQuery, [listID, id]);
+
+      if (rows.length > 0) {
+        return res.status(200).json({ message: 'List deleted successfully' });
+      } else {
+        return res.status(404).json({ error: 'List not found.' });
+      }
+    } catch (error: any) {
+      console.error(error);
+      return res.status(500).json({ error: 'Error deleting list.' });
     }
   },
 );

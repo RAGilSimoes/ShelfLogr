@@ -1,17 +1,17 @@
 import {
   IonIcon,
   IonAlert,
-  IonButton,
   IonToast,
-  IonSelectOption,
   IonList,
   IonItem,
-  IonInput,
+  IonCard,
+  IonCardContent,
+  IonButton,
 } from '@ionic/react';
 
 import styles from './EditShelvesForm.module.css';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 import useAuthStore from '../store/useAuthStore';
 
@@ -23,7 +23,11 @@ import { useQueryClient } from '@tanstack/react-query';
 import LoadSpinner from './LoadSpinner';
 
 import { useUserLists } from '../queryOptions/useUserLists';
-import { pencilOutline, trashBinOutline } from 'ionicons/icons';
+import {
+  pencilOutline,
+  trashBinOutline,
+  alertCircleOutline,
+} from 'ionicons/icons';
 
 const EditShelvesForm: React.FC<{
   onClose: () => void;
@@ -52,21 +56,85 @@ const EditShelvesForm: React.FC<{
     quantity: number;
   }> = listsNamesQuery.isSuccess ? listsNamesQuery.data.lists : [];
 
-  const submitShelveEdit = (newName: string) => {
-    console.log(newName);
+  const submitShelfEdit = async (newName: string) => {
+    setIsLoading(true);
+    const body = {
+      name: newName,
+      listID: selectedListID,
+    };
+
+    try {
+      const response = await api.patch('/user/edit-list', body);
+
+      const status = response.status;
+
+      if (status == 200) {
+        queryClient.invalidateQueries({
+          queryKey: ['userLists', userID],
+        });
+        setIsLoading(false);
+        onSuccess(response.data.message);
+        onClose();
+      }
+    } catch (error) {
+      setDisplayToast(true);
+      if (axios.isAxiosError(error)) {
+        const serverMessage =
+          error.response?.data?.error || 'Server communication error.';
+        setToastMessage(serverMessage);
+      } else {
+        setToastMessage('Unexpected error occurred.');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const deleteShelf = async () => {
+    setIsLoading(true);
+
+    try {
+      const response = await api.delete(`/user/delete-list/${selectedListID}`);
+
+      const status = response.status;
+
+      if (status == 200) {
+        queryClient.invalidateQueries({
+          queryKey: ['userLists', userID],
+        });
+        setIsLoading(false);
+        onSuccess(response.data.message);
+        onClose();
+      }
+    } catch (error) {
+      setDisplayToast(true);
+      if (axios.isAxiosError(error)) {
+        const serverMessage =
+          error.response?.data?.error || 'Server communication error.';
+        setToastMessage(serverMessage);
+      } else {
+        setToastMessage('Unexpected error occurred.');
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <>
       <IonAlert
         isOpen={isEditAlertOpen || isDeleteAlertOpen}
-        header={isEditAlertOpen ? 'Edit Shelve' : 'Delete Shelve'}
+        header={isDeleteAlertOpen ? 'Delete Shelf' : 'Edit Shelf'}
         message={
           isEditAlertOpen
-            ? 'Insert new name for this shelve'
-            : `Are you sure you want to delete ${selectedListName}?`
+            ? 'Insert new name for this shelf'
+            : isDeleteAlertOpen
+            ? `Are you sure you want to delete ${selectedListName}?`
+            : ''
         }
-        cssClass="custom-isbn-alert"
+        cssClass={
+          isDeleteAlertOpen ? 'custom-danger-alert' : 'custom-confirm-alert'
+        }
         inputs={
           isEditAlertOpen
             ? [
@@ -90,24 +158,39 @@ const EditShelvesForm: React.FC<{
             cssClass: 'alert-cancel-button',
           },
           {
-            text: 'Confirm',
+            text: isDeleteAlertOpen ? 'Delete' : 'Save',
             role: 'confirm',
-            cssClass: 'alert-confirm-button',
+            cssClass: isDeleteAlertOpen
+              ? 'alert-danger-confirm-button'
+              : 'alert-confirm-button',
             handler: (alertData) => {
               if (isEditAlertOpen) {
                 const selectedName = String(
                   alertData.inputName || selectedListName,
                 ).trim();
                 if (selectedName) {
-                  setIsEditAlertOpen(false);
-                  if (selectedListName !== selectedName) {
+                  if (
+                    listsNames.some(
+                      (list: {
+                        id: string;
+                        name: string;
+                        is_system: boolean;
+                        quantity: number;
+                      }) =>
+                        list.name.toLowerCase() ===
+                          selectedName.toLowerCase() &&
+                        list.id !== selectedListID,
+                    )
+                  ) {
+                    setDisplayToast(true);
+                    setToastMessage('Shelf with that name already exists.');
+                  } else if (selectedListName !== selectedName) {
                     setSelectedListName(selectedName);
-                    submitShelveEdit(selectedName);
+                    submitShelfEdit(selectedName);
                   }
                 }
               } else {
-                setIsDeleteAlertOpen(false);
-                console.log(`Deleting ${selectedListName}...`);
+                deleteShelf();
               }
             },
           },
@@ -135,7 +218,7 @@ const EditShelvesForm: React.FC<{
 
       {isLoading ? (
         <LoadSpinner
-          message={'Updating Shelve Information...'}
+          message={'Updating Shelf Information...'}
           fullScreen={false}
         />
       ) : listsNamesQuery.isFetching ? (
@@ -146,43 +229,68 @@ const EditShelvesForm: React.FC<{
       ) : listsNamesQuery.isSuccess && listsNames.length > 0 ? (
         <>
           <div className={styles.container}>
-            <IonList>
-              {listsNames.map((item) => {
-                const formattedListName =
-                  item.name.charAt(0).toUpperCase() + item.name.slice(1);
-                return (
-                  <IonItem key={item.id}>
-                    <strong>{formattedListName}</strong>
-                    {item.is_system ? (
-                      <strong>Default</strong>
-                    ) : (
-                      <div>
-                        <IonIcon
-                          icon={pencilOutline}
-                          onClick={() => {
-                            setIsEditAlertOpen(true);
-                            setSelectedListName(item.name);
-                            setSelectedListID(item.id);
-                          }}
-                        ></IonIcon>
-                        <IonIcon
-                          icon={trashBinOutline}
-                          onClick={() => {
-                            setIsDeleteAlertOpen(true);
-                            setSelectedListName(item.name);
-                            setSelectedListID(item.id);
-                          }}
-                        ></IonIcon>
-                      </div>
-                    )}
-                  </IonItem>
-                );
-              })}
-            </IonList>
+            <IonCard className={styles.card}>
+              <IonCardContent className={styles.cardContent}>
+                <IonList className={styles.list} lines="full">
+                  {listsNames.map((item) => {
+                    const formattedListName =
+                      item.name.charAt(0).toUpperCase() + item.name.slice(1);
+                    return (
+                      <IonItem key={item.id} className={styles.item}>
+                        <span className={styles.shelfName}>
+                          {formattedListName}
+                        </span>
+                        {item.is_system ? (
+                          <span slot="end" className={styles.defaultBadge}>
+                            Default
+                          </span>
+                        ) : (
+                          <div slot="end" className={styles.actions}>
+                            <IonIcon
+                              icon={pencilOutline}
+                              onClick={() => {
+                                setIsEditAlertOpen(true);
+                                setSelectedListName(item.name);
+                                setSelectedListID(item.id);
+                              }}
+                              className={styles.editIcon}
+                            ></IonIcon>
+                            <IonIcon
+                              icon={trashBinOutline}
+                              onClick={() => {
+                                setIsDeleteAlertOpen(true);
+                                setSelectedListName(item.name);
+                                setSelectedListID(item.id);
+                              }}
+                              className={styles.deleteIcon}
+                            ></IonIcon>
+                          </div>
+                        )}
+                      </IonItem>
+                    );
+                  })}
+                </IonList>
+              </IonCardContent>
+            </IonCard>
           </div>
         </>
       ) : (
-        <p>Erro</p>
+        <div className={styles.emptyContainer}>
+          <IonIcon icon={alertCircleOutline} className={styles.errorIcon} />
+          <h3 className={styles.emptyTitle}>Couldn't Load Books</h3>
+          <p className={styles.emptySubtitle}>
+            There was a problem connecting to the server. Please check your
+            connection and try again.
+          </p>
+          <IonButton
+            fill="outline"
+            shape="round"
+            className={styles.retryBtn}
+            onClick={() => listsNamesQuery.refetch()}
+          >
+            Try Again
+          </IonButton>
+        </div>
       )}
     </>
   );
