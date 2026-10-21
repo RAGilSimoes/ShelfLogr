@@ -223,10 +223,7 @@ const Settings: React.FC = () => {
         {isSpinnerDeleteOpen ? (
           <LoadSpinner message={'Deleting your account...'} fullScreen={true} />
         ) : profileInfoQuery.isFetching ? (
-          <LoadSpinner
-            message={'Getting your profile information...'}
-            fullScreen={true}
-          />
+          <LoadSpinner message={'Getting settings page...'} fullScreen={true} />
         ) : profileInfoQuery.isSuccess && profileInfoQuery.data ? (
           <IonGrid>
             <UserCard userInfo={profileInfoQuery.data}>
