@@ -184,10 +184,15 @@ const EditShelvesForm: React.FC<{
                   ) {
                     setDisplayToast(true);
                     setToastMessage('Shelf with that name already exists.');
+                    return false;
                   } else if (selectedListName !== selectedName) {
                     setSelectedListName(selectedName);
                     submitShelfEdit(selectedName);
                   }
+                } else {
+                  setDisplayToast(true);
+                  setToastMessage('Please insert a name.');
+                  return false;
                 }
               } else {
                 deleteShelf();

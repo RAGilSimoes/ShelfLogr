@@ -608,6 +608,40 @@ app.patch(
   },
 );
 
+app.post(
+  '/api/user/create-list',
+  verifyAuthorization(false),
+  async (req: Request, res: Response) => {
+    try {
+      const { id } = req.token;
+
+      const { name } = req.body;
+
+      const updateListNameQuery =
+        'INSERT INTO "user_list"(user_id, name, is_system, added_at) VALUES ($1, $2, false, CURRENT_TIMESTAMP) RETURNING id;';
+
+      const { rows } = await pool.query(updateListNameQuery, [id, name]);
+
+      if (rows.length > 0) {
+        return res
+          .status(200)
+          .json({ listID: rows[0].id, message: 'List created successfully' });
+      }
+    } catch (error: any) {
+      const errorCode = error.code;
+      console.error(error);
+
+      if (errorCode === '23505') {
+        return res
+          .status(409)
+          .json({ error: 'A shelf with that name already exists' });
+      } else {
+        return res.status(500).json({ error: 'Error creating list' });
+      }
+    }
+  },
+);
+
 app.delete(
   '/api/user/delete-list/:id',
   verifyAuthorization(false),
