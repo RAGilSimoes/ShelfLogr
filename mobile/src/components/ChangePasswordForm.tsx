@@ -22,7 +22,7 @@ import axios from 'axios';
 
 import api from '../services/api.service';
 
-import { lockClosedOutline, saveOutline } from 'ionicons/icons';
+import { lockClosedOutline } from 'ionicons/icons';
 
 import LoadSpinner from './LoadSpinner';
 
@@ -101,8 +101,6 @@ const ChangePasswordForm: React.FC<{
 
   const isValidForm =
     isValidOldPassword && isValidPassword && isValidVerifyPassword;
-
-  const updateAuthToken = useAuthStore((state) => state.updateJWT);
 
   const submitForm = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();

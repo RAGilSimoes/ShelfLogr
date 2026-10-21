@@ -9,7 +9,7 @@ import {
   IonCardContent,
 } from '@ionic/react';
 
-import { personOutline, mailOutline, saveOutline } from 'ionicons/icons';
+import { personOutline, mailOutline } from 'ionicons/icons';
 
 import styles from './EditProfileForm.module.css';
 

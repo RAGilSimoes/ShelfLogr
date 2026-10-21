@@ -47,12 +47,14 @@ import {
   mailOutline,
   personOutline,
   trashBinOutline,
+  alertCircleOutline,
 } from 'ionicons/icons';
 import LoadSpinner from '../components/LoadSpinner';
 
 import EditProfileForm from '../components/EditProfileForm';
 import EditShelvesForm from '../components/EditShelvesForm';
 import ChangePasswordForm from '../components/ChangePasswordForm';
+import AppInfo from '../components/AppInfo';
 
 const Settings: React.FC = () => {
   const queryClient = useQueryClient();
@@ -78,6 +80,7 @@ const Settings: React.FC = () => {
     profile: 'profile',
     password: 'password',
     shelves: 'shelves',
+    app: 'app',
   };
 
   const modalAvailableTitles: Record<string, string> = {
@@ -85,6 +88,7 @@ const Settings: React.FC = () => {
     profile: 'Edit Profile Info',
     password: 'Change Password',
     shelves: 'Edit Shelves Info',
+    app: 'Application Info',
   };
 
   const [modalType, setModalType] = useState<string>(
@@ -218,142 +222,159 @@ const Settings: React.FC = () => {
 
         {isSpinnerDeleteOpen ? (
           <LoadSpinner message={'Deleting your account...'} fullScreen={true} />
-        ) : (
+        ) : profileInfoQuery.isFetching ? (
+          <LoadSpinner
+            message={'Getting your profile information...'}
+            fullScreen={true}
+          />
+        ) : profileInfoQuery.isSuccess && profileInfoQuery.data ? (
           <IonGrid>
-            {profileInfoQuery.isSuccess && profileInfoQuery.data ? (
-              <>
-                <UserCard userInfo={profileInfoQuery.data}>
-                  <span className={styles.emailContainer}>
-                    <IonIcon icon={mailOutline}></IonIcon>
-                    {profileInfoQuery.data.email}
-                  </span>
-                </UserCard>
+            <UserCard userInfo={profileInfoQuery.data}>
+              <span className={styles.emailContainer}>
+                <IonIcon icon={mailOutline}></IonIcon>
+                {profileInfoQuery.data.email}
+              </span>
+            </UserCard>
 
-                <IonCard className={styles.card}>
-                  <IonCardHeader className={styles.accountHeader}>
-                    <IonCardTitle className={styles.accountTitle}>
-                      Account
-                    </IonCardTitle>
-                  </IonCardHeader>
+            <IonCard className={styles.card}>
+              <IonCardHeader className={styles.accountHeader}>
+                <IonCardTitle className={styles.accountTitle}>
+                  Account
+                </IonCardTitle>
+              </IonCardHeader>
 
-                  <IonCardContent className={styles.accountContent}>
-                    <IonList lines="full" className={styles.accountList}>
-                      <IonItem
-                        detail={true}
-                        button={true}
-                        onClick={() => {
-                          setIsModalOpen(true);
-                          setModalType(modalAvailableTypes.profile);
-                        }}
-                      >
-                        <IonIcon icon={personOutline} slot="start"></IonIcon>
-                        Edit Profile Info
-                      </IonItem>
-                      <IonItem
-                        detail={true}
-                        button={true}
-                        onClick={() => {
-                          setIsModalOpen(true);
-                          setModalType(modalAvailableTypes.password);
-                        }}
-                      >
-                        <IonIcon
-                          icon={lockClosedOutline}
-                          slot="start"
-                        ></IonIcon>
-                        Change Password
-                      </IonItem>
-                      <IonItem
-                        detail={true}
-                        button={true}
-                        onClick={() => {
-                          setIsModalOpen(true);
-                          setModalType(modalAvailableTypes.shelves);
-                        }}
-                      >
-                        <IonIcon icon={libraryOutline} slot="start"></IonIcon>
-                        Edit Shelves Info
-                      </IonItem>
-                    </IonList>
-                  </IonCardContent>
-                </IonCard>
+              <IonCardContent className={styles.accountContent}>
+                <IonList lines="full" className={styles.accountList}>
+                  <IonItem
+                    detail={true}
+                    button={true}
+                    onClick={() => {
+                      setIsModalOpen(true);
+                      setModalType(modalAvailableTypes.profile);
+                    }}
+                  >
+                    <IonIcon icon={personOutline} slot="start"></IonIcon>
+                    Edit Profile Info
+                  </IonItem>
+                  <IonItem
+                    detail={true}
+                    button={true}
+                    onClick={() => {
+                      setIsModalOpen(true);
+                      setModalType(modalAvailableTypes.password);
+                    }}
+                  >
+                    <IonIcon icon={lockClosedOutline} slot="start"></IonIcon>
+                    Change Password
+                  </IonItem>
+                  <IonItem
+                    detail={true}
+                    button={true}
+                    onClick={() => {
+                      setIsModalOpen(true);
+                      setModalType(modalAvailableTypes.shelves);
+                    }}
+                  >
+                    <IonIcon icon={libraryOutline} slot="start"></IonIcon>
+                    Edit Shelves Info
+                  </IonItem>
+                </IonList>
+              </IonCardContent>
+            </IonCard>
 
-                <IonCard className={styles.card}>
-                  <IonCardHeader className={styles.generalHeader}>
-                    <IonCardTitle className={styles.generalTitle}>
-                      General
-                    </IonCardTitle>
-                  </IonCardHeader>
+            <IonCard className={styles.card}>
+              <IonCardHeader className={styles.generalHeader}>
+                <IonCardTitle className={styles.generalTitle}>
+                  General
+                </IonCardTitle>
+              </IonCardHeader>
 
-                  <IonCardContent className={styles.generalContent}>
-                    <IonList lines="full" className={styles.generalList}>
-                      <IonItem
-                        detail={true}
-                        button={true}
-                        onClick={() => clearCache()}
-                      >
-                        <IonIcon icon={trashBinOutline} slot="start"></IonIcon>
-                        Clear Cache
-                      </IonItem>
-                      <IonItem detail={true} button={true}>
-                        <IonIcon
-                          icon={informationCircleOutline}
-                          slot="start"
-                        ></IonIcon>
-                        APP Info
-                      </IonItem>
-                    </IonList>
-                  </IonCardContent>
-                </IonCard>
+              <IonCardContent className={styles.generalContent}>
+                <IonList lines="full" className={styles.generalList}>
+                  <IonItem
+                    detail={true}
+                    button={true}
+                    onClick={() => clearCache()}
+                  >
+                    <IonIcon icon={trashBinOutline} slot="start"></IonIcon>
+                    Clear Cache
+                  </IonItem>
+                  <IonItem
+                    detail={true}
+                    button={true}
+                    onClick={() => {
+                      setIsModalOpen(true);
+                      setModalType(modalAvailableTypes.app);
+                    }}
+                  >
+                    <IonIcon
+                      icon={informationCircleOutline}
+                      slot="start"
+                    ></IonIcon>
+                    APP Info
+                  </IonItem>
+                </IonList>
+              </IonCardContent>
+            </IonCard>
 
-                <IonCard className={styles.cardDanger}>
-                  <IonCardHeader className={styles.dangerHeader}>
-                    <IonCardTitle className={styles.dangerTitle}>
-                      <strong>Danger Zone</strong>
-                    </IonCardTitle>
-                  </IonCardHeader>
+            <IonCard className={styles.cardDanger}>
+              <IonCardHeader className={styles.dangerHeader}>
+                <IonCardTitle className={styles.dangerTitle}>
+                  <strong>Danger Zone</strong>
+                </IonCardTitle>
+              </IonCardHeader>
 
-                  <IonCardContent className={styles.dangerContent}>
-                    <IonList lines="full" className={styles.dangerList}>
-                      <IonItem
-                        detail={true}
-                        button={true}
-                        className={styles.dangerItem}
-                        onClick={() => setIsLogOutAlertOpen(true)}
-                      >
-                        <IonIcon
-                          icon={logOutOutline}
-                          slot="start"
-                          className={styles.dangerIcon}
-                        ></IonIcon>
-                        <IonLabel className={styles.dangerLabel}>
-                          Log Out
-                        </IonLabel>
-                      </IonItem>
-                      <IonItem
-                        detail={true}
-                        button={true}
-                        className={styles.dangerItem}
-                        onClick={() => setIsDeleteAlertOpen(true)}
-                      >
-                        <IonIcon
-                          icon={closeCircleOutline}
-                          slot="start"
-                          className={styles.dangerIcon}
-                        ></IonIcon>
-                        <IonLabel className={styles.dangerLabel}>
-                          Delete Account
-                        </IonLabel>
-                      </IonItem>
-                    </IonList>
-                  </IonCardContent>
-                </IonCard>
-              </>
-            ) : (
-              <p>Ola</p>
-            )}
-            <IonCard></IonCard>
+              <IonCardContent className={styles.dangerContent}>
+                <IonList lines="full" className={styles.dangerList}>
+                  <IonItem
+                    detail={true}
+                    button={true}
+                    className={styles.dangerItem}
+                    onClick={() => setIsLogOutAlertOpen(true)}
+                  >
+                    <IonIcon
+                      icon={logOutOutline}
+                      slot="start"
+                      className={styles.dangerIcon}
+                    ></IonIcon>
+                    <IonLabel className={styles.dangerLabel}>Log Out</IonLabel>
+                  </IonItem>
+                  <IonItem
+                    detail={true}
+                    button={true}
+                    className={styles.dangerItem}
+                    onClick={() => setIsDeleteAlertOpen(true)}
+                  >
+                    <IonIcon
+                      icon={closeCircleOutline}
+                      slot="start"
+                      className={styles.dangerIcon}
+                    ></IonIcon>
+                    <IonLabel className={styles.dangerLabel}>
+                      Delete Account
+                    </IonLabel>
+                  </IonItem>
+                </IonList>
+              </IonCardContent>
+            </IonCard>
           </IonGrid>
+        ) : (
+          <div className={styles.emptyContainer}>
+            <IonIcon icon={alertCircleOutline} className={styles.errorIcon} />
+            <h3 className={styles.emptyTitle}>Couldn't Load Settings Page</h3>
+            <p className={styles.emptySubtitle}>
+              There was a problem connecting to the server. Please check your
+              connection and try again.
+            </p>
+            <IonButton
+              fill="outline"
+              shape="round"
+              className={styles.retryBtn}
+              onClick={() => profileInfoQuery.refetch()}
+            >
+              Try Again
+            </IonButton>
+          </div>
         )}
       </IonContent>
       <IonModal
@@ -366,10 +387,19 @@ const Settings: React.FC = () => {
           modalType === modalAvailableTypes.shelves ||
           modalType === modalAvailableTypes.password
             ? [0, 0.55, 0.85, 1]
-            : [0, 0.68]
+            : modalType === modalAvailableTypes.profile
+            ? [0, 0.68]
+            : [0, 0.55, 1]
         }
         initialBreakpoint={
-          modalType === modalAvailableTypes.shelves ? 0.85 : 0.68
+          modalType === modalAvailableTypes.shelves
+            ? 0.85
+            : modalType === modalAvailableTypes.password ||
+              modalType === modalAvailableTypes.profile
+            ? 0.68
+            : modalType === modalAvailableTypes.app
+            ? 1
+            : 0.55
         }
         handle={true}
       >
@@ -420,6 +450,8 @@ const Settings: React.FC = () => {
                 setIsModalOpen(false);
               }}
             />
+          ) : modalType === modalAvailableTypes.app ? (
+            <AppInfo />
           ) : null}
         </IonContent>
       </IonModal>
