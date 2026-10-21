@@ -15,7 +15,14 @@ import {
   IonCardHeader,
   IonCardTitle,
 } from '@ionic/react';
-import { cog, book, bookmark, checkmarkCircle, star } from 'ionicons/icons';
+import {
+  cog,
+  book,
+  bookmark,
+  checkmarkCircle,
+  star,
+  alertCircleOutline,
+} from 'ionicons/icons';
 
 import styles from './Profile.module.css';
 
@@ -252,7 +259,22 @@ const Profile: React.FC = () => {
             </IonGrid>
           </>
         ) : (
-          <p>Erro</p>
+          <div className={styles.emptyContainer}>
+            <IonIcon icon={alertCircleOutline} className={styles.errorIcon} />
+            <h3 className={styles.emptyTitle}>Couldn't Load Profile Page</h3>
+            <p className={styles.emptySubtitle}>
+              There was a problem connecting to the server. Please check your
+              connection and try again.
+            </p>
+            <IonButton
+              fill="outline"
+              shape="round"
+              className={styles.retryBtn}
+              onClick={() => profileInfoQuery.refetch()}
+            >
+              Try Again
+            </IonButton>
+          </div>
         )}
       </IonContent>
     </IonPage>
