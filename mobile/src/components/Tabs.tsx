@@ -20,6 +20,7 @@ import BookPage from '../pages/BookPage';
 import Settings from '../pages/SettingsPage';
 import ListPage from '../pages/ListPage';
 import ReviewsPage from '../pages/ReviewsPage';
+import ContributePage from '../pages/ContributePage';
 
 const Tabs: React.FC = () => {
   const match = useRouteMatch();
@@ -54,6 +55,9 @@ const Tabs: React.FC = () => {
         </Route>
         <Route exact path={path + '/book/:id'}>
           <BookPage />
+        </Route>
+        <Route exact path={path + '/contribute-book'}>
+          <ContributePage />
         </Route>
         <Route exact path={path}>
           <Redirect to={path + '/home'} />

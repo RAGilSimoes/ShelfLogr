@@ -19,6 +19,8 @@ import {
   IonToast,
   IonModal,
   IonButton,
+  IonFooter,
+  IonText,
 } from '@ionic/react';
 
 import UserCard from '../components/UserCard';
@@ -48,13 +50,15 @@ import {
   personOutline,
   trashBinOutline,
   alertCircleOutline,
+  chatbubbleEllipsesOutline,
+  constructOutline,
 } from 'ionicons/icons';
 import LoadSpinner from '../components/LoadSpinner';
 
 import EditProfileForm from '../components/EditProfileForm';
 import EditShelvesForm from '../components/EditShelvesForm';
 import ChangePasswordForm from '../components/ChangePasswordForm';
-import AppInfo from '../components/AppInfo';
+import SupportPage from '../components/SupportPage';
 
 const Settings: React.FC = () => {
   const queryClient = useQueryClient();
@@ -80,7 +84,7 @@ const Settings: React.FC = () => {
     profile: 'profile',
     password: 'password',
     shelves: 'shelves',
-    app: 'app',
+    support: 'support',
   };
 
   const modalAvailableTitles: Record<string, string> = {
@@ -88,7 +92,7 @@ const Settings: React.FC = () => {
     profile: 'Edit Profile Info',
     password: 'Change Password',
     shelves: 'Edit Shelves Info',
-    app: 'Application Info',
+    support: 'Support & Feedback',
   };
 
   const [modalType, setModalType] = useState<string>(
@@ -301,14 +305,24 @@ const Settings: React.FC = () => {
                     button={true}
                     onClick={() => {
                       setIsModalOpen(true);
-                      setModalType(modalAvailableTypes.app);
+                      setModalType(modalAvailableTypes.support);
                     }}
                   >
                     <IonIcon
-                      icon={informationCircleOutline}
+                      icon={chatbubbleEllipsesOutline}
                       slot="start"
                     ></IonIcon>
-                    APP Info
+                    Support & Feedback
+                  </IonItem>
+                  <IonItem
+                    detail={true}
+                    button={true}
+                    onClick={() => {
+                      history.push('/app/contribute-book');
+                    }}
+                  >
+                    <IonIcon icon={constructOutline} slot="start"></IonIcon>
+                    Contribute
                   </IonItem>
                 </IonList>
               </IonCardContent>
@@ -354,6 +368,21 @@ const Settings: React.FC = () => {
                 </IonList>
               </IonCardContent>
             </IonCard>
+
+            <div className={`ion-text-center ${styles.footer}`}>
+              <IonText color="medium">v0.0.1</IonText>
+              {' - '}
+              <IonText color="medium">
+                Developed by{' '}
+                <a
+                  href="https://www.linkedin.com/in/ricardo-andré-simões-0716b4280"
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  Ricardo André Simões
+                </a>
+              </IonText>
+            </div>
           </IonGrid>
         ) : (
           <div className={styles.emptyContainer}>
@@ -374,6 +403,7 @@ const Settings: React.FC = () => {
           </div>
         )}
       </IonContent>
+
       <IonModal
         isOpen={isModalOpen}
         onDidDismiss={() => {
@@ -394,7 +424,7 @@ const Settings: React.FC = () => {
             : modalType === modalAvailableTypes.password ||
               modalType === modalAvailableTypes.profile
             ? 0.68
-            : modalType === modalAvailableTypes.app
+            : modalType === modalAvailableTypes.support
             ? 1
             : 0.55
         }
@@ -447,8 +477,15 @@ const Settings: React.FC = () => {
                 setIsModalOpen(false);
               }}
             />
-          ) : modalType === modalAvailableTypes.app ? (
-            <AppInfo />
+          ) : modalType === modalAvailableTypes.support ? (
+            <SupportPage
+              onClose={() => setIsModalOpen(false)}
+              onSuccess={(message: string) => {
+                setDisplaySuccessToast(true);
+                setToastMessage(message);
+                setIsModalOpen(false);
+              }}
+            />
           ) : null}
         </IonContent>
       </IonModal>
