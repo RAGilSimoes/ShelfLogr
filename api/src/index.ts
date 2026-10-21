@@ -151,6 +151,65 @@ app.post('/api/register', async (req: Request, res: Response) => {
   }
 });
 
+app.post(
+  '/api/support',
+  verifyAuthorization(false),
+  async (req: Request, res: Response) => {
+    try {
+      const { id, email } = req.token;
+
+      const { type, subject, text } = req.body;
+
+      const colors: Record<string, number> = {
+        bug: 0xeb445a,
+        feature: 0x3880ff,
+        question: 0xffb800,
+      };
+
+      const discordPayload = {
+        embeds: [
+          {
+            title: `[${type.toUpperCase()}] ${subject}`,
+            description: text,
+            color: colors[type] || 0x3880ff,
+            fields: [
+              {
+                name: 'From',
+                value: `${email} (ID: ${id})`,
+                inline: true,
+              },
+              {
+                name: 'Category',
+                value: type.charAt(0).toUpperCase() + type.slice(1),
+                inline: true,
+              },
+            ],
+            timestamp: new Date().toISOString(),
+            footer: {
+              text: 'ShelfLogr Support System',
+            },
+          },
+        ],
+      };
+
+      const response = await fetch(`${process.env.DISCORD_BOT_WEBHOOK}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(discordPayload),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to send Discord webhook');
+      }
+
+      return res.status(200).json({ message: 'Message sent successfully' });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ error: 'Error sending message. ' });
+    }
+  },
+);
+
 app.delete(
   '/api/user/delete-account',
   verifyAuthorization(false),

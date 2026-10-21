@@ -58,7 +58,7 @@ import LoadSpinner from '../components/LoadSpinner';
 import EditProfileForm from '../components/EditProfileForm';
 import EditShelvesForm from '../components/EditShelvesForm';
 import ChangePasswordForm from '../components/ChangePasswordForm';
-import SupportPage from '../components/SupportPage';
+import SupportForm from '../components/SupportForm';
 
 const Settings: React.FC = () => {
   const queryClient = useQueryClient();
@@ -422,10 +422,9 @@ const Settings: React.FC = () => {
           modalType === modalAvailableTypes.shelves
             ? 0.85
             : modalType === modalAvailableTypes.password ||
-              modalType === modalAvailableTypes.profile
+              modalType === modalAvailableTypes.profile ||
+              modalType === modalAvailableTypes.support
             ? 0.68
-            : modalType === modalAvailableTypes.support
-            ? 1
             : 0.55
         }
         handle={true}
@@ -478,7 +477,7 @@ const Settings: React.FC = () => {
               }}
             />
           ) : modalType === modalAvailableTypes.support ? (
-            <SupportPage
+            <SupportForm
               onClose={() => setIsModalOpen(false)}
               onSuccess={(message: string) => {
                 setDisplaySuccessToast(true);
