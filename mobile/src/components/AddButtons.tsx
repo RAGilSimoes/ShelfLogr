@@ -149,7 +149,7 @@ const AddButtons: React.FC<{
           isOpen={isAddAlertOpen || isCreateAlertOpen}
           header={
             isCreateAlertOpen
-              ? 'Create List'
+              ? 'Create Shelf'
               : isAddAlertOpen
               ? 'Confirm Action'
               : ''

@@ -27,6 +27,7 @@ import {
   pencilOutline,
   trashBinOutline,
   alertCircleOutline,
+  addOutline,
 } from 'ionicons/icons';
 
 const EditShelvesForm: React.FC<{
@@ -45,6 +46,7 @@ const EditShelvesForm: React.FC<{
 
   const [isEditAlertOpen, setIsEditAlertOpen] = useState<boolean>(false);
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState<boolean>(false);
+  const [isCreateAlertOpen, setIsCreateAlertOpen] = useState<boolean>(false);
 
   const [selectedListID, setSelectedListID] = useState<string>('');
   const [selectedListName, setSelectedListName] = useState<string>('');
@@ -75,6 +77,39 @@ const EditShelvesForm: React.FC<{
         setIsLoading(false);
         onSuccess(response.data.message);
         onClose();
+      }
+    } catch (error) {
+      setDisplayToast(true);
+      if (axios.isAxiosError(error)) {
+        const serverMessage =
+          error.response?.data?.error || 'Server communication error.';
+        setToastMessage(serverMessage);
+      } else {
+        setToastMessage('Unexpected error occurred.');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const submitNewList = async (newName: string) => {
+    setIsLoading(true);
+    const body = {
+      name: newName,
+    };
+
+    try {
+      const response = await api.post('/user/create-list', body);
+
+      const status = response.status;
+
+      if (status == 200) {
+        queryClient.invalidateQueries({
+          queryKey: ['userLists', userID],
+        });
+        setIsLoading(false);
+        setDisplayToast(true);
+        setToastMessage(response.data.message);
       }
     } catch (error) {
       setDisplayToast(true);
@@ -123,13 +158,23 @@ const EditShelvesForm: React.FC<{
   return (
     <>
       <IonAlert
-        isOpen={isEditAlertOpen || isDeleteAlertOpen}
-        header={isDeleteAlertOpen ? 'Delete Shelf' : 'Edit Shelf'}
+        isOpen={isEditAlertOpen || isDeleteAlertOpen || isCreateAlertOpen}
+        header={
+          isDeleteAlertOpen
+            ? 'Delete Shelf'
+            : isEditAlertOpen
+            ? 'Edit Shelf'
+            : isCreateAlertOpen
+            ? 'Create Shelf'
+            : ''
+        }
         message={
           isEditAlertOpen
             ? 'Insert new name for this shelf'
             : isDeleteAlertOpen
             ? `Are you sure you want to delete ${selectedListName}?`
+            : isCreateAlertOpen
+            ? 'Insert the name for the new shelf'
             : ''
         }
         cssClass={
@@ -143,6 +188,18 @@ const EditShelvesForm: React.FC<{
                   name: 'inputName',
                   value: `${selectedListName}`,
                   placeholder: `${selectedListName}`,
+                  cssClass: 'alert-isbn-input',
+                  attributes: {
+                    minLength: 1,
+                  },
+                },
+              ]
+            : isCreateAlertOpen
+            ? [
+                {
+                  type: 'text',
+                  name: 'inputName',
+                  placeholder: 'Favorites',
                   cssClass: 'alert-isbn-input',
                   attributes: {
                     minLength: 1,
@@ -164,10 +221,8 @@ const EditShelvesForm: React.FC<{
               ? 'alert-danger-confirm-button'
               : 'alert-confirm-button',
             handler: (alertData) => {
-              if (isEditAlertOpen) {
-                const selectedName = String(
-                  alertData.inputName || selectedListName,
-                ).trim();
+              if (isEditAlertOpen || isCreateAlertOpen) {
+                const selectedName = String(alertData.inputName).trim();
                 if (selectedName) {
                   if (
                     listsNames.some(
@@ -176,18 +231,33 @@ const EditShelvesForm: React.FC<{
                         name: string;
                         is_system: boolean;
                         quantity: number;
-                      }) =>
-                        list.name.toLowerCase() ===
-                          selectedName.toLowerCase() &&
-                        list.id !== selectedListID,
+                      }) => {
+                        if (isEditAlertOpen) {
+                          return (
+                            list.name.toLowerCase() ===
+                              selectedName.toLowerCase() &&
+                            list.id !== selectedListID
+                          );
+                        } else if (isCreateAlertOpen) {
+                          return (
+                            list.name.toLowerCase() ===
+                            selectedName.toLowerCase()
+                          );
+                        }
+                      },
                     )
                   ) {
                     setDisplayToast(true);
                     setToastMessage('Shelf with that name already exists.');
                     return false;
-                  } else if (selectedListName !== selectedName) {
+                  } else if (
+                    isEditAlertOpen &&
+                    selectedListName !== selectedName
+                  ) {
                     setSelectedListName(selectedName);
                     submitShelfEdit(selectedName);
+                  } else if (isCreateAlertOpen) {
+                    submitNewList(selectedName);
                   }
                 } else {
                   setDisplayToast(true);
@@ -201,9 +271,9 @@ const EditShelvesForm: React.FC<{
           },
         ]}
         onDidDismiss={() => {
-          isEditAlertOpen
-            ? setIsEditAlertOpen(false)
-            : setIsDeleteAlertOpen(false);
+          setIsEditAlertOpen(false);
+          setIsDeleteAlertOpen(false);
+          setIsCreateAlertOpen(false);
         }}
         className={styles.alert}
       ></IonAlert>
@@ -275,6 +345,20 @@ const EditShelvesForm: React.FC<{
                     );
                   })}
                 </IonList>
+                <IonButton
+                  expand="block"
+                  shape="round"
+                  size="default"
+                  onClick={() => {
+                    setIsCreateAlertOpen(true);
+                  }}
+                  className="ion-margin-top ion-margin-bottom"
+                  color="primary"
+                  fill="outline"
+                >
+                  Create New List{' '}
+                  <IonIcon slot="end" icon={addOutline}></IonIcon>
+                </IonButton>
               </IonCardContent>
             </IonCard>
           </div>
@@ -282,7 +366,7 @@ const EditShelvesForm: React.FC<{
       ) : (
         <div className={styles.emptyContainer}>
           <IonIcon icon={alertCircleOutline} className={styles.errorIcon} />
-          <h3 className={styles.emptyTitle}>Couldn't Load Books</h3>
+          <h3 className={styles.emptyTitle}>Couldn't Load Shelves</h3>
           <p className={styles.emptySubtitle}>
             There was a problem connecting to the server. Please check your
             connection and try again.
