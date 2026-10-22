@@ -3,10 +3,10 @@ export default function getQueryKeys(userID: string) {
     ['bookInfoISBN', userID],
     ['trendingCategoryBooks', userID],
     ['trendingBooks', userID],
-    ['userList', userID],
+    ['userShelf', userID],
     ['userProfile', userID],
     ['userReviews', userID],
     ['userBook', userID],
-    ['userLists', userID],
+    ['userShelves', userID],
   ];
 }

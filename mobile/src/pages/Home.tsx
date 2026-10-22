@@ -23,7 +23,7 @@ import BookSwiper from '../components/BookSwiper';
 import { useQuery } from '@tanstack/react-query';
 import fetchTrendingBooksRecommendation from '../queryOptions/homeQueries';
 
-import { getUserListsOptions } from '../queryOptions/useUserLists';
+import { getUserShelvesOptions } from '../queryOptions/useUserShelves';
 
 import useAuthStore from '../store/useAuthStore';
 import { bookInfo } from '@shelflogr/shared';
@@ -42,7 +42,6 @@ const Home: React.FC = () => {
   const [buttonDisabled, setButtonDisabled] = useState<boolean>(false);
 
   const [displayToast, setDisplayToast] = useState(false);
-  const [toastType, setToastType] = useState<string>('');
 
   const availableToastTypes = {
     success: 'success',
@@ -76,52 +75,52 @@ const Home: React.FC = () => {
   }
 
   const activeBookQuery = useQuery({
-    ...getUserListsOptions(userID),
+    ...getUserShelvesOptions(userID),
     select(data: {
       category?: string;
-      lists: {
-        reading: Array<{ book: bookInfo; lists: Array<string> }>;
-        wish: Array<{ book: bookInfo; lists: Array<string> }>;
+      shelves: {
+        reading: Array<{ book: bookInfo; shelves: Array<string> }>;
+        wish: Array<{ book: bookInfo; shelves: Array<string> }>;
       };
     }) {
-      let listName =
-        data.lists.reading.length > 0
+      let shelfName =
+        data.shelves.reading.length > 0
           ? 'reading'
-          : data.lists.wish.length > 0
+          : data.shelves.wish.length > 0
           ? 'wish'
           : undefined;
-      let list =
-        data.lists.reading.length > 0
-          ? data.lists.reading
-          : data.lists.wish.length > 0
-          ? data.lists.wish
+      let shelf =
+        data.shelves.reading.length > 0
+          ? data.shelves.reading
+          : data.shelves.wish.length > 0
+          ? data.shelves.wish
           : undefined;
 
-      if (listName && list) {
+      if (shelfName && shelf) {
         if (activeBookID === undefined) {
-          const ind: number = Math.floor(Math.random() * list.length);
-          const item = list[ind];
+          const ind: number = Math.floor(Math.random() * shelf.length);
+          const item = shelf[ind];
 
           return {
             category: data.category,
             book: item.book,
-            bookLists: item.lists,
-            list: listName,
+            bookShelves: item.shelves,
+            shelf: shelfName,
           };
         } else {
-          const backupList =
-            listName === 'reading' ? data.lists.wish : data.lists.reading;
-          const backupListName = listName === 'reading' ? 'wish' : 'reading';
+          const backupShelf =
+            shelfName === 'reading' ? data.shelves.wish : data.shelves.reading;
+          const backupShelfName = shelfName === 'reading' ? 'wish' : 'reading';
 
-          let item: { book: bookInfo; lists: Array<string> };
+          let item: { book: bookInfo; shelves: Array<string> };
 
-          item = list.find((item) => activeBookID === item.book.id)!;
+          item = shelf.find((item) => activeBookID === item.book.id)!;
 
           if (!item) {
-            item = backupList.find((item) => activeBookID === item.book.id)!;
+            item = backupShelf.find((item) => activeBookID === item.book.id)!;
             if (item) {
-              listName = backupListName;
-              list = backupList;
+              shelfName = backupShelfName;
+              shelf = backupShelf;
             }
           }
 
@@ -129,18 +128,18 @@ const Home: React.FC = () => {
             return {
               category: data.category,
               book: item.book,
-              bookLists: item.lists,
-              list: listName,
+              bookShelves: item.shelves,
+              shelf: shelfName,
             };
           } else {
-            const ind: number = Math.floor(Math.random() * list.length);
-            const item = list[ind];
+            const ind: number = Math.floor(Math.random() * shelf.length);
+            const item = shelf[ind];
 
             return {
               category: data.category,
               book: item.book,
-              bookLists: item.lists,
-              list: listName,
+              bookShelves: item.shelves,
+              shelf: shelfName,
             };
           }
         }
@@ -148,11 +147,11 @@ const Home: React.FC = () => {
         return {
           category: data.category,
           book: null,
-          bookLists: null,
-          list: null,
+          bookShelves: null,
+          shelf: null,
         };
       } else {
-        return { category: null, book: null, bookLists: null, list: null };
+        return { category: null, book: null, bookShelves: null, shelf: null };
       }
     },
   });
@@ -212,15 +211,17 @@ const Home: React.FC = () => {
           {activeBookQuery.isLoading ? (
             <LoadSpinner message={'Getting Active Book'} fullScreen={false} />
           ) : (
-            activeBookQuery.status === 'success' &&
+            activeBookQuery.isSuccess &&
             activeBookQuery.data.book &&
             Object.keys(activeBookQuery.data.book).length > 0 && (
               <div>
                 <h3 className={styles.statusMessage}>
                   This book is in your{' '}
-                  {activeBookQuery.data.list?.charAt(0).toUpperCase() +
-                    activeBookQuery.data.list?.slice(1)}{' '}
-                  List
+                  {activeBookQuery.data.shelf
+                    ? activeBookQuery.data.shelf.charAt(0).toUpperCase() +
+                      activeBookQuery.data.shelf.slice(1)
+                    : ''}{' '}
+                  Shelf
                 </h3>
                 <div
                   onClick={() => {

@@ -1,15 +1,15 @@
 import api from '../services/api.service';
 
-async function fetchUserLists() {
-  const response = await api.get('/user/active-lists');
+async function fetchUserShelves() {
+  const response = await api.get('/user/active-shelves');
 
   return response.data;
 }
 
-async function fetchUserListsNames() {
-  const response = await api.get('/user/lists-names');
+async function fetchUserShelvesNames() {
+  const response = await api.get('/user/shelves-names');
 
   return response.data;
 }
 
-export { fetchUserLists, fetchUserListsNames };
+export { fetchUserShelves, fetchUserShelvesNames };

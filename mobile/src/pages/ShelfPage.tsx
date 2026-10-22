@@ -12,7 +12,7 @@ import {
 import { useLocation } from 'react-router';
 
 import { useQuery } from '@tanstack/react-query';
-import fetchListBooks from '../queryOptions/listPageQueries';
+import fetchShelfBooks from '../queryOptions/shelfPageQueries';
 
 import useAuthStore from '../store/useAuthStore';
 
@@ -26,19 +26,18 @@ import { bookOutline, libraryOutline } from 'ionicons/icons';
 import { useHistory, useParams } from 'react-router';
 
 import { useEffect, useState } from 'react';
-import BookInfo from '../components/BookInfo';
 
-const ListPage: React.FC = () => {
+const ShelfPage: React.FC = () => {
   const userID = useAuthStore((state) => state.userID);
   const location: any = useLocation().state;
 
   const [searchedBook, setSearchedBook] = useState<string>('');
 
-  const [listName, setListName] = useState<string>('');
+  const [shelfName, setShelfName] = useState<string>('');
 
   const history = useHistory();
 
-  const { id: listID } = useParams<{ id: string }>();
+  const { id: shelfID } = useParams<{ id: string }>();
 
   const information: {
     id: string;
@@ -48,31 +47,31 @@ const ListPage: React.FC = () => {
   } = location?.information;
 
   useEffect(() => {
-    if (information) setListName(information.name);
+    if (information) setShelfName(information.name);
   }, []);
 
-  const listBooksQuery = useQuery({
-    queryKey: ['userList', userID, listID],
-    queryFn: () => fetchListBooks(listID),
+  const shelfBooksQuery = useQuery({
+    queryKey: ['userShelf', userID, shelfID],
+    queryFn: () => fetchShelfBooks(shelfID),
     select(data) {
       return data.books;
     },
   });
 
   const filteredBooks =
-    listBooksQuery.isSuccess && listBooksQuery.data.length > 0
-      ? listBooksQuery.data.filter(
+    shelfBooksQuery.isSuccess && shelfBooksQuery.data.length > 0
+      ? shelfBooksQuery.data.filter(
           (item: {
             added_at: string;
             authors: Array<string>;
-            bookLists: Array<string>;
+            bookShelves: Array<string>;
             categories: Array<string>;
             cover: string;
             description: string;
             id: string;
             isbn: string;
             language: string;
-            list: string;
+            shelf: string;
             mainCategory: string;
             pageCount: number;
             publishedDate: string;
@@ -90,18 +89,18 @@ const ListPage: React.FC = () => {
             <IonBackButton defaultHref="/app/profile"></IonBackButton>
           </IonButtons>
           <IonTitle>
-            {listName.charAt(0).toUpperCase() + listName.slice(1) || ''} List
+            {shelfName.charAt(0).toUpperCase() + shelfName.slice(1) || ''} Shelf
           </IonTitle>
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
-        {listBooksQuery.isFetching ? (
+        {shelfBooksQuery.isFetching ? (
           <LoadSpinner
-            message={'Fetching the books from this list'}
+            message={'Fetching the books from this shelf'}
             fullScreen={true}
           />
-        ) : listBooksQuery.isSuccess ? (
-          listBooksQuery.data && listBooksQuery.data.length > 0 ? (
+        ) : shelfBooksQuery.isSuccess ? (
+          shelfBooksQuery.data && shelfBooksQuery.data.length > 0 ? (
             <>
               <IonSearchbar
                 debounce={100}
@@ -116,14 +115,14 @@ const ListPage: React.FC = () => {
                   (item: {
                     added_at: string;
                     authors: Array<string>;
-                    bookLists: Array<string>;
+                    bookShelves: Array<string>;
                     categories: Array<string>;
                     cover: string;
                     description: string;
                     id: string;
                     isbn: string;
                     language: string;
-                    list: string;
+                    shelf: string;
                     mainCategory: string;
                     pageCount: number;
                     publishedDate: string;
@@ -136,8 +135,8 @@ const ListPage: React.FC = () => {
                           history.push(`/app/book/${item.id}`, {
                             information: {
                               book: item,
-                              list: item.list,
-                              bookLists: item.bookLists,
+                              shelf: item.shelf,
+                              bookShelves: item.bookShelves,
                             },
                           });
                         }}
@@ -151,16 +150,16 @@ const ListPage: React.FC = () => {
               ) : (
                 <ErrorDisplay
                   title={`No Books with that Title`}
-                  subtitle="Change your filters."
+                  subtitle="Try searching with a different title."
                   icon={bookOutline}
                 />
               )}
             </>
           ) : (
-            listBooksQuery.data.length === 0 && (
+            shelfBooksQuery.data.length === 0 && (
               <ErrorDisplay
                 title={`No Books Yet`}
-                subtitle="When you add a book to this list, it will appear here."
+                subtitle="When you add a book to this shelf, it will appear here."
                 icon={libraryOutline}
               />
             )
@@ -170,7 +169,7 @@ const ListPage: React.FC = () => {
             title={`Couldn't Load Books`}
             subtitle="There was a problem loading the books from this shelf"
             onRetry={() => {
-              listBooksQuery.refetch();
+              shelfBooksQuery.refetch();
             }}
           />
         )}
@@ -179,4 +178,4 @@ const ListPage: React.FC = () => {
   );
 };
 
-export default ListPage;
+export default ShelfPage;

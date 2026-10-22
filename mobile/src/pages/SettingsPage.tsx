@@ -222,8 +222,8 @@ const Settings: React.FC = () => {
 
         {isSpinnerDeleteOpen ? (
           <LoadSpinner message={'Deleting your account...'} fullScreen={true} />
-        ) : profileInfoQuery.isFetching ? (
-          <LoadSpinner message={'Getting settings page...'} fullScreen={true} />
+        ) : profileInfoQuery.isLoading ? (
+          <LoadSpinner message={'Loading settings...'} fullScreen={true} />
         ) : profileInfoQuery.isSuccess && profileInfoQuery.data ? (
           <IonGrid>
             <UserCard userInfo={profileInfoQuery.data}>
@@ -383,7 +383,7 @@ const Settings: React.FC = () => {
         ) : (
           <ErrorDisplay
             title="Couldn't Load Settings"
-            subtitle="There was a problem getting the settings"
+            subtitle="There was a problem loading your settings."
             onRetry={() => profileInfoQuery.refetch()}
           />
         )}
@@ -399,8 +399,9 @@ const Settings: React.FC = () => {
           modalType === modalAvailableTypes.shelves ||
           modalType === modalAvailableTypes.password
             ? [0, 0.55, 0.85, 1]
-            : modalType === modalAvailableTypes.profile
-            ? [0, 0.68]
+            : modalType === modalAvailableTypes.profile ||
+              modalType === modalAvailableTypes.support
+            ? [0, 0.68, 1]
             : [0, 0.55, 1]
         }
         initialBreakpoint={

@@ -18,7 +18,7 @@ import Profile from '../pages/Profile';
 import ChatBot from '../pages/ChatBot';
 import BookPage from '../pages/BookPage';
 import Settings from '../pages/SettingsPage';
-import ListPage from '../pages/ListPage';
+import ShelfPage from '../pages/ShelfPage';
 import ReviewsPage from '../pages/ReviewsPage';
 import ContributePage from '../pages/ContributePage';
 
@@ -44,8 +44,8 @@ const Tabs: React.FC = () => {
         <Route exact path={path + '/profile'}>
           <Profile />
         </Route>
-        <Route exact path={path + '/list/:id'}>
-          <ListPage />
+        <Route exact path={path + '/shelf/:id'}>
+          <ShelfPage />
         </Route>
         <Route exact path={path + '/reviews'}>
           <ReviewsPage />

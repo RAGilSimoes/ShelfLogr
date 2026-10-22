@@ -25,14 +25,14 @@ import LoadSpinner from './LoadSpinner';
 
 import Toast from '../components/Toast';
 
-import { useUserLists } from '../queryOptions/useUserLists';
+import { useUserShelves } from '../queryOptions/useUserShelves';
 import { pencilOutline, trashBinOutline, addOutline } from 'ionicons/icons';
 
 const EditShelvesForm: React.FC<{
   onClose: () => void;
   onSuccess: (message: string) => void;
 }> = ({ onClose, onSuccess }) => {
-  const listsNamesQuery = useUserLists();
+  const shelvesNamesQuery = useUserShelves();
 
   const queryClient = useQueryClient();
   const userID = useAuthStore((state) => state.userID);
@@ -53,31 +53,31 @@ const EditShelvesForm: React.FC<{
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState<boolean>(false);
   const [isCreateAlertOpen, setIsCreateAlertOpen] = useState<boolean>(false);
 
-  const [selectedListID, setSelectedListID] = useState<string>('');
-  const [selectedListName, setSelectedListName] = useState<string>('');
+  const [selectedShelfID, setSelectedShelfID] = useState<string>('');
+  const [selectedShelfName, setSelectedShelfName] = useState<string>('');
 
-  let listsNames: Array<{
+  let shelvesNames: Array<{
     id: string;
     name: string;
     is_system: boolean;
     quantity: number;
-  }> = listsNamesQuery.isSuccess ? listsNamesQuery.data.lists : [];
+  }> = shelvesNamesQuery.isSuccess ? shelvesNamesQuery.data.shelves : [];
 
   const submitShelfEdit = async (newName: string) => {
     setIsLoading(true);
     const body = {
       name: newName,
-      listID: selectedListID,
+      shelfID: selectedShelfID,
     };
 
     try {
-      const response = await api.patch('/user/edit-list', body);
+      const response = await api.patch('/user/edit-shelf', body);
 
       const status = response.status;
 
       if (status == 200) {
         queryClient.invalidateQueries({
-          queryKey: ['userLists', userID],
+          queryKey: ['userShelves', userID],
         });
         setIsLoading(false);
         onSuccess(response.data.message);
@@ -99,20 +99,20 @@ const EditShelvesForm: React.FC<{
     }
   };
 
-  const submitNewList = async (newName: string) => {
+  const submitNewShelf = async (newName: string) => {
     setIsLoading(true);
     const body = {
       name: newName,
     };
 
     try {
-      const response = await api.post('/user/create-list', body);
+      const response = await api.post('/user/create-shelf', body);
 
       const status = response.status;
 
       if (status == 200) {
         queryClient.invalidateQueries({
-          queryKey: ['userLists', userID],
+          queryKey: ['userShelves', userID],
         });
         setIsLoading(false);
         setDisplayToast(true);
@@ -138,13 +138,15 @@ const EditShelvesForm: React.FC<{
     setIsLoading(true);
 
     try {
-      const response = await api.delete(`/user/delete-list/${selectedListID}`);
+      const response = await api.delete(
+        `/user/delete-shelf/${selectedShelfID}`,
+      );
 
       const status = response.status;
 
       if (status == 200) {
         queryClient.invalidateQueries({
-          queryKey: ['userLists', userID],
+          queryKey: ['userShelves', userID],
         });
         setIsLoading(false);
         onSuccess(response.data.message);
@@ -181,11 +183,11 @@ const EditShelvesForm: React.FC<{
         }
         message={
           isEditAlertOpen
-            ? 'Insert new name for this shelf'
+            ? 'Enter a new name for this shelf'
             : isDeleteAlertOpen
-            ? `Are you sure you want to delete ${selectedListName}?`
+            ? `Are you sure you want to delete ${selectedShelfName}?`
             : isCreateAlertOpen
-            ? 'Insert the name for the new shelf'
+            ? 'Enter a name for the new shelf'
             : ''
         }
         cssClass={
@@ -197,8 +199,8 @@ const EditShelvesForm: React.FC<{
                 {
                   type: 'text',
                   name: 'inputName',
-                  value: `${selectedListName}`,
-                  placeholder: `${selectedListName}`,
+                  value: `${selectedShelfName}`,
+                  placeholder: `${selectedShelfName}`,
                   cssClass: 'alert-isbn-input',
                   attributes: {
                     minLength: 1,
@@ -236,8 +238,8 @@ const EditShelvesForm: React.FC<{
                 const selectedName = String(alertData.inputName).trim();
                 if (selectedName) {
                   if (
-                    listsNames.some(
-                      (list: {
+                    shelvesNames.some(
+                      (shelf: {
                         id: string;
                         name: string;
                         is_system: boolean;
@@ -245,13 +247,13 @@ const EditShelvesForm: React.FC<{
                       }) => {
                         if (isEditAlertOpen) {
                           return (
-                            list.name.toLowerCase() ===
+                            shelf.name.toLowerCase() ===
                               selectedName.toLowerCase() &&
-                            list.id !== selectedListID
+                            shelf.id !== selectedShelfID
                           );
                         } else if (isCreateAlertOpen) {
                           return (
-                            list.name.toLowerCase() ===
+                            shelf.name.toLowerCase() ===
                             selectedName.toLowerCase()
                           );
                         }
@@ -264,16 +266,16 @@ const EditShelvesForm: React.FC<{
                     return false;
                   } else if (
                     isEditAlertOpen &&
-                    selectedListName !== selectedName
+                    selectedShelfName !== selectedName
                   ) {
-                    setSelectedListName(selectedName);
+                    setSelectedShelfName(selectedName);
                     submitShelfEdit(selectedName);
                   } else if (isCreateAlertOpen) {
-                    submitNewList(selectedName);
+                    submitNewShelf(selectedName);
                   }
                 } else {
                   setDisplayToast(true);
-                  setToastMessage('Please insert a name.');
+                  setToastMessage('Please enter a name.');
                   setToastType(availableToastTypes.error);
                   return false;
                 }
@@ -302,26 +304,26 @@ const EditShelvesForm: React.FC<{
           message={'Updating Shelf Information...'}
           fullScreen={false}
         />
-      ) : listsNamesQuery.isFetching ? (
+      ) : shelvesNamesQuery.isFetching ? (
         <LoadSpinner
           message={'Getting Shelves Information...'}
           fullScreen={false}
         />
-      ) : listsNamesQuery.isSuccess && listsNames.length > 0 ? (
+      ) : shelvesNamesQuery.isSuccess && shelvesNames.length > 0 ? (
         <>
           <div className={styles.container}>
             <IonCard className={styles.card}>
               <IonCardContent className={styles.cardContent}>
                 <IonList className={styles.list} lines="full">
-                  {listsNames.map((item) => {
-                    const formattedListName =
-                      item.name.charAt(0).toUpperCase() + item.name.slice(1);
+                  {shelvesNames.map((shelf) => {
+                    const formattedShelfName =
+                      shelf.name.charAt(0).toUpperCase() + shelf.name.slice(1);
                     return (
-                      <IonItem key={item.id} className={styles.item}>
+                      <IonItem key={shelf.id} className={styles.item}>
                         <span className={styles.shelfName}>
-                          {formattedListName}
+                          {formattedShelfName}
                         </span>
-                        {item.is_system ? (
+                        {shelf.is_system ? (
                           <span slot="end" className={styles.defaultBadge}>
                             Default
                           </span>
@@ -331,8 +333,8 @@ const EditShelvesForm: React.FC<{
                               icon={pencilOutline}
                               onClick={() => {
                                 setIsEditAlertOpen(true);
-                                setSelectedListName(item.name);
-                                setSelectedListID(item.id);
+                                setSelectedShelfName(shelf.name);
+                                setSelectedShelfID(shelf.id);
                               }}
                               className={styles.editIcon}
                             ></IonIcon>
@@ -340,8 +342,8 @@ const EditShelvesForm: React.FC<{
                               icon={trashBinOutline}
                               onClick={() => {
                                 setIsDeleteAlertOpen(true);
-                                setSelectedListName(item.name);
-                                setSelectedListID(item.id);
+                                setSelectedShelfName(shelf.name);
+                                setSelectedShelfID(shelf.id);
                               }}
                               className={styles.deleteIcon}
                             ></IonIcon>
@@ -362,7 +364,7 @@ const EditShelvesForm: React.FC<{
                   color="primary"
                   fill="outline"
                 >
-                  Create New List{' '}
+                  Create New Shelf{' '}
                   <IonIcon slot="end" icon={addOutline}></IonIcon>
                 </IonButton>
               </IonCardContent>
@@ -372,9 +374,9 @@ const EditShelvesForm: React.FC<{
       ) : (
         <ErrorDisplay
           title="Couldn't Load Shelves"
-          subtitle="There was a problem getting your shelves informations."
+          subtitle="There was a problem loading your shelves."
           onRetry={() => {
-            listsNamesQuery.refetch();
+            shelvesNamesQuery.refetch();
           }}
         />
       )}

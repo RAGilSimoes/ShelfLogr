@@ -24,11 +24,11 @@ CREATE TABLE "categories" (
 	"name" text NOT NULL CONSTRAINT "categories_name_key" UNIQUE,
 	"added_at" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
-CREATE TABLE "list_books" (
-	"list_id" uuid,
+CREATE TABLE "shelf_books" (
+	"shelf_id" uuid,
 	"book_id" uuid,
 	"added_at" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	CONSTRAINT "list_book" PRIMARY KEY("list_id","book_id")
+	CONSTRAINT "shelf_book" PRIMARY KEY("shelf_id","book_id")
 );
 CREATE TABLE "user" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -43,13 +43,13 @@ CREATE TABLE "user_category" (
 	"category_id" uuid,
 	CONSTRAINT "primary" PRIMARY KEY("user_id","category_id")
 );
-CREATE TABLE "user_list" (
+CREATE TABLE "user_shelf" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
 	"user_id" uuid NOT NULL,
 	"name" text NOT NULL,
 	"is_system" boolean NOT NULL,
 	"added_at" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	CONSTRAINT "list_name" UNIQUE("user_id","name")
+	CONSTRAINT "shelf_name" UNIQUE("user_id","name")
 );
 CREATE TABLE "user_reviews" (
 	"user_id" uuid,
@@ -63,15 +63,15 @@ CREATE TABLE "user_reviews" (
 	CONSTRAINT "user_book" PRIMARY KEY("user_id","book_id")
 );
 CREATE INDEX "book_category_index" ON "book_category" ("category_id");
-CREATE INDEX "book_index" ON "list_books" ("book_id");
-CREATE INDEX "user_list_index" ON "user_list" ("user_id");
+CREATE INDEX "book_index" ON "shelf_books" ("book_id");
+CREATE INDEX "user_shelf_index" ON "user_shelf" ("user_id");
 CREATE INDEX "book_reviews_index" ON "user_reviews" ("book_id");
 ALTER TABLE "book_category" ADD CONSTRAINT "book" FOREIGN KEY ("book_id") REFERENCES "book"("id") ON DELETE CASCADE;
 ALTER TABLE "book_category" ADD CONSTRAINT "category" FOREIGN KEY ("category_id") REFERENCES "categories"("id") ON DELETE CASCADE;
-ALTER TABLE "list_books" ADD CONSTRAINT "book" FOREIGN KEY ("book_id") REFERENCES "book"("id") ON DELETE CASCADE;
-ALTER TABLE "list_books" ADD CONSTRAINT "list" FOREIGN KEY ("list_id") REFERENCES "user_list"("id") ON DELETE CASCADE;
+ALTER TABLE "shelf_books" ADD CONSTRAINT "book" FOREIGN KEY ("book_id") REFERENCES "book"("id") ON DELETE CASCADE;
+ALTER TABLE "shelf_books" ADD CONSTRAINT "shelf" FOREIGN KEY ("shelf_id") REFERENCES "user_shelf"("id") ON DELETE CASCADE;
 ALTER TABLE "user_category" ADD CONSTRAINT "category" FOREIGN KEY ("category_id") REFERENCES "categories"("id") ON DELETE CASCADE;
 ALTER TABLE "user_category" ADD CONSTRAINT "user" FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE CASCADE;
-ALTER TABLE "user_list" ADD CONSTRAINT "user" FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE CASCADE;
+ALTER TABLE "user_shelf" ADD CONSTRAINT "user" FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE CASCADE;
 ALTER TABLE "user_reviews" ADD CONSTRAINT "book" FOREIGN KEY ("book_id") REFERENCES "book"("id") ON DELETE CASCADE;
 ALTER TABLE "user_reviews" ADD CONSTRAINT "user" FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE CASCADE;

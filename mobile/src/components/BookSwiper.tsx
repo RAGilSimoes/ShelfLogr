@@ -12,8 +12,8 @@ import { useHistory } from 'react-router';
 const BookSwiper: React.FC<{
   books: Array<{
     book: bookInfo;
-    bookLists: Array<string>;
-    list: string | null;
+    bookShelves: Array<string>;
+    shelf: string | null;
   }>;
 }> = ({ books }) => {
   const history = useHistory();
@@ -29,8 +29,8 @@ const BookSwiper: React.FC<{
           (
             info: {
               book: bookInfo;
-              bookLists: Array<string>;
-              list: string | null;
+              bookShelves: Array<string>;
+              shelf: string | null;
             },
             index: number,
           ) => {

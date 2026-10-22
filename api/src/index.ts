@@ -114,7 +114,7 @@ app.post('/api/register', async (req: Request, res: Response) => {
       const token = generateToken(userID, email, username);
 
       const createDefaultTablesQuery =
-        "INSERT INTO user_list(user_id, name, is_system) VALUES ($1,'reading',true),($1,'wish',true),($1,'completed',true)";
+        "INSERT INTO user_shelf(user_id, name, is_system) VALUES ($1,'reading',true),($1,'wish',true),($1,'completed',true)";
 
       await client.query(createDefaultTablesQuery, [userID]);
 
@@ -251,7 +251,7 @@ app.get(
 );
 
 app.post(
-  '/api/add-book-to-list',
+  '/api/add-book-to-shelf',
   verifyAuthorization(false),
   async (req: Request, res: Response) => {
     if (!req.body || !req.body.book) {
@@ -260,7 +260,7 @@ app.post(
     const client = await pool.connect();
     try {
       const { id } = req.token;
-      const { book, requiredList, reviewData, optionalLists } = req.body;
+      const { book, requiredShelf, reviewData, optionalShelves } = req.body;
 
       const bookID = book.id;
 
@@ -268,19 +268,19 @@ app.post(
 
       await client.query('BEGIN');
 
-      const deleteRequiredListRelation =
-        'DELETE FROM list_books WHERE list_books.book_id=$1 AND list_books.list_id IN (SELECT id FROM user_list WHERE user_list.user_id=$2 AND user_list.is_system = true)';
+      const deleteRequiredShelfRelation =
+        'DELETE FROM shelf_books WHERE shelf_books.book_id=$1 AND shelf_books.shelf_id IN (SELECT id FROM user_shelf WHERE user_shelf.user_id=$2 AND user_shelf.is_system = true)';
 
-      await client.query(deleteRequiredListRelation, [bookID, userID]);
+      await client.query(deleteRequiredShelfRelation, [bookID, userID]);
 
-      const insertBookList =
-        'INSERT INTO list_books(list_id, book_id) VALUES($1,$2) ON CONFLICT DO NOTHING;';
+      const insertBookShelf =
+        'INSERT INTO shelf_books(shelf_id, book_id) VALUES($1,$2) ON CONFLICT DO NOTHING;';
 
-      await client.query(insertBookList, [requiredList, bookID]);
+      await client.query(insertBookShelf, [requiredShelf, bookID]);
 
-      if (optionalLists && optionalLists.length > 0) {
-        for (const optionalList of optionalLists) {
-          await client.query(insertBookList, [optionalList, bookID]);
+      if (optionalShelves && optionalShelves.length > 0) {
+        for (const optionalShelf of optionalShelves) {
+          await client.query(insertBookShelf, [optionalShelf, bookID]);
         }
       }
 
@@ -346,14 +346,14 @@ app.post(
       await client.query('COMMIT');
       return res.status(200).json({
         message: 'Book added successfully',
-        requiredList,
-        optionalLists,
+        requiredShelf,
+        optionalShelves,
       });
     } catch (error) {
       console.log(error);
       await client.query('ROLLBACK');
       return res.status(500).json({
-        error: `Error Adding Book to List(s).`,
+        error: `Error Adding Book to Shelves.`,
       });
     } finally {
       client.release();
@@ -362,49 +362,51 @@ app.post(
 );
 
 app.get(
-  '/api/user/lists-names',
+  '/api/user/shelves-names',
   verifyAuthorization(false),
   async (req: Request, res: Response) => {
     try {
       const { id } = req.token;
 
-      const getBookListsNamesQuery =
-        'SELECT ul.id, ul.name, ul.is_system, COUNT(lb.book_id)::int as quantity FROM "user_list" ul LEFT JOIN "list_books" lb ON ul.id = lb.list_id WHERE ul.user_id=$1 GROUP BY ul.id, ul.is_system ORDER BY ul.is_system DESC, ul.name ASC;';
+      const getBookShelvesNamesQuery =
+        'SELECT ul.id, ul.name, ul.is_system, COUNT(lb.book_id)::int as quantity FROM "user_shelf" ul LEFT JOIN "shelf_books" lb ON ul.id = lb.shelf_id WHERE ul.user_id=$1 GROUP BY ul.id, ul.is_system ORDER BY ul.is_system DESC, ul.name ASC;';
 
-      const { rows: lists } = await pool.query(getBookListsNamesQuery, [id]);
+      const { rows: shelves } = await pool.query(getBookShelvesNamesQuery, [
+        id,
+      ]);
 
-      return res.status(200).json({ lists });
+      return res.status(200).json({ shelves });
     } catch (error) {
       console.log(error);
-      return res.status(500).json({ error: "Couldn't get user lists." });
+      return res.status(500).json({ error: "Couldn't get user's shelves." });
     }
   },
 );
 
 app.get(
-  '/api/user/active-lists',
+  '/api/user/active-shelves',
   verifyAuthorization(false),
   async (req: Request, res: Response) => {
     try {
       const { id } = req.token;
 
-      let lists: {
-        reading: Array<{ book: bookInfo; lists: Array<string> }>;
-        wish: Array<{ book: bookInfo; lists: Array<string> }>;
+      let shelves: {
+        reading: Array<{ book: bookInfo; shelves: Array<string> }>;
+        wish: Array<{ book: bookInfo; shelves: Array<string> }>;
       } = {
         reading: [],
         wish: [],
       };
 
-      const defaultLists = ['reading', 'wish', 'completed'];
+      const defaultShelves = ['reading', 'wish', 'completed'];
 
-      const getBookLists = `SELECT ul.name as "listName",
+      const getBookShelves = `SELECT ul.name as "shelfName",
             b.*, 
             COALESCE((ARRAY_AGG(c.name) FILTER (WHERE bc.main = true))[1], '') as "mainCategory",
             COALESCE(ARRAY_AGG(c.name) FILTER (WHERE bc.main = false), '{}') as categories,
-            (SELECT COALESCE(ARRAY_AGG(all_ul.name), '{}') FROM list_books all_lb JOIN user_list all_ul ON all_ul.id = all_lb.list_id WHERE all_lb.book_id = b.id AND all_ul.user_id = $1) AS lists
-            FROM "list_books" lb 
-            JOIN user_list ul ON ul.id = lb.list_id
+            (SELECT COALESCE(ARRAY_AGG(all_ul.name), '{}') FROM shelf_books all_lb JOIN user_shelf all_ul ON all_ul.id = all_lb.shelf_id WHERE all_lb.book_id = b.id AND all_ul.user_id = $1) AS shelves
+            FROM "shelf_books" lb 
+            JOIN user_shelf ul ON ul.id = lb.shelf_id
             JOIN book b ON b.id = lb.book_id
             LEFT JOIN book_category bc ON b.id = bc.book_id
             LEFT JOIN categories c ON bc.category_id = c.id
@@ -412,26 +414,26 @@ app.get(
             GROUP BY b.id, ul.name;`;
 
       await pool
-        .query(getBookLists, [id, defaultLists.slice(0, 2)])
+        .query(getBookShelves, [id, defaultShelves.slice(0, 2)])
         .then((result: any) =>
           result.rows.forEach((index: any) => {
-            const listName = index.listName;
-            const bookLists = index.lists;
-            delete index.listName;
-            delete index.lists;
+            const shelfName = index.shelfName;
+            const bookShelves = index.shelves;
+            delete index.shelfName;
+            delete index.shelves;
 
-            if (listName === 'reading') {
-              lists.reading.push({ book: index, lists: bookLists });
-            } else if (listName === 'wish') {
-              lists.wish.push({ book: index, lists: bookLists });
+            if (shelfName === 'reading') {
+              shelves.reading.push({ book: index, shelves: bookShelves });
+            } else if (shelfName === 'wish') {
+              shelves.wish.push({ book: index, shelves: bookShelves });
             }
           }),
         );
 
       const getTopCategoryQuery = `
             SELECT c.name as "topCategory"
-            FROM list_books lb
-            JOIN user_list ul ON ul.id=lb.list_id
+            FROM shelf_books lb
+            JOIN user_shelf ul ON ul.id=lb.shelf_id
             JOIN book_category bc ON lb.book_id = bc.book_id
             JOIN categories c ON bc.category_id = c.id
             JOIN user_reviews ur ON ur.book_id = lb.book_id
@@ -453,7 +455,7 @@ app.get(
 
       if (topCategoryRow.length > 0) category = topCategoryRow[0].topCategory;
 
-      res.status(200).json({ lists, category });
+      res.status(200).json({ shelves, category });
     } catch (error) {
       console.error('Database query failed:', error);
       res
@@ -464,28 +466,28 @@ app.get(
 );
 
 app.get(
-  '/api/user/list/:id',
+  '/api/user/shelf/:id',
   verifyAuthorization(false),
   async (req: Request, res: Response) => {
     try {
       const { id } = req.token;
-      const listID: string = req.params.id as string;
+      const shelfID: string = req.params.id as string;
 
       const getBooksQuery = `SELECT 
         b.*, 
         COALESCE((ARRAY_AGG(c.name) FILTER (WHERE bc.main = true))[1], '') as "mainCategory",
         COALESCE(ARRAY_AGG(c.name) FILTER (WHERE bc.main = false), '{}') as categories,
-        (SELECT COALESCE(ARRAY_AGG(all_ul.name), '{}') FROM list_books all_lb JOIN user_list all_ul ON all_ul.id = all_lb.list_id WHERE all_lb.book_id = b.id AND all_ul.user_id = $2) AS "bookLists",
-        (SELECT all_ul.name FROM list_books all_lb JOIN user_list all_ul ON all_ul.id = all_lb.list_id WHERE all_lb.book_id = b.id AND all_ul.user_id = $2 AND all_ul.is_system = true LIMIT 1) AS "list"
+        (SELECT COALESCE(ARRAY_AGG(all_ul.name), '{}') FROM shelf_books all_lb JOIN user_shelf all_ul ON all_ul.id = all_lb.shelf_id WHERE all_lb.book_id = b.id AND all_ul.user_id = $2) AS "bookShelves",
+        (SELECT all_ul.name FROM shelf_books all_lb JOIN user_shelf all_ul ON all_ul.id = all_lb.shelf_id WHERE all_lb.book_id = b.id AND all_ul.user_id = $2 AND all_ul.is_system = true LIMIT 1) AS "shelf"
     FROM "book" b
     LEFT JOIN book_category bc ON b.id = bc.book_id
     LEFT JOIN categories c ON bc.category_id = c.id
-    LEFT JOIN list_books lb ON b.id = lb.book_id
-    LEFT JOIN user_list ul ON ul.id = lb.list_id
-    WHERE lb.list_id = $1 AND ul.user_id = $2
+    LEFT JOIN shelf_books lb ON b.id = lb.book_id
+    LEFT JOIN user_shelf ul ON ul.id = lb.shelf_id
+    WHERE lb.shelf_id = $1 AND ul.user_id = $2
     GROUP BY b.id;`;
 
-      const { rows } = await pool.query(getBooksQuery, [listID, id]);
+      const { rows } = await pool.query(getBooksQuery, [shelfID, id]);
 
       if (rows) {
         return res.status(200).json({ books: rows });
@@ -494,7 +496,7 @@ app.get(
       console.log(error);
       return res
         .status(500)
-        .json({ error: 'Error getting the books from this list' });
+        .json({ error: 'Error getting the books from this shelf' });
     }
   },
 );
@@ -520,7 +522,7 @@ app.get(
       console.error('Database query failed:', error);
       return res
         .status(500)
-        .json({ error: 'Error getting profile informations.' });
+        .json({ error: 'Error getting profile information.' });
     }
   },
 );
@@ -571,27 +573,27 @@ app.patch(
 );
 
 app.patch(
-  '/api/user/edit-list',
+  '/api/user/edit-shelf',
   verifyAuthorization(false),
   async (req: Request, res: Response) => {
     try {
       const { id } = req.token;
 
-      const { name, listID } = req.body;
+      const { name, shelfID } = req.body;
 
-      const updateListNameQuery =
-        'UPDATE "user_list" SET name=$1 WHERE id=$2 AND user_id=$3 RETURNING id;';
+      const updateShelfNameQuery =
+        'UPDATE "user_shelf" SET name=$1 WHERE id=$2 AND user_id=$3 RETURNING id;';
 
-      const { rows } = await pool.query(updateListNameQuery, [
+      const { rows } = await pool.query(updateShelfNameQuery, [
         name,
-        listID,
+        shelfID,
         id,
       ]);
 
       if (rows.length > 0) {
-        return res.status(200).json({ message: 'List updated successfully' });
+        return res.status(200).json({ message: 'Shelf updated successfully' });
       } else {
-        return res.status(404).json({ error: 'List not found.' });
+        return res.status(404).json({ error: 'Shelf not found.' });
       }
     } catch (error: any) {
       const errorCode = error.code;
@@ -602,14 +604,14 @@ app.patch(
           .status(409)
           .json({ error: 'A shelf with that name already exists' });
       } else {
-        return res.status(500).json({ error: 'Error updating list' });
+        return res.status(500).json({ error: 'Error updating shelf' });
       }
     }
   },
 );
 
 app.post(
-  '/api/user/create-list',
+  '/api/user/create-shelf',
   verifyAuthorization(false),
   async (req: Request, res: Response) => {
     try {
@@ -617,15 +619,15 @@ app.post(
 
       const { name } = req.body;
 
-      const updateListNameQuery =
-        'INSERT INTO "user_list"(user_id, name, is_system, added_at) VALUES ($1, $2, false, CURRENT_TIMESTAMP) RETURNING id;';
+      const insertShelfQuery =
+        'INSERT INTO "user_shelf"(user_id, name, is_system, added_at) VALUES ($1, $2, false, CURRENT_TIMESTAMP) RETURNING id;';
 
-      const { rows } = await pool.query(updateListNameQuery, [id, name]);
+      const { rows } = await pool.query(insertShelfQuery, [id, name]);
 
       if (rows.length > 0) {
         return res
           .status(200)
-          .json({ listID: rows[0].id, message: 'List created successfully' });
+          .json({ shelfID: rows[0].id, message: 'Shelf created successfully' });
       }
     } catch (error: any) {
       const errorCode = error.code;
@@ -636,34 +638,34 @@ app.post(
           .status(409)
           .json({ error: 'A shelf with that name already exists' });
       } else {
-        return res.status(500).json({ error: 'Error creating list' });
+        return res.status(500).json({ error: 'Error creating shelf' });
       }
     }
   },
 );
 
 app.delete(
-  '/api/user/delete-list/:id',
+  '/api/user/delete-shelf/:id',
   verifyAuthorization(false),
   async (req: Request, res: Response) => {
     try {
       const { id } = req.token;
 
-      const listID: string = req.params.id as string;
+      const shelfID: string = req.params.id as string;
 
-      const deleteListQuery =
-        'DELETE FROM "user_list" WHERE id=$1 AND user_id=$2 AND is_system=false RETURNING id;';
+      const deleteShelfQuery =
+        'DELETE FROM "user_shelf" WHERE id=$1 AND user_id=$2 AND is_system=false RETURNING id;';
 
-      const { rows } = await pool.query(deleteListQuery, [listID, id]);
+      const { rows } = await pool.query(deleteShelfQuery, [shelfID, id]);
 
       if (rows.length > 0) {
-        return res.status(200).json({ message: 'List deleted successfully' });
+        return res.status(200).json({ message: 'Shelf deleted successfully' });
       } else {
-        return res.status(404).json({ error: 'List not found.' });
+        return res.status(404).json({ error: 'Shelf not found.' });
       }
     } catch (error: any) {
       console.error(error);
-      return res.status(500).json({ error: 'Error deleting list.' });
+      return res.status(500).json({ error: 'Error deleting shelf.' });
     }
   },
 );

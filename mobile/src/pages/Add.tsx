@@ -57,7 +57,7 @@ const Add: React.FC = () => {
 
   const userID = useAuthStore((state) => state.userID);
 
-  const [formattedListNames, setFormattedListNames] = useState<string[]>([]);
+  const [formattedShelfNames, setFormattedShelfNames] = useState<string[]>([]);
 
   useIonViewWillLeave(() => {
     setToastMessage('');
@@ -67,7 +67,7 @@ const Add: React.FC = () => {
     queryClient.removeQueries({
       queryKey: ['bookInfoISBN', userID, finalIsbn],
     });
-    addBookToList.reset();
+    addBookToShelf.reset();
 
     setFinalIsbn('');
   });
@@ -129,7 +129,7 @@ const Add: React.FC = () => {
         BarcodeScanner.stopScan();
       }
     } else {
-      setToastMessage('You need to grant permission to use the camera.');
+      setToastMessage('Camera permission is required to scan barcodes.');
       setDisplayToast(true);
       setToastType(availableToastTypes.error);
     }
@@ -154,19 +154,19 @@ const Add: React.FC = () => {
     },
   });
 
-  const addBookToList = useMutation({
+  const addBookToShelf = useMutation({
     mutationFn: (content: {
       book: bookInfo;
-      requiredList: string;
+      requiredShelf: string;
       reviewData: {
         rating: number;
         display: string;
         liked: boolean;
         review: string | null;
       } | null;
-      optionalLists: Array<string> | null;
+      optionalShelves: Array<string> | null;
     }) => {
-      return api.post('/add-book-to-list', content);
+      return api.post('/add-book-to-shelf', content);
     },
     onSuccess: () => {
       const queryKeys = getQueryKeys(userID);
@@ -181,41 +181,41 @@ const Add: React.FC = () => {
   });
 
   const handleBookAdd = (
-    requiredList: string,
-    formattedListNames: Array<string>,
+    requiredShelf: string,
+    formattedShelfNames: Array<string>,
     reviewData: {
       rating: number;
       display: string;
       liked: boolean;
       review: string | null;
     } | null,
-    optionalLists: Array<string> | null,
+    optionalShelves: Array<string> | null,
   ) => {
-    setFormattedListNames(formattedListNames);
-    addBookToList.mutate({
+    setFormattedShelfNames(formattedShelfNames);
+    addBookToShelf.mutate({
       book: bookInfoQuery.data.book,
-      requiredList,
+      requiredShelf,
       reviewData,
-      optionalLists,
+      optionalShelves,
     });
   };
 
-  const showAddToListsButton =
+  const showAddToShelvesButton =
     bookInfoQuery.isSuccess &&
     bookInfoQuery.data.book &&
-    bookInfoQuery.data.list === null &&
-    addBookToList.isIdle;
+    bookInfoQuery.data.shelf === null &&
+    addBookToShelf.isIdle;
 
   const showAlreadyHasBook =
     bookInfoQuery.isSuccess &&
     bookInfoQuery.data.book &&
-    bookInfoQuery.data.list !== null;
+    bookInfoQuery.data.shelf !== null;
 
   const successMessage =
-    bookInfoQuery.isSuccess && bookInfoQuery.data.list
+    bookInfoQuery.isSuccess && bookInfoQuery.data.shelf
       ? 'You already added this book!'
-      : addBookToList.isSuccess
-      ? addBookToList.data.data.message
+      : addBookToShelf.isSuccess
+      ? addBookToShelf.data.data.message
       : '';
 
   return (
@@ -223,23 +223,21 @@ const Add: React.FC = () => {
       <IonContent className="ion-padding">
         <Toast
           message={
-            addBookToList.isError
-              ? addBookToList.error?.message
+            addBookToShelf.isError
+              ? addBookToShelf.error?.message
               : bookInfoQuery.isError
               ? bookInfoQuery.error.message
               : toastMessage
           }
           onDismiss={() => setDisplayToast(false)}
           type={toastType}
-          open={addBookToList.isError || bookInfoQuery.isError || displayToast}
+          open={addBookToShelf.isError || bookInfoQuery.isError || displayToast}
         />
 
         <IonAlert
           isOpen={isScanAlertOpen}
           header={'ISBN Detected'}
-          message={
-            'Confirm if the displayed ISBN matches the one from the book'
-          }
+          message={'Confirm that the displayed ISBN matches your book'}
           cssClass="custom-isbn-alert"
           inputs={
             isScanAlertOpen
@@ -286,13 +284,13 @@ const Add: React.FC = () => {
           className={styles.alert}
         ></IonAlert>
 
-        {bookInfoQuery.isFetching || addBookToList.isPending ? (
+        {bookInfoQuery.isFetching || addBookToShelf.isPending ? (
           <LoadSpinner
             message={
               bookInfoQuery.isFetching
                 ? 'Getting Book Info...'
-                : addBookToList.isPending
-                ? `Adding Book To \n\n ${formattedListNames
+                : addBookToShelf.isPending
+                ? `Adding Book To \n\n ${formattedShelfNames
                     .map((item) => '• ' + item)
                     .join('\n')} \n\n ...`
                 : ''
@@ -311,30 +309,30 @@ const Add: React.FC = () => {
               {bookInfoQuery.isSuccess && bookInfoQuery.data.book && (
                 <BookInfo bookInfo={bookInfoQuery.data.book} detailed={false} />
               )}
-              {(showAddToListsButton && (
+              {(showAddToShelvesButton && (
                 <>
                   <AddButtons onAddBook={handleBookAdd} />
                 </>
               )) ||
-                ((showAlreadyHasBook || addBookToList.isSuccess) && (
+                ((showAlreadyHasBook || addBookToShelf.isSuccess) && (
                   <StatusFeedback
                     successMessage={successMessage}
-                    list={
-                      addBookToList.isSuccess
-                        ? formattedListNames
-                        : bookInfoQuery.data.bookLists &&
-                          bookInfoQuery.data.bookLists.length > 0
-                        ? bookInfoQuery.data.bookLists
-                        : [bookInfoQuery.data.list]
+                    shelf={
+                      addBookToShelf.isSuccess
+                        ? formattedShelfNames
+                        : bookInfoQuery.data.bookShelves &&
+                          bookInfoQuery.data.bookShelves.length > 0
+                        ? bookInfoQuery.data.bookShelves
+                        : [bookInfoQuery.data.shelf]
                     }
                   />
                 ))}
               <IonButton
                 expand="block"
                 shape="round"
-                size={showAddToListsButton === true ? 'default' : 'large'}
-                fill={showAddToListsButton === true ? 'outline' : 'solid'}
-                color={showAddToListsButton === true ? 'medium' : 'primary'}
+                size={showAddToShelvesButton === true ? 'default' : 'large'}
+                fill={showAddToShelvesButton === true ? 'outline' : 'solid'}
+                color={showAddToShelvesButton === true ? 'medium' : 'primary'}
                 onClick={readBarcode}
                 className="ion-margin-top"
               >

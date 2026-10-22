@@ -18,7 +18,7 @@ const BookInfo: React.FC<{
         }
       >
         <h3 className={styles.sinopse}>
-          <strong>Sinopse:</strong>
+          <strong>Description:</strong>
         </h3>
 
         <div className={styles.description}>

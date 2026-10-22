@@ -27,13 +27,12 @@ import styles from './Login.module.css';
 import useAuthStore from '../store/useAuthStore';
 
 import { useQueryClient } from '@tanstack/react-query';
-import { fetchUserLists } from '../queryOptions/loginQueries';
 
 import {
-  useUserLists,
-  getUserListsOptions,
-  getUserListsNamesOptions,
-} from '../queryOptions/useUserLists';
+  getUserShelvesOptions,
+  getUserShelvesNamesOptions,
+} from '../queryOptions/useUserShelves';
+
 import { jwtDecode } from 'jwt-decode';
 
 import Toast from '../components/Toast';
@@ -139,9 +138,9 @@ const Login: React.FC = () => {
         const decodedToken: { id: string; email: string; name: string } =
           jwtDecode(token);
 
-        queryClient.prefetchQuery(getUserListsOptions(decodedToken.id));
+        queryClient.prefetchQuery(getUserShelvesOptions(decodedToken.id));
 
-        queryClient.prefetchQuery(getUserListsNamesOptions(decodedToken.id));
+        queryClient.prefetchQuery(getUserShelvesNamesOptions(decodedToken.id));
 
         setDisplayToast(false);
         setToastMessage('');

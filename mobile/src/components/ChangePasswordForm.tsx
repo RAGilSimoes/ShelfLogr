@@ -160,10 +160,7 @@ const ChangePasswordForm: React.FC<{
       />
 
       {isLoading ? (
-        <LoadSpinner
-          message={'Updating Profile Password...'}
-          fullScreen={false}
-        />
+        <LoadSpinner message={'Updating password...'} fullScreen={false} />
       ) : (
         <div className={styles.container}>
           <form onSubmit={submitForm}>
@@ -177,7 +174,7 @@ const ChangePasswordForm: React.FC<{
                       className={styles.inputIcon}
                     />
                     <IonInput
-                      label="Old Password"
+                      label="Current Password"
                       labelPlacement="stacked"
                       value={inputOldPassword}
                       className={`${
@@ -185,7 +182,7 @@ const ChangePasswordForm: React.FC<{
                       } ${isTouched ? 'ion-touched' : ''} ${styles.input}`}
                       name="oldPassword"
                       type="password"
-                      errorText="Invalid old password"
+                      errorText="Invalid current password"
                       placeholder="●●●●●●●●"
                       onIonInput={(event) => validate(event)}
                       onIonBlur={() => markTouched()}

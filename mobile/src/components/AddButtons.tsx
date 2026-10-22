@@ -13,7 +13,7 @@ import styles from './AddButtons.module.css';
 
 import { useState } from 'react';
 
-import { useUserLists } from '../queryOptions/useUserLists';
+import { useUserShelves } from '../queryOptions/useUserShelves';
 
 import CompletedBookForm from './CompletedBookForm';
 
@@ -29,15 +29,15 @@ import Toast from '../components/Toast';
 
 const AddButtons: React.FC<{
   onAddBook: (
-    requiredList: string,
-    formattedListNames: Array<string>,
+    requiredShelf: string,
+    formattedShelvesNames: Array<string>,
     reviewData: {
       rating: number;
       display: string;
       liked: boolean;
       review: string | null;
     } | null,
-    optionalLists: Array<string> | null,
+    optionalShelves: Array<string> | null,
   ) => void;
 }> = ({ onAddBook }) => {
   const [isAddAlertOpen, setIsAddAlertOpen] = useState<boolean>(false);
@@ -54,12 +54,12 @@ const AddButtons: React.FC<{
     error: 'error',
   };
 
-  const listsNamesQuery = useUserLists();
+  const shelvesNamesQuery = useUserShelves();
 
-  const [requiredListID, setRequiredListID] = useState<string>('');
-  const [requiredListName, setRequiredListName] = useState<string>('');
+  const [requiredShelfID, setRequiredShelfID] = useState<string>('');
+  const [requiredShelfName, setRequiredShelfName] = useState<string>('');
 
-  const [optionalListsID, setOptionalListsID] = useState<string[]>([]);
+  const [optionalShelvesID, setOptionalShelvesID] = useState<string[]>([]);
 
   const queryClient = useQueryClient();
   const userID = useAuthStore((state) => state.userID);
@@ -71,22 +71,22 @@ const AddButtons: React.FC<{
     review: string | null;
   }>({ rating: 0, display: '', liked: false, review: null });
 
-  if (listsNamesQuery.isSuccess) {
-    const lists: Array<{
+  if (shelvesNamesQuery.isSuccess) {
+    const shelves: Array<{
       id: string;
       name: string;
       is_system: boolean;
       quantity: number;
-    }> = listsNamesQuery.data.lists;
+    }> = shelvesNamesQuery.data.shelves;
 
-    const systemLists = lists.filter((list) => list.is_system === true);
-    const extraLists = lists.filter((list) => list.is_system === false);
+    const systemShelves = shelves.filter((shelf) => shelf.is_system === true);
+    const extraShelves = shelves.filter((shelf) => shelf.is_system === false);
 
-    const extraListsNames = extraLists
-      .filter((item) => optionalListsID.includes(item.id))
+    const extraShelvesNames = extraShelves
+      .filter((item) => optionalShelvesID.includes(item.id))
       .map((item) => item.name);
 
-    const listsNamesArray = [requiredListName, ...extraListsNames];
+    const shelvesNamesArray = [requiredShelfName, ...extraShelvesNames];
 
     const handleReviewAdd = (
       rating: number,
@@ -98,26 +98,26 @@ const AddButtons: React.FC<{
     };
 
     const disabledButton =
-      requiredListID === '' ||
-      (requiredListName === 'Completed' &&
+      requiredShelfID === '' ||
+      (requiredShelfName === 'Completed' &&
         (reviewData.rating < 0 ||
           reviewData.rating > 5 ||
           reviewData.display === ''));
 
-    const submitNewList = async (newName: string) => {
+    const submitNewShelf = async (newName: string) => {
       setIsLoading(true);
       const body = {
         name: newName,
       };
 
       try {
-        const response = await api.post('/user/create-list', body);
+        const response = await api.post('/user/create-shelf', body);
 
         const status = response.status;
 
         if (status == 200) {
           queryClient.invalidateQueries({
-            queryKey: ['userLists', userID],
+            queryKey: ['userShelves', userID],
           });
           setIsLoading(false);
           setDisplayToast(true);
@@ -159,10 +159,10 @@ const AddButtons: React.FC<{
           }
           message={
             isCreateAlertOpen
-              ? 'Insert the name for the new list'
+              ? 'Enter a name for the new shelf'
               : isAddAlertOpen
-              ? `Are you sure you want to add this book to the following lists?\n\n
-            ${listsNamesArray.map((item) => '• ' + item).join('\n')}`
+              ? `Are you sure you want to add this book to the following shelves?\n\n
+            ${shelvesNamesArray.map((item) => '• ' + item).join('\n')}`
               : ''
           }
           cssClass="custom-isbn-alert"
@@ -196,14 +196,14 @@ const AddButtons: React.FC<{
                   const selectedName = String(alertData.inputName).trim();
                   if (selectedName) {
                     if (
-                      lists.some(
-                        (list: {
+                      shelves.some(
+                        (shelf: {
                           id: string;
                           name: string;
                           is_system: boolean;
                           quantity: number;
                         }) =>
-                          list.name.toLowerCase() ===
+                          shelf.name.toLowerCase() ===
                           selectedName.toLowerCase(),
                       )
                     ) {
@@ -211,19 +211,19 @@ const AddButtons: React.FC<{
                       setToastMessage('Shelf with that name already exists.');
                       return false;
                     } else {
-                      submitNewList(selectedName);
+                      submitNewShelf(selectedName);
                     }
                   } else {
                     setDisplayToast(true);
-                    setToastMessage('Please insert a name');
+                    setToastMessage('Please enter a name');
                     return false;
                   }
                 } else {
                   onAddBook(
-                    requiredListID,
-                    listsNamesArray,
-                    requiredListName === 'Completed' ? reviewData : null,
-                    optionalListsID,
+                    requiredShelfID,
+                    shelvesNamesArray,
+                    requiredShelfName === 'Completed' ? reviewData : null,
+                    optionalShelvesID,
                   );
                 }
               },
@@ -237,28 +237,28 @@ const AddButtons: React.FC<{
         ></IonAlert>
 
         {isLoading ? (
-          <LoadSpinner message="Creating new list..." fullScreen={true} />
+          <LoadSpinner message="Creating new shelf..." fullScreen={true} />
         ) : (
           <>
             <div className={styles.dividerDiv}>
               <hr className={styles.divider} />
-              LISTS
+              SHELVES
               <hr className={styles.divider} />
             </div>
 
-            <IonList inset={true} className={styles.listsSelect}>
+            <IonList inset={true} className={styles.shelvesSelect}>
               <IonSelect
-                placeholder="List To Add"
-                interfaceOptions={{ header: 'Choose A List' }}
+                placeholder="Shelf To Add"
+                interfaceOptions={{ header: 'Choose A Shelf' }}
                 onIonChange={(e) => {
-                  const listName = systemLists.find(
-                    (list) => list.id === e.detail.value,
+                  const shelfName = systemShelves.find(
+                    (shelf) => shelf.id === e.detail.value,
                   )!.name;
 
                   const formattedName =
-                    listName.charAt(0).toUpperCase() + listName.slice(1);
-                  setRequiredListID(e.detail.value);
-                  setRequiredListName(formattedName);
+                    shelfName.charAt(0).toUpperCase() + shelfName.slice(1);
+                  setRequiredShelfID(e.detail.value);
+                  setRequiredShelfName(formattedName);
 
                   if (formattedName !== 'Completed')
                     setReviewData({
@@ -270,11 +270,11 @@ const AddButtons: React.FC<{
                 }}
                 label="Status"
                 multiple={false}
-                value={requiredListID}
+                value={requiredShelfID}
               >
-                {systemLists.map(
+                {systemShelves.map(
                   (
-                    list: {
+                    shelf: {
                       id: string;
                       name: string;
                       is_system: boolean;
@@ -283,8 +283,9 @@ const AddButtons: React.FC<{
                     index: number,
                   ) => {
                     return (
-                      <IonSelectOption key={index} value={list.id}>
-                        {list.name.charAt(0).toUpperCase() + list.name.slice(1)}
+                      <IonSelectOption key={index} value={shelf.id}>
+                        {shelf.name.charAt(0).toUpperCase() +
+                          shelf.name.slice(1)}
                       </IonSelectOption>
                     );
                   },
@@ -292,25 +293,25 @@ const AddButtons: React.FC<{
               </IonSelect>
             </IonList>
 
-            {requiredListName === 'Completed' && (
+            {requiredShelfName === 'Completed' && (
               <CompletedBookForm onReviewChange={handleReviewAdd} />
             )}
 
-            {extraLists.length > 0 && (
-              <IonList inset={true} className={styles.listsSelect}>
+            {extraShelves.length > 0 && (
+              <IonList inset={true} className={styles.shelvesSelect}>
                 <IonSelect
-                  placeholder="Extra List(s)"
-                  interfaceOptions={{ header: 'Choose The List(s)' }}
+                  placeholder="Extra Shelves"
+                  interfaceOptions={{ header: 'Choose The Shelves' }}
                   onIonChange={(e) => {
-                    setOptionalListsID(e.detail.value);
+                    setOptionalShelvesID(e.detail.value);
                   }}
-                  label="Optional Lists"
+                  label="Optional Shelves"
                   multiple={true}
-                  value={optionalListsID}
+                  value={optionalShelvesID}
                 >
-                  {extraLists.map(
+                  {extraShelves.map(
                     (
-                      list: {
+                      shelf: {
                         id: string;
                         name: string;
                         is_system: boolean;
@@ -319,9 +320,9 @@ const AddButtons: React.FC<{
                       index: number,
                     ) => {
                       return (
-                        <IonSelectOption key={index} value={list.id}>
-                          {list.name.charAt(0).toUpperCase() +
-                            list.name.slice(1)}
+                        <IonSelectOption key={index} value={shelf.id}>
+                          {shelf.name.charAt(0).toUpperCase() +
+                            shelf.name.slice(1)}
                         </IonSelectOption>
                       );
                     },
@@ -341,7 +342,7 @@ const AddButtons: React.FC<{
               color="primary"
               fill="outline"
             >
-              Create New List <IonIcon slot="end" icon={addOutline}></IonIcon>
+              Create New Shelf <IonIcon slot="end" icon={addOutline}></IonIcon>
             </IonButton>
 
             <IonButton
@@ -355,7 +356,7 @@ const AddButtons: React.FC<{
               color="primary"
               disabled={disabledButton}
             >
-              Add Book To List <IonIcon slot="end" icon={book}></IonIcon>
+              Add Book To Shelf <IonIcon slot="end" icon={book}></IonIcon>
             </IonButton>
           </>
         )}

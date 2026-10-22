@@ -16,7 +16,7 @@
   width: -webkit-fill-available;
 }
 
-.listsSelect {
+.shelvesSelect {
   --ion-item-background: #1c1c1e;
   border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 14px;

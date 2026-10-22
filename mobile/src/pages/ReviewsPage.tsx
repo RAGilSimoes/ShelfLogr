@@ -339,7 +339,7 @@ const ReviewsPage: React.FC = () => {
               reviewsQuery.data.length === 0 && (
                 <ErrorDisplay
                   title="No Reviews Yet"
-                  subtitle="When you share your thoughts on a book, your evaluations
+                  subtitle="When you share your thoughts on a book, your reviews
                     will appear here."
                   icon={chatbubbleEllipsesOutline}
                 />

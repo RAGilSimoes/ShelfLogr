@@ -22,7 +22,7 @@ import { cog, book, bookmark, checkmarkCircle, star } from 'ionicons/icons';
 
 import styles from './Profile.module.css';
 
-import { useUserLists } from '../queryOptions/useUserLists';
+import { useUserShelves } from '../queryOptions/useUserShelves';
 
 import LoadSpinner from '../components/LoadSpinner';
 
@@ -39,14 +39,14 @@ import ErrorDisplay from '../components/ErrorDisplay';
 
 const Profile: React.FC = () => {
   const history = useHistory();
-  const userListsQuery = useUserLists();
+  const userShelvesQuery = useUserShelves();
 
-  let userLists: Array<{
+  const userShelves: Array<{
     id: string;
     name: string;
     is_system: boolean;
     quantity: number;
-  }> = userListsQuery.isSuccess ? userListsQuery.data.lists : [];
+  }> = userShelvesQuery.isSuccess ? userShelvesQuery.data.shelves : [];
 
   const userID = useAuthStore((state) => state.userID);
 
@@ -90,7 +90,7 @@ const Profile: React.FC = () => {
             try {
               await Promise.all([
                 profileInfoQuery.refetch(),
-                userListsQuery.refetch(),
+                userShelvesQuery.refetch(),
               ]);
             } catch (error) {
             } finally {
@@ -101,12 +101,12 @@ const Profile: React.FC = () => {
           <IonRefresherContent></IonRefresherContent>
         </IonRefresher>
 
-        {profileInfoQuery.isLoading ? (
+        {profileInfoQuery.isLoading || userShelvesQuery.isLoading ? (
           <LoadSpinner
             message={'Getting User Information...'}
             fullScreen={true}
           />
-        ) : profileInfoQuery.isSuccess ? (
+        ) : profileInfoQuery.isSuccess && userShelvesQuery.isSuccess ? (
           <>
             <div className={styles.topBar}>
               <h1>Profile</h1>
@@ -125,24 +125,24 @@ const Profile: React.FC = () => {
               <UserCard userInfo={profileInfoQuery.data}>
                 <hr className={styles.divider}></hr>
 
-                {userLists.length > 0 && (
+                {userShelves.length > 0 && (
                   <div className={styles.userInfo}>
-                    <div className={styles.userListsInfo}>
-                      <strong className={styles.userListsQuantity}>
-                        {userLists
+                    <div className={styles.userShelvesInfo}>
+                      <strong className={styles.userShelvesQuantity}>
+                        {userShelves
                           .filter((item) => item.is_system)
                           .reduce((sum, item) => {
                             return sum + item.quantity;
                           }, 0)}
                       </strong>
-                      <span className={styles.userListsText}>Nº Books</span>
+                      <span className={styles.userShelvesText}>Books</span>
                     </div>
 
                     <div className={styles.userReviewsInfo}>
                       <strong className={styles.userReviewsQuantity}>
                         {profileInfoQuery.data.number_reviews}
                       </strong>
-                      <span className={styles.userReviewsText}>Nº Reviews</span>
+                      <span className={styles.userReviewsText}>Reviews</span>
                     </div>
                   </div>
                 )}
@@ -156,24 +156,24 @@ const Profile: React.FC = () => {
                 </IonCardHeader>
                 <IonCardContent className={styles.shelvesContent}>
                   <IonList lines="full" className={styles.shelfList}>
-                    {userLists
-                      .filter((list) => list.is_system)
-                      .map((list) => {
+                    {userShelves
+                      .filter((shelf) => shelf.is_system)
+                      .map((shelf) => {
                         const icon =
-                          list.name === 'reading'
+                          shelf.name === 'reading'
                             ? book
-                            : list.name === 'wish'
+                            : shelf.name === 'wish'
                             ? bookmark
                             : checkmarkCircle;
                         return (
                           <IonItem
                             button={true}
-                            key={list.id}
+                            key={shelf.id}
                             detail={true}
                             className={styles.shelfItem}
                             onClick={() => {
-                              history.push(`/app/list/${list.id}`, {
-                                information: list,
+                              history.push(`/app/shelf/${shelf.id}`, {
+                                information: shelf,
                               });
                             }}
                           >
@@ -183,17 +183,17 @@ const Profile: React.FC = () => {
                               className={styles.shelfIcon}
                             ></IonIcon>
                             <IonLabel className={styles.shelfName}>
-                              {list.name}
+                              {shelf.name}
                             </IonLabel>
                             <IonBadge slot="end" className={styles.shelfBadge}>
-                              {list.quantity}
+                              {shelf.quantity}
                             </IonBadge>
                           </IonItem>
                         );
                       })}
                   </IonList>
 
-                  {userLists.some((list) => !list.is_system) && (
+                  {userShelves.some((shelf) => !shelf.is_system) && (
                     <>
                       <hr className={styles.divider}></hr>
 
@@ -207,7 +207,7 @@ const Profile: React.FC = () => {
                             className={styles.accordionHeader}
                           >
                             <IonLabel className={styles.accordionHeaderLabel}>
-                              Custom Lists
+                              Custom Shelves
                             </IonLabel>
                           </IonItem>
                           <div
@@ -215,29 +215,29 @@ const Profile: React.FC = () => {
                             className={styles.accordionContent}
                           >
                             <IonList className={styles.shelfList}>
-                              {userLists
-                                .filter((list) => !list.is_system)
-                                .map((list) => {
+                              {userShelves
+                                .filter((shelf) => !shelf.is_system)
+                                .map((shelf) => {
                                   return (
                                     <IonItem
                                       button={true}
-                                      key={list.id}
+                                      key={shelf.id}
                                       detail={true}
                                       className={styles.shelfItem}
                                       onClick={() => {
-                                        history.push(`/app/list/${list.id}`, {
-                                          information: list,
+                                        history.push(`/app/shelf/${shelf.id}`, {
+                                          information: shelf,
                                         });
                                       }}
                                     >
                                       <IonLabel className={styles.shelfName}>
-                                        {list.name}
+                                        {shelf.name}
                                       </IonLabel>
                                       <IonBadge
                                         slot="end"
                                         className={styles.shelfBadge}
                                       >
-                                        {list.quantity}
+                                        {shelf.quantity}
                                       </IonBadge>
                                     </IonItem>
                                   );
@@ -282,7 +282,7 @@ const Profile: React.FC = () => {
             subtitle="There was a problem loading your profile."
             onRetry={() => {
               profileInfoQuery.refetch();
-              userListsQuery.refetch();
+              userShelvesQuery.refetch();
             }}
           />
         )}
