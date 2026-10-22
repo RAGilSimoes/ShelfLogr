@@ -1,7 +1,6 @@
 import {
   IonIcon,
   IonAlert,
-  IonToast,
   IonList,
   IonItem,
   IonCard,
@@ -24,6 +23,8 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import LoadSpinner from './LoadSpinner';
 
+import Toast from '../components/Toast';
+
 import { useUserLists } from '../queryOptions/useUserLists';
 import { pencilOutline, trashBinOutline, addOutline } from 'ionicons/icons';
 
@@ -38,6 +39,13 @@ const EditShelvesForm: React.FC<{
 
   const [toastMessage, setToastMessage] = useState<string>('');
   const [displayToast, setDisplayToast] = useState<boolean>(false);
+
+  const [toastType, setToastType] = useState<string>('');
+
+  const availableToastTypes = {
+    success: 'success',
+    error: 'error',
+  };
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
@@ -73,6 +81,7 @@ const EditShelvesForm: React.FC<{
         });
         setIsLoading(false);
         onSuccess(response.data.message);
+        setToastType(availableToastTypes.success);
         onClose();
       }
     } catch (error) {
@@ -84,6 +93,7 @@ const EditShelvesForm: React.FC<{
       } else {
         setToastMessage('Unexpected error occurred.');
       }
+      setToastType(availableToastTypes.error);
     } finally {
       setIsLoading(false);
     }
@@ -107,6 +117,7 @@ const EditShelvesForm: React.FC<{
         setIsLoading(false);
         setDisplayToast(true);
         setToastMessage(response.data.message);
+        setToastType(availableToastTypes.success);
       }
     } catch (error) {
       setDisplayToast(true);
@@ -117,6 +128,7 @@ const EditShelvesForm: React.FC<{
       } else {
         setToastMessage('Unexpected error occurred.');
       }
+      setToastType(availableToastTypes.error);
     } finally {
       setIsLoading(false);
     }
@@ -136,6 +148,7 @@ const EditShelvesForm: React.FC<{
         });
         setIsLoading(false);
         onSuccess(response.data.message);
+        setToastType(availableToastTypes.success);
         onClose();
       }
     } catch (error) {
@@ -147,6 +160,7 @@ const EditShelvesForm: React.FC<{
       } else {
         setToastMessage('Unexpected error occurred.');
       }
+      setToastType(availableToastTypes.error);
     } finally {
       setIsLoading(false);
     }
@@ -246,6 +260,7 @@ const EditShelvesForm: React.FC<{
                   ) {
                     setDisplayToast(true);
                     setToastMessage('Shelf with that name already exists.');
+                    setToastType(availableToastTypes.error);
                     return false;
                   } else if (
                     isEditAlertOpen &&
@@ -259,6 +274,7 @@ const EditShelvesForm: React.FC<{
                 } else {
                   setDisplayToast(true);
                   setToastMessage('Please insert a name.');
+                  setToastType(availableToastTypes.error);
                   return false;
                 }
               } else {
@@ -274,19 +290,12 @@ const EditShelvesForm: React.FC<{
         }}
         className={styles.alert}
       ></IonAlert>
-
-      <IonToast
-        trigger="open-toast"
+      <Toast
         message={toastMessage}
-        duration={2500}
-        isOpen={displayToast}
-        onDidDismiss={() => {
-          setDisplayToast(false);
-          setToastMessage('');
-        }}
-        className={`${styles.customToast} ${styles.errorToast}`}
-        position="top"
-      ></IonToast>
+        onDismiss={() => setDisplayToast(false)}
+        type={toastType}
+        open={displayToast}
+      />
 
       {isLoading ? (
         <LoadSpinner

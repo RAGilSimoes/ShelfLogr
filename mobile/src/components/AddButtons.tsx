@@ -5,7 +5,6 @@ import {
   IonSelect,
   IonSelectOption,
   IonList,
-  IonToast,
 } from '@ionic/react';
 
 import { addOutline, book } from 'ionicons/icons';
@@ -25,6 +24,8 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import useAuthStore from '../store/useAuthStore';
 import LoadSpinner from './LoadSpinner';
+
+import Toast from '../components/Toast';
 
 const AddButtons: React.FC<{
   onAddBook: (
@@ -46,6 +47,12 @@ const AddButtons: React.FC<{
 
   const [toastMessage, setToastMessage] = useState<string>('');
   const [displayToast, setDisplayToast] = useState<boolean>(false);
+  const [toastType, setToastType] = useState<string>('');
+
+  const availableToastTypes = {
+    success: 'success',
+    error: 'error',
+  };
 
   const listsNamesQuery = useUserLists();
 
@@ -115,6 +122,7 @@ const AddButtons: React.FC<{
           setIsLoading(false);
           setDisplayToast(true);
           setToastMessage(response.data.message);
+          setToastType(availableToastTypes.success);
         }
       } catch (error) {
         setDisplayToast(true);
@@ -125,6 +133,7 @@ const AddButtons: React.FC<{
         } else {
           setToastMessage('Unexpected error occurred.');
         }
+        setToastType(availableToastTypes.error);
       } finally {
         setIsLoading(false);
       }
@@ -132,18 +141,12 @@ const AddButtons: React.FC<{
 
     return (
       <>
-        <IonToast
-          trigger="open-toast"
+        <Toast
           message={toastMessage}
-          duration={2500}
-          isOpen={displayToast}
-          onDidDismiss={() => {
-            setDisplayToast(false);
-            setToastMessage('');
-          }}
-          className={`${styles.customToast} ${styles.errorToast}`}
-          position="top"
-        ></IonToast>
+          onDismiss={() => setDisplayToast(false)}
+          type={toastType}
+          open={displayToast}
+        />
 
         <IonAlert
           isOpen={isAddAlertOpen || isCreateAlertOpen}

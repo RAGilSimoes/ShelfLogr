@@ -21,9 +21,12 @@ import LoadSpinner from '../components/LoadSpinner';
 import BookCard from '../components/BookCard';
 import ErrorDisplay from '../components/ErrorDisplay';
 
+import { bookOutline, libraryOutline } from 'ionicons/icons';
+
 import { useHistory, useParams } from 'react-router';
 
 import { useEffect, useState } from 'react';
+import BookInfo from '../components/BookInfo';
 
 const ListPage: React.FC = () => {
   const userID = useAuthStore((state) => state.userID);
@@ -149,7 +152,7 @@ const ListPage: React.FC = () => {
                 <ErrorDisplay
                   title={`No Books with that Title`}
                   subtitle="Change your filters."
-                  icon="bookOutline"
+                  icon={bookOutline}
                 />
               )}
             </>
@@ -158,7 +161,7 @@ const ListPage: React.FC = () => {
               <ErrorDisplay
                 title={`No Books Yet`}
                 subtitle="When you add a book to this list, it will appear here."
-                icon="libraryOutline"
+                icon={libraryOutline}
               />
             )
           )

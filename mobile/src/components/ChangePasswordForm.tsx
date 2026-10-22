@@ -5,7 +5,6 @@ import {
   IonCardContent,
   IonItem,
   IonList,
-  IonToast,
   IonInput,
   IonInputPasswordToggle,
 } from '@ionic/react';
@@ -26,6 +25,8 @@ import { lockClosedOutline } from 'ionicons/icons';
 
 import LoadSpinner from './LoadSpinner';
 
+import Toast from '../components/Toast';
+
 const ChangePasswordForm: React.FC<{
   onClose: () => void;
   onSuccess: (message: string) => void;
@@ -39,6 +40,13 @@ const ChangePasswordForm: React.FC<{
 
   const [toastMessage, setToastMessage] = useState<string>('');
   const [displayToast, setDisplayToast] = useState<boolean>(false);
+
+  const [toastType, setToastType] = useState<string>('');
+
+  const availableToastTypes = {
+    success: 'success',
+    error: 'error',
+  };
 
   const [inputOldPassword, setInputOldPassword] = useState<string>('');
   const [inputPassword, setInputPassword] = useState<string>('');
@@ -136,6 +144,7 @@ const ChangePasswordForm: React.FC<{
       } else {
         setToastMessage('Unexpected error occurred.');
       }
+      setToastType(availableToastTypes.error);
     } finally {
       setIsLoading(false);
     }
@@ -143,18 +152,12 @@ const ChangePasswordForm: React.FC<{
 
   return (
     <>
-      <IonToast
-        trigger="open-toast"
+      <Toast
         message={toastMessage}
-        duration={2500}
-        isOpen={displayToast}
-        onDidDismiss={() => {
-          setDisplayToast(false);
-          setToastMessage('');
-        }}
-        className={`${styles.customToast} ${styles.errorToast}`}
-        position="top"
-      ></IonToast>
+        onDismiss={() => setDisplayToast(false)}
+        type={toastType}
+        open={displayToast}
+      />
 
       {isLoading ? (
         <LoadSpinner

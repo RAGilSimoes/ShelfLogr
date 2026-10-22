@@ -2,7 +2,6 @@ import {
   IonButton,
   IonContent,
   IonPage,
-  IonToast,
   IonGrid,
   useIonViewWillLeave,
   IonIcon,
@@ -19,6 +18,8 @@ import { useState } from 'react';
 import styles from './Add.module.css';
 
 import api from '../services/api.service';
+
+import Toast from '../components/Toast';
 
 import LoadSpinner from '../components/LoadSpinner';
 import BookInfo from '../components/BookInfo';
@@ -38,9 +39,15 @@ import AddButtons from '../components/AddButtons';
 import getQueryKeys from '../queryOptions/queryKeys';
 
 const Add: React.FC = () => {
-  const [errorMessage, setErrorMessage] = useState<string>('');
-  const [displayErrorMessage, setDisplayErrorMessage] =
-    useState<boolean>(false);
+  const [toastMessage, setToastMessage] = useState<string>('');
+  const [displayToast, setDisplayToast] = useState<boolean>(false);
+  const [toastType, setToastType] = useState<string>('');
+
+  const availableToastTypes = {
+    success: 'success',
+    error: 'error',
+  };
+
   const [isScanAlertOpen, setIsScanAlertOpen] = useState<boolean>(false);
 
   const [tempIsbn, setTempIsbn] = useState<number>(0);
@@ -53,8 +60,8 @@ const Add: React.FC = () => {
   const [formattedListNames, setFormattedListNames] = useState<string[]>([]);
 
   useIonViewWillLeave(() => {
-    setErrorMessage('');
-    setDisplayErrorMessage(false);
+    setToastMessage('');
+    setDisplayToast(false);
     setIsScanAlertOpen(false);
 
     queryClient.removeQueries({
@@ -84,8 +91,8 @@ const Add: React.FC = () => {
   };
 
   const readBarcode = async () => {
-    setErrorMessage('');
-    setDisplayErrorMessage(false);
+    setToastMessage('');
+    setDisplayToast(false);
     setTempIsbn(0);
 
     let cameraPermission = await checkPermissions();
@@ -105,23 +112,26 @@ const Add: React.FC = () => {
 
           setIsScanAlertOpen(true);
         } else {
-          setErrorMessage("Barcode doesn't match a book");
+          setToastMessage("Barcode doesn't match a book");
+          setToastType(availableToastTypes.error);
 
-          setDisplayErrorMessage(true);
+          setDisplayToast(true);
         }
       } catch (error) {
         if (error instanceof Error) {
-          setErrorMessage(error.message);
+          setToastMessage(error.message);
         } else {
-          setErrorMessage('Error scanning barcode');
+          setToastMessage('Error scanning barcode');
         }
-        setDisplayErrorMessage(true);
+        setDisplayToast(true);
+        setToastType(availableToastTypes.error);
       } finally {
         BarcodeScanner.stopScan();
       }
     } else {
-      setErrorMessage('You need to grant permission to use the camera.');
-      setDisplayErrorMessage(true);
+      setToastMessage('You need to grant permission to use the camera.');
+      setDisplayToast(true);
+      setToastType(availableToastTypes.error);
     }
   };
 
@@ -211,28 +221,18 @@ const Add: React.FC = () => {
   return (
     <IonPage>
       <IonContent className="ion-padding">
-        <IonToast
-          trigger="open-toast"
+        <Toast
           message={
             addBookToList.isError
               ? addBookToList.error?.message
               : bookInfoQuery.isError
               ? bookInfoQuery.error.message
-              : errorMessage
+              : toastMessage
           }
-          duration={5000}
-          isOpen={
-            addBookToList.isError ||
-            bookInfoQuery.isError ||
-            displayErrorMessage
-          }
-          onDidDismiss={() => {
-            setDisplayErrorMessage(false);
-            setErrorMessage('');
-          }}
-          className={styles.customToast}
-          position="top"
-        ></IonToast>
+          onDismiss={() => setDisplayToast(false)}
+          type={toastType}
+          open={addBookToList.isError || bookInfoQuery.isError || displayToast}
+        />
 
         <IonAlert
           isOpen={isScanAlertOpen}

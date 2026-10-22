@@ -66,14 +66,3 @@
   font-weight: 700;
   height: 48px;
 }
-
-.customToast {
-  --box-shadow: 3px 3px 10px 0 rgba(0, 0, 0, 0.2);
-  --color: white;
-  text-align: center;
-  font-weight: bolder;
-}
-
-.errorToast {
-  --background: red;
-}

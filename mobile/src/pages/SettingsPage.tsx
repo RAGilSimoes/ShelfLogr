@@ -16,7 +16,6 @@ import {
   IonCardHeader,
   IonCardTitle,
   IonIcon,
-  IonToast,
   IonModal,
   IonButton,
   IonText,
@@ -40,6 +39,8 @@ import fetchUserProfileInfo from '../queryOptions/profilePageQueries';
 import api from '../services/api.service';
 
 import ErrorDisplay from '../components/ErrorDisplay';
+
+import Toast from '../components/Toast';
 
 import {
   closeCircleOutline,
@@ -69,9 +70,13 @@ const Settings: React.FC = () => {
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState<boolean>(false);
 
   const [toastMessage, setToastMessage] = useState<string>('');
-  const [displayErrorToast, setDisplayErrorToast] = useState<boolean>(false);
-  const [displaySuccessToast, setDisplaySuccessToast] =
-    useState<boolean>(false);
+  const [displayToast, setDisplayToast] = useState<boolean>(false);
+  const [toastType, setToastType] = useState<string>('');
+
+  const availableToastTypes = {
+    success: 'success',
+    error: 'error',
+  };
 
   const [isSpinnerDeleteOpen, setIsSpinnerDeleteOpen] =
     useState<boolean>(false);
@@ -101,7 +106,8 @@ const Settings: React.FC = () => {
   const clearCache = () => {
     queryClient.clear();
     setToastMessage('Cache cleared successfully.');
-    setDisplaySuccessToast(true);
+    setDisplayToast(true);
+    setToastType(availableToastTypes.success);
   };
 
   const logOut = async () => {
@@ -125,7 +131,8 @@ const Settings: React.FC = () => {
         });
       }
     } catch (error) {
-      setDisplayErrorToast(true);
+      setDisplayToast(true);
+      setToastType(availableToastTypes.error);
       setToastMessage('Error deleting account');
     } finally {
       setIsSpinnerDeleteOpen(false);
@@ -174,22 +181,12 @@ const Settings: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
-        <IonToast
-          trigger="open-toast"
+        <Toast
           message={toastMessage}
-          duration={2500}
-          isOpen={displayErrorToast || displaySuccessToast}
-          onDidDismiss={() => {
-            displayErrorToast
-              ? setDisplayErrorToast(false)
-              : setDisplaySuccessToast(false);
-            setToastMessage('');
-          }}
-          className={`${styles.customToast} ${
-            displayErrorToast ? styles.errorToast : styles.successToast
-          }`}
-          position="top"
-        ></IonToast>
+          onDismiss={() => setDisplayToast(false)}
+          type={toastType}
+          open={displayToast}
+        />
 
         <IonAlert
           isOpen={isLogOutAlertOpen || isDeleteAlertOpen}
@@ -441,7 +438,8 @@ const Settings: React.FC = () => {
                 email: profileInfoQuery.data?.email ?? '',
               }}
               onSuccess={(message: string) => {
-                setDisplaySuccessToast(true);
+                setDisplayToast(true);
+                setToastType(availableToastTypes.success);
                 setToastMessage(message);
                 setIsModalOpen(false);
               }}
@@ -450,7 +448,8 @@ const Settings: React.FC = () => {
             <ChangePasswordForm
               onClose={() => setIsModalOpen(false)}
               onSuccess={(message: string) => {
-                setDisplaySuccessToast(true);
+                setDisplayToast(true);
+                setToastType(availableToastTypes.success);
                 setToastMessage(message);
                 setIsModalOpen(false);
               }}
@@ -459,7 +458,8 @@ const Settings: React.FC = () => {
             <EditShelvesForm
               onClose={() => setIsModalOpen(false)}
               onSuccess={(message: string) => {
-                setDisplaySuccessToast(true);
+                setDisplayToast(true);
+                setToastType(availableToastTypes.success);
                 setToastMessage(message);
                 setIsModalOpen(false);
               }}
@@ -468,7 +468,8 @@ const Settings: React.FC = () => {
             <SupportForm
               onClose={() => setIsModalOpen(false)}
               onSuccess={(message: string) => {
-                setDisplaySuccessToast(true);
+                setDisplayToast(true);
+                setToastType(availableToastTypes.success);
                 setToastMessage(message);
                 setIsModalOpen(false);
               }}

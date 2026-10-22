@@ -5,7 +5,6 @@ import {
   IonCardContent,
   IonItem,
   IonList,
-  IonToast,
   IonInput,
   IonSelect,
   IonSelectOption,
@@ -13,6 +12,8 @@ import {
 } from '@ionic/react';
 
 import styles from './SupportForm.module.css';
+
+import Toast from '../components/Toast';
 
 import {
   bugOutline,
@@ -47,6 +48,12 @@ const SupportForm: React.FC<{
 
   const [toastMessage, setToastMessage] = useState<string>('');
   const [displayToast, setDisplayToast] = useState<boolean>(false);
+  const [toastType, setToastType] = useState<string>('');
+
+  const availableToastTypes = {
+    success: 'success',
+    error: 'error',
+  };
 
   const minLengthSubject = 10;
   const maxLengthSubject = 50;
@@ -114,6 +121,7 @@ const SupportForm: React.FC<{
       if (status == 200) {
         setIsLoading(false);
         onSuccess(response.data.message);
+        setToastType(availableToastTypes.success);
         onClose();
       }
     } catch (error) {
@@ -125,6 +133,7 @@ const SupportForm: React.FC<{
       } else {
         setToastMessage('Unexpected error occurred.');
       }
+      setToastType(availableToastTypes.error);
     } finally {
       setIsLoading(false);
     }
@@ -132,18 +141,13 @@ const SupportForm: React.FC<{
 
   return (
     <>
-      <IonToast
-        trigger="open-toast"
+      <Toast
         message={toastMessage}
-        duration={2500}
-        isOpen={displayToast}
-        onDidDismiss={() => {
-          setDisplayToast(false);
-          setToastMessage('');
-        }}
-        className={`${styles.customToast} ${styles.errorToast}`}
-        position="top"
-      ></IonToast>
+        onDismiss={() => setDisplayToast(false)}
+        type={toastType}
+        open={displayToast}
+      />
+
       {isLoading ? (
         <LoadSpinner message={'Sending Feedback...'} fullScreen={false} />
       ) : (

@@ -4,10 +4,11 @@ import {
   IonList,
   IonInput,
   IonItem,
-  IonToast,
   IonCard,
   IonCardContent,
 } from '@ionic/react';
+
+import Toast from '../components/Toast';
 
 import { personOutline, mailOutline } from 'ionicons/icons';
 
@@ -46,6 +47,12 @@ const EditProfileForm: React.FC<{
 
   const [toastMessage, setToastMessage] = useState<string>('');
   const [displayToast, setDisplayToast] = useState<boolean>(false);
+  const [toastType, setToastType] = useState<string>('');
+
+  const availableToastTypes = {
+    success: 'success',
+    error: 'error',
+  };
 
   const validateEmail = (email: string) => {
     return email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
@@ -119,6 +126,7 @@ const EditProfileForm: React.FC<{
         });
         setIsLoading(false);
         onSuccess(response.data.message);
+        setToastType(availableToastTypes.success);
         onClose();
       }
     } catch (error) {
@@ -130,6 +138,7 @@ const EditProfileForm: React.FC<{
       } else {
         setToastMessage('Unexpected error occurred.');
       }
+      setToastType(availableToastTypes.error);
     } finally {
       setIsLoading(false);
     }
@@ -137,18 +146,12 @@ const EditProfileForm: React.FC<{
 
   return (
     <>
-      <IonToast
-        trigger="open-toast"
+      <Toast
         message={toastMessage}
-        duration={2500}
-        isOpen={displayToast}
-        onDidDismiss={() => {
-          setDisplayToast(false);
-          setToastMessage('');
-        }}
-        className={`${styles.customToast} ${styles.errorToast}`}
-        position="top"
-      ></IonToast>
+        onDismiss={() => setDisplayToast(false)}
+        type={toastType}
+        open={displayToast}
+      />
 
       {isLoading ? (
         <LoadSpinner

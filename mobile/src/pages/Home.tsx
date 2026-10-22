@@ -4,7 +4,6 @@ import {
   IonIcon,
   IonHeader,
   IonToolbar,
-  IonToast,
   IonGrid,
   useIonViewWillLeave,
   IonButton,
@@ -29,6 +28,8 @@ import { getUserListsOptions } from '../queryOptions/useUserLists';
 import useAuthStore from '../store/useAuthStore';
 import { bookInfo } from '@shelflogr/shared';
 
+import Toast from '../components/Toast';
+
 const Home: React.FC = () => {
   const username = useAuthStore((state) => state.username);
   const userID = useAuthStore((state) => state.userID);
@@ -40,10 +41,16 @@ const Home: React.FC = () => {
 
   const [buttonDisabled, setButtonDisabled] = useState<boolean>(false);
 
-  const [displayErrorMessage, setDisplayErrorMessage] = useState(false);
+  const [displayToast, setDisplayToast] = useState(false);
+  const [toastType, setToastType] = useState<string>('');
+
+  const availableToastTypes = {
+    success: 'success',
+    error: 'error',
+  };
 
   useIonViewWillLeave(() => {
-    setDisplayErrorMessage(false);
+    setDisplayToast(false);
 
     const timeoutId = timeoutRef.current;
     clearTimeout(timeoutId);
@@ -188,8 +195,7 @@ const Home: React.FC = () => {
       </IonHeader>
 
       <IonContent fullscreen>
-        <IonToast
-          trigger="open-toast"
+        <Toast
           message={
             activeBookQuery.isError
               ? activeBookQuery.error.message
@@ -197,12 +203,10 @@ const Home: React.FC = () => {
               ? trendingBookQuery.error.message
               : ''
           }
-          duration={5000}
-          isOpen={displayErrorMessage}
-          onDidDismiss={() => setDisplayErrorMessage(false)}
-          className={styles.customToast}
-          position="top"
-        ></IonToast>
+          onDismiss={() => setDisplayToast(false)}
+          type={availableToastTypes.error}
+          open={displayToast}
+        />
 
         <IonGrid className={styles.grid}>
           {activeBookQuery.isLoading ? (

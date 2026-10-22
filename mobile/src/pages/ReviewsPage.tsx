@@ -331,7 +331,7 @@ const ReviewsPage: React.FC = () => {
                   <ErrorDisplay
                     title={`No Reviews Match The Filters`}
                     subtitle="Change your filters."
-                    icon="chatbubbleEllipsesOutline"
+                    icon={chatbubbleEllipsesOutline}
                   />
                 )}
               </>
@@ -341,7 +341,7 @@ const ReviewsPage: React.FC = () => {
                   title="No Reviews Yet"
                   subtitle="When you share your thoughts on a book, your evaluations
                     will appear here."
-                  icon="chatbubbleEllipsesOutline"
+                  icon={chatbubbleEllipsesOutline}
                 />
               )
             )}
@@ -350,7 +350,7 @@ const ReviewsPage: React.FC = () => {
           <ErrorDisplay
             title="Couldn't Load Reviews"
             subtitle="There was a problem getting your reviews"
-            icon="alertCircleOutline"
+            icon={alertCircleOutline}
             onRetry={() => reviewsQuery.refetch()}
           />
         )}
