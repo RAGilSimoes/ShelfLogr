@@ -9,6 +9,8 @@ import {
   IonButton,
 } from '@ionic/react';
 
+import ErrorDisplay from './ErrorDisplay';
+
 import styles from './EditShelvesForm.module.css';
 
 import { useState } from 'react';
@@ -23,12 +25,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import LoadSpinner from './LoadSpinner';
 
 import { useUserLists } from '../queryOptions/useUserLists';
-import {
-  pencilOutline,
-  trashBinOutline,
-  alertCircleOutline,
-  addOutline,
-} from 'ionicons/icons';
+import { pencilOutline, trashBinOutline, addOutline } from 'ionicons/icons';
 
 const EditShelvesForm: React.FC<{
   onClose: () => void;
@@ -364,22 +361,13 @@ const EditShelvesForm: React.FC<{
           </div>
         </>
       ) : (
-        <div className={styles.emptyContainer}>
-          <IonIcon icon={alertCircleOutline} className={styles.errorIcon} />
-          <h3 className={styles.emptyTitle}>Couldn't Load Shelves</h3>
-          <p className={styles.emptySubtitle}>
-            There was a problem connecting to the server. Please check your
-            connection and try again.
-          </p>
-          <IonButton
-            fill="outline"
-            shape="round"
-            className={styles.retryBtn}
-            onClick={() => listsNamesQuery.refetch()}
-          >
-            Try Again
-          </IonButton>
-        </div>
+        <ErrorDisplay
+          title="Couldn't Load Shelves"
+          subtitle="There was a problem getting your shelves informations."
+          onRetry={() => {
+            listsNamesQuery.refetch();
+          }}
+        />
       )}
     </>
   );

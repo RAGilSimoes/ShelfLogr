@@ -7,17 +7,7 @@ import {
   IonToolbar,
   IonButtons,
   IonSearchbar,
-  IonIcon,
-  IonButton,
 } from '@ionic/react';
-
-import styles from './ListPage.module.css';
-
-import {
-  alertCircleOutline,
-  bookOutline,
-  libraryOutline,
-} from 'ionicons/icons';
 
 import { useLocation } from 'react-router';
 
@@ -29,6 +19,7 @@ import useAuthStore from '../store/useAuthStore';
 import LoadSpinner from '../components/LoadSpinner';
 
 import BookCard from '../components/BookCard';
+import ErrorDisplay from '../components/ErrorDisplay';
 
 import { useHistory, useParams } from 'react-router';
 
@@ -155,42 +146,30 @@ const ListPage: React.FC = () => {
                   },
                 )
               ) : (
-                <div className={styles.emptyContainer}>
-                  <IonIcon icon={bookOutline} className={styles.emptyIcon} />
-                  <h3 className={styles.emptyTitle}>
-                    No Books with that Title
-                  </h3>
-                </div>
+                <ErrorDisplay
+                  title={`No Books with that Title`}
+                  subtitle="Change your filters."
+                  icon="bookOutline"
+                />
               )}
             </>
           ) : (
             listBooksQuery.data.length === 0 && (
-              <div className={styles.emptyContainer}>
-                <IonIcon icon={libraryOutline} className={styles.emptyIcon} />
-                <h3 className={styles.emptyTitle}>No Books Yet</h3>
-                <p className={styles.emptySubtitle}>
-                  When you add a book to this list, it will appear here.
-                </p>
-              </div>
+              <ErrorDisplay
+                title={`No Books Yet`}
+                subtitle="When you add a book to this list, it will appear here."
+                icon="libraryOutline"
+              />
             )
           )
         ) : (
-          <div className={styles.emptyContainer}>
-            <IonIcon icon={alertCircleOutline} className={styles.errorIcon} />
-            <h3 className={styles.emptyTitle}>Couldn't Load Books</h3>
-            <p className={styles.emptySubtitle}>
-              There was a problem connecting to the server. Please check your
-              connection and try again.
-            </p>
-            <IonButton
-              fill="outline"
-              shape="round"
-              className={styles.retryBtn}
-              onClick={() => listBooksQuery.refetch()}
-            >
-              Try Again
-            </IonButton>
-          </div>
+          <ErrorDisplay
+            title={`Couldn't Load Books`}
+            subtitle="There was a problem loading the books from this shelf"
+            onRetry={() => {
+              listBooksQuery.refetch();
+            }}
+          />
         )}
       </IonContent>
     </IonPage>

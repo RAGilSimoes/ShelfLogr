@@ -19,7 +19,6 @@ import {
   IonToast,
   IonModal,
   IonButton,
-  IonFooter,
   IonText,
 } from '@ionic/react';
 
@@ -40,16 +39,16 @@ import fetchUserProfileInfo from '../queryOptions/profilePageQueries';
 
 import api from '../services/api.service';
 
+import ErrorDisplay from '../components/ErrorDisplay';
+
 import {
   closeCircleOutline,
-  informationCircleOutline,
   libraryOutline,
   lockClosedOutline,
   logOutOutline,
   mailOutline,
   personOutline,
   trashBinOutline,
-  alertCircleOutline,
   chatbubbleEllipsesOutline,
   constructOutline,
 } from 'ionicons/icons';
@@ -385,22 +384,11 @@ const Settings: React.FC = () => {
             </div>
           </IonGrid>
         ) : (
-          <div className={styles.emptyContainer}>
-            <IonIcon icon={alertCircleOutline} className={styles.errorIcon} />
-            <h3 className={styles.emptyTitle}>Couldn't Load Settings Page</h3>
-            <p className={styles.emptySubtitle}>
-              There was a problem connecting to the server. Please check your
-              connection and try again.
-            </p>
-            <IonButton
-              fill="outline"
-              shape="round"
-              className={styles.retryBtn}
-              onClick={() => profileInfoQuery.refetch()}
-            >
-              Try Again
-            </IonButton>
-          </div>
+          <ErrorDisplay
+            title="Couldn't Load Settings"
+            subtitle="There was a problem getting the settings"
+            onRetry={() => profileInfoQuery.refetch()}
+          />
         )}
       </IonContent>
 

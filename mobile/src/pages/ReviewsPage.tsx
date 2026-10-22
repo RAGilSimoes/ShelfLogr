@@ -34,6 +34,7 @@ import useAuthStore from '../store/useAuthStore';
 import { bookInfo } from '@shelflogr/shared';
 
 import ReviewCard from '../components/ReviewCard';
+import ErrorDisplay from '../components/ErrorDisplay';
 
 import {
   chatbubbleEllipsesOutline,
@@ -327,50 +328,31 @@ const ReviewsPage: React.FC = () => {
                     return <ReviewCard info={item} key={item.book.id} />;
                   })
                 ) : (
-                  <div className={styles.emptyContainer}>
-                    <IonIcon
-                      icon={chatbubbleEllipsesOutline}
-                      className={styles.emptyIcon}
-                    />
-                    <h3 className={styles.emptyTitle}>
-                      No Reviews Match The Filters
-                    </h3>
-                  </div>
+                  <ErrorDisplay
+                    title={`No Reviews Match The Filters`}
+                    subtitle="Change your filters."
+                    icon="chatbubbleEllipsesOutline"
+                  />
                 )}
               </>
             ) : (
               reviewsQuery.data.length === 0 && (
-                <div className={styles.emptyContainer}>
-                  <IonIcon
-                    icon={chatbubbleEllipsesOutline}
-                    className={styles.emptyIcon}
-                  />
-                  <h3 className={styles.emptyTitle}>No Reviews Yet</h3>
-                  <p className={styles.emptySubtitle}>
-                    When you share your thoughts on a book, your evaluations
-                    will appear here.
-                  </p>
-                </div>
+                <ErrorDisplay
+                  title="No Reviews Yet"
+                  subtitle="When you share your thoughts on a book, your evaluations
+                    will appear here."
+                  icon="chatbubbleEllipsesOutline"
+                />
               )
             )}
           </>
         ) : (
-          <div className={styles.emptyContainer}>
-            <IonIcon icon={alertCircleOutline} className={styles.errorIcon} />
-            <h3 className={styles.emptyTitle}>Couldn't Load Reviews</h3>
-            <p className={styles.emptySubtitle}>
-              There was a problem connecting to the server. Please check your
-              connection and try again.
-            </p>
-            <IonButton
-              fill="outline"
-              shape="round"
-              className={styles.retryBtn}
-              onClick={() => reviewsQuery.refetch()}
-            >
-              Try Again
-            </IonButton>
-          </div>
+          <ErrorDisplay
+            title="Couldn't Load Reviews"
+            subtitle="There was a problem getting your reviews"
+            icon="alertCircleOutline"
+            onRetry={() => reviewsQuery.refetch()}
+          />
         )}
       </IonContent>
     </IonPage>

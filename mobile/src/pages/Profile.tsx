@@ -14,15 +14,11 @@ import {
   IonCardContent,
   IonCardHeader,
   IonCardTitle,
+  IonRefresher,
+  IonRefresherContent,
 } from '@ionic/react';
-import {
-  cog,
-  book,
-  bookmark,
-  checkmarkCircle,
-  star,
-  alertCircleOutline,
-} from 'ionicons/icons';
+
+import { cog, book, bookmark, checkmarkCircle, star } from 'ionicons/icons';
 
 import styles from './Profile.module.css';
 
@@ -38,6 +34,8 @@ import fetchUserProfileInfo from '../queryOptions/profilePageQueries';
 import useAuthStore from '../store/useAuthStore';
 
 import { useHistory } from 'react-router';
+
+import ErrorDisplay from '../components/ErrorDisplay';
 
 const Profile: React.FC = () => {
   const history = useHistory();
@@ -86,8 +84,28 @@ const Profile: React.FC = () => {
   return (
     <IonPage>
       <IonContent fullscreen>
-        {profileInfoQuery.isFetching ? (
-          <LoadSpinner message={'Fetching User Info...'} fullScreen={true} />
+        <IonRefresher
+          slot="fixed"
+          onIonRefresh={async (event) => {
+            try {
+              await Promise.all([
+                profileInfoQuery.refetch(),
+                userListsQuery.refetch(),
+              ]);
+            } catch (error) {
+            } finally {
+              event.detail.complete();
+            }
+          }}
+        >
+          <IonRefresherContent></IonRefresherContent>
+        </IonRefresher>
+
+        {profileInfoQuery.isLoading ? (
+          <LoadSpinner
+            message={'Getting User Information...'}
+            fullScreen={true}
+          />
         ) : profileInfoQuery.isSuccess ? (
           <>
             <div className={styles.topBar}>
@@ -259,22 +277,14 @@ const Profile: React.FC = () => {
             </IonGrid>
           </>
         ) : (
-          <div className={styles.emptyContainer}>
-            <IonIcon icon={alertCircleOutline} className={styles.errorIcon} />
-            <h3 className={styles.emptyTitle}>Couldn't Load Profile Page</h3>
-            <p className={styles.emptySubtitle}>
-              There was a problem connecting to the server. Please check your
-              connection and try again.
-            </p>
-            <IonButton
-              fill="outline"
-              shape="round"
-              className={styles.retryBtn}
-              onClick={() => profileInfoQuery.refetch()}
-            >
-              Try Again
-            </IonButton>
-          </div>
+          <ErrorDisplay
+            title={`Couldn't Load Profile Information`}
+            subtitle="There was a problem loading your profile."
+            onRetry={() => {
+              profileInfoQuery.refetch();
+              userListsQuery.refetch();
+            }}
+          />
         )}
       </IonContent>
     </IonPage>
