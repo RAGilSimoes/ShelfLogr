@@ -138,123 +138,32 @@ Provides account management tools. Modals open as responsive bottom sheets:
 
 ---
 
-## Challenges so far
+## 🧠 Architectural Decisions & Engineering Challenges
 
-1. **Token Implementation:** Thinking how the Token process should be implemented to keep the app secured without asking for the login every time the user tries to enter the app. This was solved using the **Grace Period** method with a 1-day acceptance window, managed directly by the front-end.
+1. **Authentication Lifecycle & Grace Period Flow:**
 
-2. **Mobile Storage:** Still on the Token part, getting to know how storage works on the mobile device (which is different from a web app). This was smoothly solved by using the **Capacitor Package**.
+   - **Challenge:** Balancing security with mobile UX so users aren't prompted to log in every time the app opens.
+   - **Decision:** Implemented a client-side **Grace Period** strategy using Capacitor Storage. If a JWT token is valid, access is instantaneous. If it expired within a 1-day acceptance window, the app seamlessly refreshes the token in the background via Axios interceptors without interrupting the user.
 
-3. **Hardware Integration:** Getting to know how to use the camera was something new for me, but it has been pretty straightforward because of the **Capawesome Package**.
+2. **Secure Backend Proxy & Multi-Source API Fallback:**
 
-4. **Working with External APIs:** Working with the Google Books API and the OpenLibrary API was a challenge, because not every information is returned on the Google Books, so had to use a plan B API, but the returned information was on a different format, so had to clean up everything to fit on the interface used.
+   - **Challenge:** Third-party book APIs often return incomplete metadata (e.g., missing covers, missing genres) and exposing private API keys on the frontend is a security hazard.
+   - **Decision:** Built a dedicated Express backend proxy. The mobile client sends only the ISBN; the backend queries Google Books and, if critical information is missing, falls back to OpenLibrary. The server sanitizes and normalizes the payload into a shared `@shelflogr/shared` interface before sending it back.
 
-5. **Workflow for Home Page:** Get the books from the user if he is reading any, if not from the wish shelf, if it has any. Checks if there is a main category that the user liked, and fetches some books from that category to recommend. If not, fetches trending books from the NYT API. Because the Google Books API sometimes returns an error, allows the user to retry the fetch for recommendations.
+3. **Hybrid State Management (Server Cache vs. Client State):**
 
-6. **Availability of Information:** Having every info needed available for the whole application to run smoother and be faster
+   - **Challenge:** Avoiding prop drilling while keeping server data synchronized and the mobile interface snappy.
+   - **Decision:** Separated state responsibilities by pairing **TanStack Query** (handling server state, optimistic updates, and cache invalidation) with **Zustand** (managing lightweight global client state like active tokens and user session data).
 
----
+4. **Relational Shelf Modeling (System vs. Custom Shelves):**
 
-## Decisions made
+   - **Challenge:** Providing structured reading workflows while giving users freedom to organize books their own way.
+   - **Decision:** Designed a PostgreSQL schema separating mutually exclusive **System Shelves** (`Reading`, `Wish`, `Completed`) from taggable **Custom Shelves** (many-to-many relationship via `shelf_books`). Database integrity rules ensure a book belongs to only one system status while allowing unlimited custom categorization.
 
-1. **Front-End Security Flow:** Use the Grace Period approach for the token verification, done by the front-end because it is the one getting the already existing token, if applicable.
+5. **External Webhook Integration for Support:**
 
-2. **Backend Proxy for API Calls:** Create an endpoint in the API to fetch the book information, passing only the book ISBN from the front-end. This protects the Google API key and allows the backend to clean up irrelevant information returned by Google.
-
-3. **How to get the book's info:** Since the Google Books API doesn't return every info needed, OpenLibrary's API is being used as a backup plan. Everything is being cleaned to fit the interface format.
-
-4. **Use more APIs:** Use the Google Books API and the NYT API to get recommendations
-
-5. **Allow user to retry:** Implement a button to allow the user to retry the fetching for recommendations
-
-6. **Cache and Global Storage:** Implement Tanstack Query and Zustand for cache and global storage, respectively. Eliminated prop drilling between components while making server cache and global state reliably accessible app-wide.
-
-7. **User Shelves:** The user has 3 default shelves: reading, wish and completed. One book can only be in one of the 3 default shelves. The user can have custom shelves, where the book can be in many as the user wants
-
----
-
-## ⚙️ Prerequisites
-
-Before you begin, ensure you have met the following requirements:
-
-- You have installed the latest version of [Node.js](https://nodejs.org/) and NPM.
-- You have installed the Ionic CLI globally by running: `npm install -g @ionic/cli`.
-
----
-
-## 🚀 Getting Started
-
-Follow these steps to get your development environment set up:
-
-### 1. Installation
-
-Clone the repository and install the dependencies for both the Frontend and Backend.
-
-**For the Backend:**
-
-```bash
-cd api
-npm install
-```
-
-**For the Mobile App (Frontend):**
-
-```bash
-cd mobile
-npm install
-```
-
-### 2. Environment Variables
-
-You will need to set up the environment variables to connect the app to the database and the API.
-
-- **Backend:** Create a `.env` file in the `api` folder and configure the needed information
-  ```env
-  DATABASE_URL=
-  JWT_SECRET=
-  BOOKS_API_KEY=
-  NYT_API_KEY=
-  ```
-- **Frontend:** Create a `.env` file in the `mobile` folder and configure the API URL
-  ```env
-  VITE_BACKEND_URL=`Your backend URL`
-  ```
-
-### 3. Running the Application
-
-You need to start both servers concurrently.
-
-**Start the Backend Server:**
-
-```bash
-cd api
-npm run dev
-```
-
-**Start the Frontend (Ionic App):**
-In a new terminal window, run:
-
-```bash
-cd mobile
-ionic serve
-```
-
-### 📱 4. Running on Android (Native)
-
-Since the `android` folder is already included in this repository, you don't need to add the platform from scratch. You just need to compile the latest web code and sync it to the native project.
-
-**Prerequisites:**
-
-- [Android Studio](https://developer.android.com/studio) installed.
-
-**Steps:**
-
-1. Build the frontend web assets:
-   ```bash
-   cd mobile
-   npm run build
-   npx cap sync
-   npx cap open android
-   ```
+   - **Challenge:** Creating a real-time, zero-cost support channel for bug tracking and user suggestions without the overhead of building an entire admin dashboard.
+   - **Decision:** Integrated native Discord Webhooks on the backend. User tickets submitted through the settings modal are automatically dispatched into private Discord channels with rich, color-coded embeds matching the ticket type (Bug, Feature, Question).
 
 ---
 
