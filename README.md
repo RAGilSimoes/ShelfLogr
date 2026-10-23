@@ -2,7 +2,7 @@
 
 This project was designed and built as a Mobile App to help me keep track of the books I read and the ones that I want to read. It also features an **AI agent** that gives tailored suggestions based on the already read books.
 
-To add books to your profile, simply scan the book's barcode!
+To add books to your profile, simply scan the book's barcode or search for it!
 
 <div align="center">
   <h1>Home Page</h1>
@@ -18,20 +18,42 @@ To add books to your profile, simply scan the book's barcode!
 <div align="center">
   <h1>Book Page</h1>
   
-  <img src="./media/bookPage/lists.png" alt="Display Lists" width="220" />
+  <img src="./media/bookPage/lists.png" alt="Display Shelves" width="220" />
   &nbsp;&nbsp;&nbsp;&nbsp;
   <img src="./media/bookPage/reviewForm.png" alt="Review Form" width="220" />
   
 </div>
 
 <div align="center">
-  <h1>Adding a Book to your Lists</h1>
+  <h1>Adding a Book to your Shelves</h1>
   
   <img src="./media/addPage/addPage.png" alt="Add Page Screen" width="220" />
   &nbsp;&nbsp;&nbsp;&nbsp;
   <img src="./media/addPage/bookInfo.png" alt="Fluent React Book Info" width="220" />
   &nbsp;&nbsp;&nbsp;&nbsp;
-  <img src="./media/addPage/addedSuccessfully.png" alt="Added book to Wish List" width="220" />
+  <img src="./media/addPage/addedSuccessfully.png" alt="Added book to Wish Shelf" width="220" />
+  
+</div>
+
+<div align="center">
+  <h1>Profile Page</h1>
+  
+  <img src="./media/profilePage/profilePage.png" alt="Profile Page" width="220" />
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="./media/profilePage/myReviews.png" alt="My Reviews" width="220" />
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="./media/profilePage/shelfPage.png" alt="Shelf Page" width="220" />
+  
+</div>
+
+<div align="center">
+  <h1>Settings Page</h1>
+  
+  <img src="./media/settingsPage/settingsPage.png" alt="Settings Page" width="220" />
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="./media/settingsPage/editShelves.png" alt="Edit Shelves" width="220" />
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="./media/settingsPage/feedbackModal.png" alt="Send Feedback" width="220" />
   
 </div>
 
@@ -39,11 +61,17 @@ To add books to your profile, simply scan the book's barcode!
 
 ## 🚧 Status
 
-Login and Register implemented. User can scan a Book's barcode to fetch book's info, and receives visual feedback if already in one of their lists. If not, gives the option to add to one.
+Login and Register implemented. User can scan a Book's barcode to fetch book's info, and receives visual feedback if already in one of their shelves. If not, gives the option to add to one.
 
-Home Page Implemented. Fetches book in user's Reading or Wishlist, if exists. Fetches trending books from Google Books API according to user's most read category, or trending books from New York Times API if no info is available from the user
+Home Page Implemented. Fetches book in user's Reading or Wish Shelf, if exists. Fetches trending books from Google Books API according to user's most read category, or trending books from New York Times API if no info is available from the user
 
-Book Page displays the info from the book and, if the user already added the book, it displays the lists where the book is added, otherwise, it displays options on lists where the user can add. If the user wants to add to the 'Completed' list, it displays a form for the review _(Updated: 24/09/2026)_
+Book Page displays the info from the book and, if the user already added the book, it displays the shelves where the book is added, otherwise, it displays options on shelves where the user can add. If the user wants to add to the 'Completed' shelf, it displays a form for the review
+
+Book Reviews implemented. Users can leave reviews about the completed books
+
+Profile Page implemented. Displays user statistics (total books read/collected, total reviews), quick access to system and custom shelves, and review overview, with native pull-to-refresh.
+
+Settings Page implemented. Features dynamic bottom-sheet modals allowing users to edit profile information, update account password, manage custom shelves (create, edit, delete), and submit feedback/bug reports integrated with Discord Webhooks. Also includes account deletion with confirmation alerts and cache clearing. _(Updated: 22/10/2026)_
 
 ---
 
@@ -51,19 +79,19 @@ Book Page displays the info from the book and, if the user already added the boo
 
 - [x] Login and Register
 - [x] Scan barcode and fetch information
-- [x] Add Book to one of the lists after scanning barcode
+- [x] Add Book to one of the shelves after scanning barcode
 - [x] Display a book suggestion from the ones the user is reading on the home page
 - [x] Display book suggestions by topic on the home page
 - [ ] Search for book by the title, author or category
 - [ ] Create chatbot for user interaction
-- [ ] Create profile page to see user's lists
-- [ ] Create settings page
+- [x] Create profile page to see user's shelves
+- [x] Create settings page
+- [x] Users can leave reviews
 
 #### Future Ideas:
 
-- Ability to see other people's accounts, have friends and see their lists.
+- Ability to see other people's accounts, have friends and see their shelves.
 - Contribution program, where users can add missing books that the APIs don't know that exist.
-- Users can add private or public review, and displays on profile and on book page.
 
 ---
 
@@ -89,13 +117,24 @@ The main technologies used in this project are:
 The user enters the app and the system immediately checks for a valid token. If the token is invalid or more than 1 day has passed since its expiration date, the user is redirected to the login page. If the token is valid and inside the expiration window, the app navigates directly to the home page. If it is expired but still inside the Grace Period, the front-end refreshes the token in the background and grants access.
 
 **2. Book Scanning Process:**
-The user accesses the "Add Book" page, opens the scanner, and scans a barcode. The app verifies the `valueType` property; if it isn't a book barcode, an error is displayed. Otherwise, the app fetches the book information through the Google Books API, or the OpenLibrary API if the Google Books API doesn't return all the needed information, via a dedicated backend endpoint. User gets visual feedback if book is already on one of the lists, if not, shows buttons that allow the user to add the book to one of the lists.
+The user accesses the "Add Book" page, opens the scanner, and scans a barcode. The app verifies the `valueType` property; if it isn't a book barcode, an error is displayed. Otherwise, the app fetches the book information through the Google Books API, or the OpenLibrary API if the Google Books API doesn't return all the needed information, via a dedicated backend endpoint. User gets visual feedback if book is already on one of the shelves, if not, shows buttons that allow the user to add the book to one of the shelves.
 
 **3. Home Page:**
-User enters the app and receives a suggestion from the books he is reading, or from his wishlist (if available and they aren't currently reading any). If user has any completed and liked book, the API gets the main category if available, and fetches books from that category to recommend to the user. If not, does the same but from the NYT API and with no specific category.
+User enters the app and receives a suggestion from the books he is reading, or from his wish shelf (if available and they aren't currently reading any). If user has any completed and liked book, the API gets the main category if available, and fetches books from that category to recommend to the user. If not, does the same but from the NYT API and with no specific category.
 
 **4. Book Page:**
-When the user enters the page from the book, it displays the book info and the current state of the book, according to the database. If the book is already added, it displays the lists, otherwise, allows the user to add to one or multiple lists. If the user wants to add to the 'Completed' list, displays a review form
+When the user enters the page from the book, it displays the book info and the current state of the book, according to the database. If the book is already added, it displays the shelves, otherwise, allows the user to add to one or multiple shelves. If the user wants to add to the 'Completed' shelf, displays a review form.
+
+**5. Profile Page:**
+Users can view their membership details, cumulative reading statistics, and navigate through default shelves (Reading, Wish, Completed) and expandable custom shelves.
+
+**6. Settings & Support:**
+Provides account management tools. Modals open as responsive bottom sheets:
+
+- **Edit Profile:** Updates name and email, generating a new JWT token and updating global state seamlessly.
+- **Change Password:** Verifies the current password and securely updates credentials with bcrypt hashing.
+- **Manage Shelves:** Allows renaming or deleting custom shelves with protective confirmation dialogs.
+- **Support & Feedback:** Dispatches rich Discord Webhook embeds categorizing submissions as bugs, feature requests, or general inquiries.
 
 ---
 
@@ -109,7 +148,7 @@ When the user enters the page from the book, it displays the book info and the c
 
 4. **Working with External APIs:** Working with the Google Books API and the OpenLibrary API was a challenge, because not every information is returned on the Google Books, so had to use a plan B API, but the returned information was on a different format, so had to clean up everything to fit on the interface used.
 
-5. **Workflow for Home Page:** Get the books from the user if he is reading any, if not from the wishlist, if it has any. Checks if there is a main category that the user liked, and fetches some books from that category to recommend. If not, fetches trending books from the NYT API. Because the Google Books API sometimes returns an error, allows the user to retry the fetch for recommendations.
+5. **Workflow for Home Page:** Get the books from the user if he is reading any, if not from the wish shelf, if it has any. Checks if there is a main category that the user liked, and fetches some books from that category to recommend. If not, fetches trending books from the NYT API. Because the Google Books API sometimes returns an error, allows the user to retry the fetch for recommendations.
 
 6. **Availability of Information:** Having every info needed available for the whole application to run smoother and be faster
 
@@ -129,7 +168,7 @@ When the user enters the page from the book, it displays the book info and the c
 
 6. **Cache and Global Storage:** Implement Tanstack Query and Zustand for cache and global storage, respectively. Eliminated prop drilling between components while making server cache and global state reliably accessible app-wide.
 
-7. **User Lists:** The user has 3 default lists: reading, wish and completed. One book can only be in one of the 3 default lists. The user can have custom lists, where the book can be in many as the user wants
+7. **User Shelves:** The user has 3 default shelves: reading, wish and completed. One book can only be in one of the 3 default shelves. The user can have custom shelves, where the book can be in many as the user wants
 
 ---
 

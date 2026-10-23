@@ -9,8 +9,8 @@ export async function fetchDatabaseBook(
   userID: string,
 ): Promise<{
   book: bookInfo;
-  bookLists: Array<string>;
-  list: string | null;
+  bookShelves: Array<string>;
+  shelf: string | null;
 } | null> {
   try {
     const { rows: bookExists } = await pool.query(
@@ -31,21 +31,21 @@ export async function fetchDatabaseBook(
 
       const bookID = book.id;
 
-      const { rows: lists } = await pool.query(
-        'SELECT ul.name, ul.is_system FROM user_list ul JOIN list_books lb ON ul.id=lb.list_id WHERE ul.user_id = $1 AND lb.book_id = $2;',
+      const { rows: shelves } = await pool.query(
+        'SELECT ul.name, ul.is_system FROM user_shelf ul JOIN shelf_books lb ON ul.id=lb.shelf_id WHERE ul.user_id = $1 AND lb.book_id = $2;',
         [userID, bookID],
       );
 
-      if (lists.length > 0) {
-        const list = lists.find(
+      if (shelves.length > 0) {
+        const shelf = shelves.find(
           (item: { name: string; is_system: boolean }) => item.is_system,
         )?.name;
 
-        const bookLists = lists.map((item) => item.name);
-        return { book, bookLists, list };
+        const bookShelves = shelves.map((item) => item.name);
+        return { book, bookShelves, shelf };
       }
 
-      return { book, bookLists: [], list: null };
+      return { book, bookShelves: [], shelf: null };
     } else {
       return null;
     }
@@ -145,7 +145,7 @@ export async function getAllUserBooks(
   try {
     const isbns: Array<string> = [];
     const { rows: status } = await pool.query(
-      'SELECT DISTINCT b.isbn FROM book b JOIN list_books lb ON b.id=lb.book_id JOIN user_list ul ON lb.list_id=ul.id WHERE ul.user_id=$1',
+      'SELECT DISTINCT b.isbn FROM book b JOIN shelf_books lb ON b.id=lb.book_id JOIN user_shelf ul ON lb.shelf_id=ul.id WHERE ul.user_id=$1',
       [id],
     );
 
@@ -186,14 +186,14 @@ export async function fetchNYTTrendingBooks(id: string): Promise<any> {
 
   let books: Array<{
     book: Partial<bookInfo>;
-    bookLists?: Array<string> | null;
-    list: string | null;
+    bookShelves?: Array<string> | null;
+    shelf: string | null;
   }> = [];
 
   for (const book of top10ReadyBooks) {
     if (books.length === 5) break;
 
-    const result: string | { book: Partial<bookInfo>; list: string | null } =
+    const result: string | { book: Partial<bookInfo>; shelf: string | null } =
       await fetchEntireBookInfo(book.isbns[0]?.isbn13, id);
 
     if (typeof result !== 'string') {
@@ -250,8 +250,8 @@ export async function fetchGoogleTrendingBooks(
         const formatted:
           | {
               book: Partial<bookInfo>;
-              bookLists?: Array<string> | null;
-              list?: string | null;
+              bookShelves?: Array<string> | null;
+              shelf?: string | null;
             }
           | string = await fetchEntireBookInfo(isbn, id);
 
@@ -344,8 +344,8 @@ export async function fetchEntireBookInfo(
 ): Promise<
   | {
       book: Partial<bookInfo>;
-      bookLists: Array<string> | null;
-      list: string | null;
+      bookShelves: Array<string> | null;
+      shelf: string | null;
     }
   | string
 > {
@@ -355,8 +355,8 @@ export async function fetchEntireBookInfo(
     if (bookInfoDatabase) {
       return {
         book: bookInfoDatabase.book,
-        bookLists: bookInfoDatabase.bookLists,
-        list: bookInfoDatabase.list,
+        bookShelves: bookInfoDatabase.bookShelves,
+        shelf: bookInfoDatabase.shelf,
       };
     }
 
@@ -370,7 +370,7 @@ export async function fetchEntireBookInfo(
       }
       await addBookToDB(fallbackBook);
 
-      return { book: fallbackBook, bookLists: null, list: null };
+      return { book: fallbackBook, bookShelves: null, shelf: null };
     } else if (googleResponse?.emptyFields.length !== 0) {
       const fallbackBook = await fetchOpenLibraryBook(isbn);
 
@@ -389,7 +389,11 @@ export async function fetchEntireBookInfo(
 
     await addBookToDB(googleResponse.cleanBookInfo);
 
-    return { book: googleResponse.cleanBookInfo, bookLists: null, list: null };
+    return {
+      book: googleResponse.cleanBookInfo,
+      bookShelves: null,
+      shelf: null,
+    };
   } catch (error) {
     console.error('Error getting Book Information:', error);
     return 'Error getting book information.';

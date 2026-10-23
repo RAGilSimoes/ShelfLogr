@@ -1,0 +1,106 @@
+.reviewCard {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  margin: 16px;
+  padding: 14px 16px 16px 16px;
+  overflow: hidden;
+}
+
+.reviewCard ion-card {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.topReviewCard {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.starsContainer {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 1.25rem;
+  margin-right: 10px;
+}
+
+.activeStar {
+  color: #ffb800;
+  opacity: 1;
+}
+
+.disabledStar {
+  color: rgba(255, 255, 255, 0.2);
+}
+
+.reviewMeta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.privacyBadge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.65);
+  font-weight: 500;
+}
+.privacyBadge ion-icon {
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.dateText {
+  font-size: 0.76rem;
+  color: rgba(255, 255, 255, 0.45);
+  white-space: nowrap;
+}
+
+.dateText strong {
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 600;
+}
+
+.bottomReviewCard {
+  margin-top: 10px;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.85);
+  word-break: break-word;
+}
+
+.emptyReview {
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.readMoreBtn {
+  background: transparent;
+  border: none;
+  color: var(--ion-color-primary, #3880ff);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 6px;
+  display: inline;
+}
+
+.readMoreBtn:active {
+  opacity: 0.7;
+}

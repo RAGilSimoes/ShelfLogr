@@ -11,5 +11,4 @@ export interface bookInfo {
   categories: Array<string>;
   cover: string;
   language: string;
-  modified: boolean;
 }

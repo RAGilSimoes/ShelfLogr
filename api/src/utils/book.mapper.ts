@@ -78,7 +78,6 @@ export const formatGoogleBook = (
     cover: googleVolumeInfo.imageLinks?.thumbnail || '',
 
     language: googleVolumeInfo.language || '',
-    modified: true,
   };
 };
 
@@ -137,6 +136,5 @@ export const formatOpenLibraryBook = (
     cover: openLibraryVolumeInfo.cover?.medium || '',
 
     language: openLibraryVolumeInfo.language || '',
-    modified: true,
   };
 };

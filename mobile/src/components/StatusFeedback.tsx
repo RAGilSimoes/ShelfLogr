@@ -9,15 +9,15 @@ import styles from './StatusFeedback.module.css';
 
 const StatusFeedback: React.FC<{
   successMessage: string;
-  list: Array<string> | [];
-}> = ({ successMessage, list }) => {
+  shelf: Array<string> | [];
+}> = ({ successMessage, shelf }) => {
   return (
     <>
       <IonCard color="success">
         <IonCardHeader className={styles.successHeader}>
           <IonCardTitle>
-            List(s):<br></br>
-            {list
+            Shelves:<br></br>
+            {shelf
               .map(
                 (item) => '• ' + item.charAt(0).toUpperCase() + item.slice(1),
               )

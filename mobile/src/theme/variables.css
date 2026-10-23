@@ -35,3 +35,46 @@ http://ionicframework.com/docs/theming/ */
   color: var(--ion-color-primary) !important;
   font-weight: 800 !important;
 }
+
+.custom-danger-alert .alert-wrapper {
+  border-radius: 16px !important;
+  box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.4) !important;
+  border: 1px solid rgba(235, 68, 90, 0.4) !important;
+}
+
+.custom-danger-alert .alert-title {
+  font-weight: 700;
+  color: var(--ion-color-danger, #eb445a) !important;
+}
+
+.custom-danger-alert .alert-message {
+  font-size: 0.95rem;
+  color: white;
+  white-space: pre-line !important;
+}
+
+.alert-danger-confirm-button {
+  color: var(--ion-color-danger, #eb445a) !important;
+  font-weight: 800 !important;
+}
+
+.custom-confirm-alert .alert-wrapper {
+  border-radius: 16px !important;
+  border: 1px solid rgba(56, 128, 255, 0.3) !important;
+}
+
+.custom-confirm-alert .alert-title {
+  color: var(--ion-color-primary) !important;
+  font-weight: 700;
+}
+
+.custom-confirm-alert .alert-message {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  text-align: left !important;
+  white-space: pre-line !important;
+  padding: 12px 14px !important;
+  margin: 8px 16px !important;
+  color: rgba(255, 255, 255, 0.9);
+}

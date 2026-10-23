@@ -8,7 +8,6 @@ import {
   IonButton,
   IonInput,
   IonInputPasswordToggle,
-  IonToast,
   IonText,
   IonRouterLink,
   IonFooter,
@@ -28,14 +27,15 @@ import styles from './Login.module.css';
 import useAuthStore from '../store/useAuthStore';
 
 import { useQueryClient } from '@tanstack/react-query';
-import { fetchUserLists } from '../queryOptions/loginQueries';
 
 import {
-  useUserLists,
-  getUserListsOptions,
-  getUserListsNamesOptions,
-} from '../queryOptions/useUserLists';
+  getUserShelvesOptions,
+  getUserShelvesNamesOptions,
+} from '../queryOptions/useUserShelves';
+
 import { jwtDecode } from 'jwt-decode';
+
+import Toast from '../components/Toast';
 
 const Login: React.FC = () => {
   const history = useHistory();
@@ -43,9 +43,17 @@ const Login: React.FC = () => {
 
   const queryClient = useQueryClient();
 
-  const [showError, setShowError] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
-  const [isTouched, setIsTouched] = useState(false);
+  const [displayToast, setDisplayToast] = useState<boolean>(false);
+  const [toastMessage, setToastMessage] = useState<string>('');
+
+  const [toastType, setToastType] = useState<string>('');
+
+  const availableToastTypes = {
+    success: 'success',
+    error: 'error',
+  };
+
+  const [isTouched, setIsTouched] = useState<boolean>(false);
   const [isValidEmail, setIsValidEmail] = useState<boolean>(false);
   const [isValidPassword, setIsValidPassword] = useState<boolean>(false);
 
@@ -54,8 +62,9 @@ const Login: React.FC = () => {
 
   useEffect(() => {
     if (location.state?.message) {
-      setErrorMessage(location.state.message);
-      setShowError(true);
+      setToastMessage(location.state.message);
+      setDisplayToast(true);
+      setToastType(availableToastTypes.error);
 
       history.replace('/login', {});
     }
@@ -129,24 +138,25 @@ const Login: React.FC = () => {
         const decodedToken: { id: string; email: string; name: string } =
           jwtDecode(token);
 
-        queryClient.prefetchQuery(getUserListsOptions(decodedToken.id));
+        queryClient.prefetchQuery(getUserShelvesOptions(decodedToken.id));
 
-        queryClient.prefetchQuery(getUserListsNamesOptions(decodedToken.id));
+        queryClient.prefetchQuery(getUserShelvesNamesOptions(decodedToken.id));
 
-        setShowError(false);
-        setErrorMessage('');
+        setDisplayToast(false);
+        setToastMessage('');
         history.push('/app/home');
       }
     } catch (error) {
-      setShowError(true);
+      setDisplayToast(true);
 
       if (axios.isAxiosError(error)) {
         const serverMessage =
           error.response?.data?.error || 'Server communication error.';
-        setErrorMessage(serverMessage);
+        setToastMessage(serverMessage);
       } else {
-        setErrorMessage('Unexpected error occurred.');
+        setToastMessage('Unexpected error occurred.');
       }
+      setToastType(availableToastTypes.error);
     }
   };
 
@@ -218,17 +228,12 @@ const Login: React.FC = () => {
           </form>
         </IonGrid>
 
-        <IonToast
-          trigger="open-toast"
-          message={errorMessage}
-          duration={5000}
-          isOpen={showError}
-          onDidDismiss={() => {
-            setShowError(false);
-            setErrorMessage('');
-          }}
-          className={styles.customToast}
-        ></IonToast>
+        <Toast
+          message={toastMessage}
+          onDismiss={() => setDisplayToast(false)}
+          type={toastType}
+          open={displayToast}
+        />
       </IonContent>
       <IonFooter className="ion-no-border" translucent={true} collapse="fade">
         <IonToolbar>

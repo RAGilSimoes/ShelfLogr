@@ -4,7 +4,6 @@ import {
   IonIcon,
   IonHeader,
   IonToolbar,
-  IonToast,
   IonGrid,
   useIonViewWillLeave,
   IonButton,
@@ -24,10 +23,12 @@ import BookSwiper from '../components/BookSwiper';
 import { useQuery } from '@tanstack/react-query';
 import fetchTrendingBooksRecommendation from '../queryOptions/homeQueries';
 
-import { getUserListsOptions } from '../queryOptions/useUserLists';
+import { getUserShelvesOptions } from '../queryOptions/useUserShelves';
 
 import useAuthStore from '../store/useAuthStore';
 import { bookInfo } from '@shelflogr/shared';
+
+import Toast from '../components/Toast';
 
 const Home: React.FC = () => {
   const username = useAuthStore((state) => state.username);
@@ -40,10 +41,15 @@ const Home: React.FC = () => {
 
   const [buttonDisabled, setButtonDisabled] = useState<boolean>(false);
 
-  const [displayErrorMessage, setDisplayErrorMessage] = useState(false);
+  const [displayToast, setDisplayToast] = useState(false);
+
+  const availableToastTypes = {
+    success: 'success',
+    error: 'error',
+  };
 
   useIonViewWillLeave(() => {
-    setDisplayErrorMessage(false);
+    setDisplayToast(false);
 
     const timeoutId = timeoutRef.current;
     clearTimeout(timeoutId);
@@ -69,53 +75,52 @@ const Home: React.FC = () => {
   }
 
   const activeBookQuery = useQuery({
-    ...getUserListsOptions(userID),
-    refetchOnWindowFocus: false,
+    ...getUserShelvesOptions(userID),
     select(data: {
       category?: string;
-      lists: {
-        reading: Array<{ book: bookInfo; lists: Array<string> }>;
-        wish: Array<{ book: bookInfo; lists: Array<string> }>;
+      shelves: {
+        reading: Array<{ book: bookInfo; shelves: Array<string> }>;
+        wish: Array<{ book: bookInfo; shelves: Array<string> }>;
       };
     }) {
-      let listName =
-        data.lists.reading.length > 0
+      let shelfName =
+        data.shelves.reading.length > 0
           ? 'reading'
-          : data.lists.wish.length > 0
+          : data.shelves.wish.length > 0
           ? 'wish'
           : undefined;
-      let list =
-        data.lists.reading.length > 0
-          ? data.lists.reading
-          : data.lists.wish.length > 0
-          ? data.lists.wish
+      let shelf =
+        data.shelves.reading.length > 0
+          ? data.shelves.reading
+          : data.shelves.wish.length > 0
+          ? data.shelves.wish
           : undefined;
 
-      if (listName && list) {
+      if (shelfName && shelf) {
         if (activeBookID === undefined) {
-          const ind: number = Math.floor(Math.random() * list.length);
-          const item = list[ind];
+          const ind: number = Math.floor(Math.random() * shelf.length);
+          const item = shelf[ind];
 
           return {
             category: data.category,
             book: item.book,
-            bookLists: item.lists,
-            list: listName,
+            bookShelves: item.shelves,
+            shelf: shelfName,
           };
         } else {
-          const backupList =
-            listName === 'reading' ? data.lists.wish : data.lists.reading;
-          const backupListName = listName === 'reading' ? 'wish' : 'reading';
+          const backupShelf =
+            shelfName === 'reading' ? data.shelves.wish : data.shelves.reading;
+          const backupShelfName = shelfName === 'reading' ? 'wish' : 'reading';
 
-          let item: { book: bookInfo; lists: Array<string> };
+          let item: { book: bookInfo; shelves: Array<string> };
 
-          item = list.find((item) => activeBookID === item.book.id)!;
+          item = shelf.find((item) => activeBookID === item.book.id)!;
 
           if (!item) {
-            item = backupList.find((item) => activeBookID === item.book.id)!;
+            item = backupShelf.find((item) => activeBookID === item.book.id)!;
             if (item) {
-              listName = backupListName;
-              list = backupList;
+              shelfName = backupShelfName;
+              shelf = backupShelf;
             }
           }
 
@@ -123,18 +128,18 @@ const Home: React.FC = () => {
             return {
               category: data.category,
               book: item.book,
-              bookLists: item.lists,
-              list: listName,
+              bookShelves: item.shelves,
+              shelf: shelfName,
             };
           } else {
-            const ind: number = Math.floor(Math.random() * list.length);
-            const item = list[ind];
+            const ind: number = Math.floor(Math.random() * shelf.length);
+            const item = shelf[ind];
 
             return {
               category: data.category,
               book: item.book,
-              bookLists: item.lists,
-              list: listName,
+              bookShelves: item.shelves,
+              shelf: shelfName,
             };
           }
         }
@@ -142,11 +147,11 @@ const Home: React.FC = () => {
         return {
           category: data.category,
           book: null,
-          bookLists: null,
-          list: null,
+          bookShelves: null,
+          shelf: null,
         };
       } else {
-        return { category: null, book: null, bookLists: null, list: null };
+        return { category: null, book: null, bookShelves: null, shelf: null };
       }
     },
   });
@@ -165,14 +170,12 @@ const Home: React.FC = () => {
     enabled:
       activeBookQuery.status === 'success' &&
       activeBookQuery.data.category !== null,
-    refetchOnWindowFocus: false,
   });
 
   const trendingBookQuery = useQuery({
     queryKey: ['trendingBooks', userID],
     queryFn: () => fetchTrendingBooksRecommendation(undefined),
     enabled: activeBookQuery.status === 'success',
-    refetchOnWindowFocus: false,
   });
 
   return (
@@ -191,8 +194,7 @@ const Home: React.FC = () => {
       </IonHeader>
 
       <IonContent fullscreen>
-        <IonToast
-          trigger="open-toast"
+        <Toast
           message={
             activeBookQuery.isError
               ? activeBookQuery.error.message
@@ -200,30 +202,30 @@ const Home: React.FC = () => {
               ? trendingBookQuery.error.message
               : ''
           }
-          duration={5000}
-          isOpen={displayErrorMessage}
-          onDidDismiss={() => setDisplayErrorMessage(false)}
-          className={styles.customToast}
-          position="top"
-        ></IonToast>
+          onDismiss={() => setDisplayToast(false)}
+          type={availableToastTypes.error}
+          open={displayToast}
+        />
 
         <IonGrid className={styles.grid}>
           {activeBookQuery.isLoading ? (
             <LoadSpinner message={'Getting Active Book'} fullScreen={false} />
           ) : (
-            activeBookQuery.status === 'success' &&
+            activeBookQuery.isSuccess &&
             activeBookQuery.data.book &&
             Object.keys(activeBookQuery.data.book).length > 0 && (
               <div>
                 <h3 className={styles.statusMessage}>
                   This book is in your{' '}
-                  {activeBookQuery.data.list?.charAt(0).toUpperCase() +
-                    activeBookQuery.data.list?.slice(1)}{' '}
-                  List
+                  {activeBookQuery.data.shelf
+                    ? activeBookQuery.data.shelf.charAt(0).toUpperCase() +
+                      activeBookQuery.data.shelf.slice(1)
+                    : ''}{' '}
+                  Shelf
                 </h3>
                 <div
                   onClick={() => {
-                    history.push(`/app/book`, {
+                    history.push(`/app/book/${activeBookQuery.data.book?.id}`, {
                       information: activeBookQuery.data,
                     });
                   }}
@@ -240,7 +242,7 @@ const Home: React.FC = () => {
 
           {activeBookQuery.isSuccess &&
             activeBookQuery.data?.category !== null &&
-            (trendingCategoryBookQuery.isLoading ? (
+            (trendingCategoryBookQuery.isFetching ? (
               <LoadSpinner
                 message={`Getting Recommendations about ${
                   activeBookQuery.data?.category || 'Your Favorite Book'
@@ -290,7 +292,7 @@ const Home: React.FC = () => {
               </div>
             ))}
 
-          {trendingBookQuery.isLoading ? (
+          {trendingBookQuery.isFetching ? (
             <LoadSpinner
               message={`Getting Trending Books`}
               fullScreen={false}

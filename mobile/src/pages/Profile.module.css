@@ -1,0 +1,156 @@
+.topBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px 0;
+}
+
+.topBar h1 {
+  margin: 0;
+  font-size: 1.85rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.settings {
+  height: 100%;
+  font-size: x-large;
+}
+
+.divider {
+  border: none;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+  width: 100%;
+  margin: 12px 0 6px 0;
+}
+
+.userInfo {
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}
+
+.userShelvesInfo,
+.userReviewsInfo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+}
+
+.userShelvesQuantity,
+.userReviewsQuantity {
+  font-size: 1.5rem;
+  line-height: 1;
+  color: white;
+  margin: 0 0 4px 0;
+  font-weight: 700;
+}
+
+.userShelvesText,
+.userReviewsText {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: rgba(255, 255, 255, 0.55);
+  font-weight: 600;
+  margin: 0;
+}
+
+.card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  margin: 4px 16px 16px 16px;
+}
+
+.shelvesHeader {
+  padding: 16px 16px 4px 16px;
+}
+
+.shelvesTitle {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.shelvesContent {
+  padding: 0 16px 12px 16px;
+}
+
+.shelfList {
+  background: transparent !important;
+  --ion-item-background: transparent !important;
+  padding: 0;
+  margin: 0;
+}
+
+.shelfItem {
+  --background: transparent !important;
+  --background-hover: rgba(255, 255, 255, 0.04);
+  --background-activated: rgba(255, 255, 255, 0.08);
+  --border-color: rgba(255, 255, 255, 0.07);
+  --padding-start: 0;
+  --inner-padding-end: 0;
+  --min-height: 48px;
+}
+
+.shelfIcon,
+.reviewIcon {
+  font-size: 1.35rem;
+  color: var(--ion-color-primary);
+  margin-right: 12px;
+}
+
+.reviewIcon {
+  color: #ffb800;
+}
+
+.shelfName {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #ffffff;
+  text-transform: capitalize;
+}
+
+.shelfBadge {
+  background: rgba(56, 128, 255, 0.2);
+  color: var(--ion-color-primary);
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 4px 9px;
+  border-radius: 12px;
+  border: 1px solid rgba(56, 128, 255, 0.3);
+}
+
+.accordionGroup {
+  background: transparent !important;
+  margin-top: 4px;
+}
+
+.accordion {
+  background: transparent !important;
+}
+
+.accordionHeader {
+  --background: transparent !important;
+  --padding-start: 0;
+  --inner-padding-end: 0;
+}
+
+.accordionHeaderLabel,
+.reviewsHeaderLabel {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.accordionContent {
+  padding: 0;
+  background: transparent !important;
+}

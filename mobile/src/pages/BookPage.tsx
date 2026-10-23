@@ -23,13 +23,15 @@ import api from '../services/api.service';
 import useAuthStore from '../store/useAuthStore';
 import { useRef } from 'react';
 
+import getQueryKeys from '../queryOptions/queryKeys';
+
 const BookPage: React.FC = () => {
   const location = useLocation<{
     information: {
       book: bookInfo;
-      bookLists: Array<string>;
+      bookShelves: Array<string>;
       category?: string;
-      list?: string;
+      shelf?: string;
     };
   }>();
 
@@ -39,65 +41,57 @@ const BookPage: React.FC = () => {
 
   const bookInformation = useRef(location.state?.information);
 
-  const [formattedListNames, setFormattedListNames] = useState<string[]>([]);
+  const [formattedShelfNames, setFormattedShelfNames] = useState<string[]>([]);
 
-  const addBookToList = useMutation({
+  const addBookToShelf = useMutation({
     mutationFn: (content: {
       book: bookInfo;
-      requiredList: string;
+      requiredShelf: string;
       reviewData: {
         rating: number;
         display: string;
         liked: boolean;
         review: string | null;
       } | null;
-      optionalLists: Array<string> | null;
+      optionalShelves: Array<string> | null;
     }) => {
-      return api.post('/add-book-to-list', content);
+      return api.post('/add-book-to-shelf', content);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['userBook'],
+      const queryKeys = getQueryKeys(userID);
+      queryKeys.forEach((queryKey) => {
+        queryClient.invalidateQueries({
+          queryKey,
+        });
       });
-      queryClient.invalidateQueries({
-        queryKey: ['userLists', userID],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['trendingCategoryBooks', userID],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['trendingBooks', userID],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['bookInfoISBN', userID],
-      });
+
       useAuthStore.getState().removeActiveBookRecommendationID();
     },
   });
 
-  if (bookInformation.current || addBookToList.isSuccess) {
+  if (bookInformation.current || addBookToShelf.isSuccess) {
     const bookInfo =
-      bookInformation.current?.book || addBookToList.variables?.book;
+      bookInformation.current?.book || addBookToShelf.variables?.book;
 
-    const bookLists = bookInformation.current?.bookLists;
+    const bookShelves = bookInformation.current?.bookShelves;
 
     const handleBookAdd = (
-      requiredList: string,
-      formattedListNames: Array<string>,
+      requiredShelf: string,
+      formattedShelfNames: Array<string>,
       reviewData: {
         rating: number;
         display: string;
         liked: boolean;
         review: string | null;
       } | null,
-      optionalLists: Array<string> | null,
+      optionalShelves: Array<string> | null,
     ) => {
-      setFormattedListNames(formattedListNames);
-      addBookToList.mutate({
+      setFormattedShelfNames(formattedShelfNames);
+      addBookToShelf.mutate({
         book: bookInfo,
-        requiredList,
+        requiredShelf,
         reviewData,
-        optionalLists,
+        optionalShelves,
       });
     };
 
@@ -111,9 +105,9 @@ const BookPage: React.FC = () => {
           </IonToolbar>
         </IonHeader>
         <IonContent fullscreen>
-          {addBookToList.isPending ? (
+          {addBookToShelf.isPending ? (
             <LoadSpinner
-              message={`Adding Book To \n\n ${formattedListNames
+              message={`Adding Book To \n\n ${formattedShelfNames
                 .map((item) => '• ' + item)
                 .join('\n')} \n\n ...`}
               fullScreen={true}
@@ -121,19 +115,19 @@ const BookPage: React.FC = () => {
           ) : (
             <>
               <BookInfo bookInfo={bookInfo} detailed={true} />
-              {bookInformation.current?.list || addBookToList.isSuccess ? (
+              {bookInformation.current?.shelf || addBookToShelf.isSuccess ? (
                 <StatusFeedback
                   successMessage={
-                    bookInformation.current?.list
+                    bookInformation.current?.shelf
                       ? 'You Already Have This Book'
                       : 'Book Added Successfully'
                   }
-                  list={
-                    addBookToList.isSuccess
-                      ? formattedListNames
-                      : bookLists && bookLists.length > 0
-                      ? bookLists
-                      : [bookInformation.current.list!]
+                  shelf={
+                    addBookToShelf.isSuccess
+                      ? formattedShelfNames
+                      : bookShelves && bookShelves.length > 0
+                      ? bookShelves
+                      : [bookInformation.current.shelf!]
                   }
                 />
               ) : (
