@@ -2,7 +2,7 @@
 
 This project was designed and built as a Mobile App to help me keep track of the books I read and the ones that I want to read. It also features an **AI agent** that gives tailored suggestions based on the already read books.
 
-To add books to your profile, simply scan the book's barcode!
+To add books to your profile, simply scan the book's barcode or search for it!
 
 <div align="center">
   <h1>Home Page</h1>
@@ -35,6 +35,28 @@ To add books to your profile, simply scan the book's barcode!
   
 </div>
 
+<div align="center">
+  <h1>Profile Page</h1>
+  
+  <img src="./media/profilePage/profilePage.png" alt="Profile Page" width="220" />
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="./media/profilePage/myReviews.png" alt="My Reviews" width="220" />
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="./media/profilePage/shelfPage.png" alt="Shelf Page" width="220" />
+  
+</div>
+
+<div align="center">
+  <h1>Settings Page</h1>
+  
+  <img src="./media/settingsPage/settingsPage.png" alt="Settings Page" width="220" />
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="./media/settingsPage/editShelves.png" alt="Edit Shelves" width="220" />
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="./media/settingsPage/feedbackModal.png" alt="Send Feedback" width="220" />
+  
+</div>
+
 ---
 
 ## 🚧 Status
@@ -49,7 +71,7 @@ Book Reviews implemented. Users can leave reviews about the completed books
 
 Profile Page implemented. Displays user statistics (total books read/collected, total reviews), quick access to system and custom shelves, and review overview, with native pull-to-refresh.
 
-Settings Page implemented. Features dynamic bottom-sheet modals allowing users to edit profile information, update account password, manage custom shelves (create, edit, delete), and submit feedback/bug reports integrated with Discord Webhooks. Also includes account deletion with confirmation alerts and cache clearing._(Updated: 22/10/2026)_
+Settings Page implemented. Features dynamic bottom-sheet modals allowing users to edit profile information, update account password, manage custom shelves (create, edit, delete), and submit feedback/bug reports integrated with Discord Webhooks. Also includes account deletion with confirmation alerts and cache clearing. _(Updated: 22/10/2026)_
 
 ---
 
@@ -101,7 +123,7 @@ The user accesses the "Add Book" page, opens the scanner, and scans a barcode. T
 User enters the app and receives a suggestion from the books he is reading, or from his wish shelf (if available and they aren't currently reading any). If user has any completed and liked book, the API gets the main category if available, and fetches books from that category to recommend to the user. If not, does the same but from the NYT API and with no specific category.
 
 **4. Book Page:**
-When the user enters the page from the book, it displays the book info and the current state of the book, according to the database. If the book is already added, it displays the shelves, otherwise, allows the user to add to one or multiple shelves. If the user wants to add to the 'Completed' shelf, displays a review form
+When the user enters the page from the book, it displays the book info and the current state of the book, according to the database. If the book is already added, it displays the shelves, otherwise, allows the user to add to one or multiple shelves. If the user wants to add to the 'Completed' shelf, displays a review form.
 
 **5. Profile Page:**
 Users can view their membership details, cumulative reading statistics, and navigate through default shelves (Reading, Wish, Completed) and expandable custom shelves.
