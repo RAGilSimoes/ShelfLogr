@@ -7,6 +7,8 @@ import {
   IonSearchbar,
   IonGrid,
   IonButton,
+  IonSelect,
+  IonSelectOption,
 } from '@ionic/react';
 
 import styles from './Search.module.css';
@@ -98,21 +100,28 @@ const Search: React.FC = () => {
                 ? 'Search By...'
                 : `Searching By -> ${selectedCategoryName}`}
             </h1>
-            {availableNYTLists.map(
-              (list: { name: string; encoded: string }) => {
-                return (
-                  <IonButton
-                    key={list.encoded}
-                    onClick={() => {
-                      setSelectedCategoryName(list.name);
-                      setSelectedCategoryEncoded(list.encoded);
-                    }}
-                  >
-                    {list.name}
-                  </IonButton>
-                );
-              },
-            )}
+            <IonSelect
+              placeholder="List"
+              interfaceOptions={{ header: 'Choose A List' }}
+              onIonChange={(e) => {
+                setSelectedCategoryEncoded(e.detail.value);
+                //setSelectedCategoryName(e);
+              }}
+              label="List"
+              multiple={false}
+              value={selectedCategoryName}
+            >
+              {availableNYTLists.map(
+                (list: { name: string; encoded: string }) => {
+                  return (
+                    <IonSelectOption value={list.encoded}>
+                      {list.name}
+                    </IonSelectOption>
+                  );
+                },
+              )}
+            </IonSelect>
+
             {trendingListBookQuery.isLoading ? (
               <LoadSpinner message="Fetching Books..." fullScreen={false} />
             ) : trendingListBookQuery.isSuccess &&
