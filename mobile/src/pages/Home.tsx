@@ -166,7 +166,10 @@ const Home: React.FC = () => {
   const trendingCategoryBookQuery = useQuery({
     queryKey: ['trendingCategoryBooks', userID, activeBookQuery.data?.category],
     queryFn: () =>
-      fetchTrendingBooksRecommendation(activeBookQuery.data?.category),
+      fetchTrendingBooksRecommendation(
+        activeBookQuery.data?.category,
+        undefined,
+      ),
     enabled:
       activeBookQuery.status === 'success' &&
       activeBookQuery.data.category !== null,
@@ -174,7 +177,7 @@ const Home: React.FC = () => {
 
   const trendingBookQuery = useQuery({
     queryKey: ['trendingBooks', userID],
-    queryFn: () => fetchTrendingBooksRecommendation(undefined),
+    queryFn: () => fetchTrendingBooksRecommendation(undefined, undefined),
     enabled: activeBookQuery.status === 'success',
   });
 

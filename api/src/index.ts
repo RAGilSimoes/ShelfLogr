@@ -775,6 +775,7 @@ app.get(
     try {
       const { id } = req.token;
       const category = req.query.category;
+      const trendingList = req.query.trending;
 
       let type;
       let trending;
@@ -788,8 +789,14 @@ app.get(
         trending = { type, category, trendingBooksInfo };
       } else {
         type = 'trending';
+        const list =
+          trendingList && typeof trendingList === 'string'
+            ? trendingList
+            : 'combined-print-and-e-book-fiction';
+
         const trendingBooksInfo: Array<bookInfo> = await fetchNYTTrendingBooks(
           id,
+          list,
         );
         trending = { type, trendingBooksInfo };
       }

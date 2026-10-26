@@ -160,8 +160,10 @@ export async function getAllUserBooks(
   }
 }
 
-export async function fetchNYTTrendingBooks(id: string): Promise<any> {
-  const list = 'combined-print-and-e-book-fiction';
+export async function fetchNYTTrendingBooks(
+  id: string,
+  list: string,
+): Promise<any> {
   const response = await fetch(
     `https://api.nytimes.com/svc/books/v3/lists/current/${list}.json?api-key=${process.env.NYT_API_KEY}`,
   );
