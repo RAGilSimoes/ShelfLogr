@@ -769,6 +769,50 @@ app.get(
 );
 
 app.get(
+  '/api/user/last-liked',
+  verifyAuthorization(false),
+  async (req: Request, res: Response) => {
+    try {
+      const { id } = req.token;
+
+      const randomLikedQuery = `SELECT 
+        b.*, 
+        COALESCE((ARRAY_AGG(c.name) FILTER (WHERE bc.main = true))[1], '') as "mainCategory",
+        COALESCE(ARRAY_AGG(c.name) FILTER (WHERE bc.main = false), '{}') as categories
+    FROM "book" b
+    LEFT JOIN book_category bc ON b.id = bc.book_id
+    LEFT JOIN categories c ON bc.category_id = c.id
+    LEFT JOIN user_reviews ur ON ur.book_id=b.id
+    WHERE ur.user_id=$1 AND ur.liked
+    GROUP BY b.id
+    HAVING COALESCE((ARRAY_AGG(c.name) FILTER (WHERE bc.main = true))[1], '') <> ''
+    ORDER BY RANDOM()
+    LIMIT 1`;
+
+      const { rows } = await pool.query(randomLikedQuery, [id]);
+
+      if (rows && rows.length > 0) {
+        const selectedBook: bookInfo = rows[0];
+
+        const suggestedBooks = await fetchGoogleTrendingBooks(
+          selectedBook.mainCategory,
+          id,
+        );
+
+        return res
+          .status(200)
+          .json({ title: selectedBook.title, suggestedBooks });
+      } else if (rows.length === 0) {
+        return res.status(200).json({});
+      }
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ error: 'Error getting suggested books' });
+    }
+  },
+);
+
+app.get(
   '/api/books/trending',
   verifyAuthorization(false),
   async (req: Request, res: Response) => {

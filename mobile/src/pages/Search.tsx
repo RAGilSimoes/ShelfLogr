@@ -19,6 +19,7 @@ import BookSwiper from '../components/BookSwiper';
 
 import { useQuery } from '@tanstack/react-query';
 import fetchTrendingBooksRecommendation from '../queryOptions/homeQueries';
+import fetchSuggestedBooks from '../queryOptions/searchPageQueries';
 
 import useAuthStore from '../store/useAuthStore';
 
@@ -81,6 +82,11 @@ const Search: React.FC = () => {
     enabled: selectedList.name !== '' && selectedList.encoded !== '',
   });
 
+  const suggestedBooksQuery = useQuery({
+    queryKey: ['suggestedBooks', userID],
+    queryFn: () => fetchSuggestedBooks(),
+  });
+
   return (
     <IonPage>
       <IonHeader>
@@ -95,7 +101,28 @@ const Search: React.FC = () => {
       <IonContent fullscreen>
         <IonGrid>
           <div>
-            <h1>Because you liked...</h1>
+            {suggestedBooksQuery.isLoading ? (
+              <LoadSpinner
+                message="Fetching Suggested Books..."
+                fullScreen={false}
+              />
+            ) : (
+              suggestedBooksQuery.isSuccess &&
+              suggestedBooksQuery.data &&
+              Object.keys(suggestedBooksQuery.data).length > 0 &&
+              suggestedBooksQuery.data.suggestedBooks.length > 0 && (
+                <>
+                  <h1>Because you liked '{suggestedBooksQuery.data.title}'</h1>
+                  <div>
+                    {
+                      <BookSwiper
+                        books={suggestedBooksQuery.data.suggestedBooks}
+                      />
+                    }
+                  </div>
+                </>
+              )
+            )}
           </div>
           <div>
             <div className={styles.sectionHeader}>

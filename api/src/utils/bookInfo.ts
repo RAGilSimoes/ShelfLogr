@@ -221,7 +221,7 @@ export async function fetchGoogleTrendingBooks(
   const safeCategory = encodeURIComponent(category);
 
   while (validBooks.length < TARGET_AMOUNT) {
-    const url = `https://www.googleapis.com/books/v1/volumes?q=subject:${safeCategory}&maxResults=${FETCH_CHUNK}&startIndex=${startIndex}&key=${process.env.BOOKS_API_KEY}`;
+    const url = `https://www.googleapis.com/books/v1/volumes?q=${safeCategory}&maxResults=${FETCH_CHUNK}&startIndex=${startIndex}&key=${process.env.BOOKS_API_KEY}`;
 
     const response = await fetch(url);
     const data = await response.json();
