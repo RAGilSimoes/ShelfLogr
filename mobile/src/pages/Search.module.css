@@ -1,0 +1,31 @@
+.chipsContainer {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 16px 16px 16px;
+  scrollbar-width: none;
+}
+
+.chipsContainer::-webkit-scrollbar {
+  display: none;
+}
+
+.chip {
+  white-space: nowrap;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.7);
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.chipActive {
+  background: var(--ion-color-primary, #3880ff);
+  border-color: var(--ion-color-primary, #3880ff);
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(56, 128, 255, 0.3);
+}

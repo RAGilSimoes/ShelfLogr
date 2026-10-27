@@ -22,60 +22,63 @@ import fetchTrendingBooksRecommendation from '../queryOptions/homeQueries';
 
 import useAuthStore from '../store/useAuthStore';
 
+const availableNYTLists: Array<{ name: string; encoded: string }> = [
+  {
+    name: 'Combined Print & E-Book Fiction',
+    encoded: 'combined-print-and-e-book-fiction',
+  },
+  {
+    name: 'Combined Print & E-Book Nonfiction',
+    encoded: 'combined-print-and-e-book-nonfiction',
+  },
+  {
+    name: 'Paperback Trade Fiction',
+    encoded: 'trade-fiction-paperback',
+  },
+  {
+    name: 'Advice, How-To & Miscellaneous',
+    encoded: 'advice-how-to-and-miscellaneous',
+  },
+  {
+    name: 'Children’s Middle Grade Hardcover',
+    encoded: 'childrens-middle-grade-hardcover',
+  },
+  {
+    name: 'Children’s Picture Books',
+    encoded: 'picture-books',
+  },
+  {
+    name: 'Children’s & Young Adult Series',
+    encoded: 'series-books',
+  },
+  {
+    name: 'Young Adult Hardcover',
+    encoded: 'young-adult-hardcover',
+  },
+  {
+    name: 'Business',
+    encoded: 'business-books',
+  },
+  {
+    name: 'Graphic Books and Manga',
+    encoded: 'graphic-books-and-manga',
+  },
+];
+
+const defaultTrendingListIndex = 0;
+
 const Search: React.FC = () => {
   const userID = useAuthStore((state) => state.userID);
-  const [selectedCategoryName, setSelectedCategoryName] = useState<string>('');
-  const [selectedCategoryEncoded, setSelectedCategoryEncoded] =
-    useState<string>('');
 
-  const availableNYTLists: Array<{ name: string; encoded: string }> = [
-    {
-      name: 'Combined Print & E-Book Fiction',
-      encoded: 'combined-print-and-e-book-fiction',
-    },
-    {
-      name: 'Combined Print & E-Book Nonfiction',
-      encoded: 'combined-print-and-e-book-nonfiction',
-    },
-    {
-      name: 'Paperback Trade Fiction',
-      encoded: 'trade-fiction-paperback',
-    },
-    {
-      name: 'Advice, How-To & Miscellaneous',
-      encoded: 'advice-how-to-and-miscellaneous',
-    },
-    {
-      name: 'Children’s Middle Grade Hardcover',
-      encoded: 'childrens-middle-grade-hardcover',
-    },
-    {
-      name: 'Children’s Picture Books',
-      encoded: 'picture-books',
-    },
-    {
-      name: 'Children’s & Young Adult Series',
-      encoded: 'series-books',
-    },
-    {
-      name: 'Young Adult Hardcover',
-      encoded: 'young-adult-hardcover',
-    },
-    {
-      name: 'Business',
-      encoded: 'business-books',
-    },
-    {
-      name: 'Graphic Books and Manga',
-      encoded: 'graphic-books-and-manga',
-    },
-  ];
+  const [selectedList, setSelectedList] = useState(
+    availableNYTLists[defaultTrendingListIndex],
+  );
 
   const trendingListBookQuery = useQuery({
-    queryKey: ['trendingListBooks', userID, selectedCategoryName],
+    queryKey: ['trendingListBooks', userID, selectedList.name],
     queryFn: () =>
-      fetchTrendingBooksRecommendation(undefined, selectedCategoryEncoded),
-    enabled: selectedCategoryName !== '' && selectedCategoryEncoded !== '',
+      fetchTrendingBooksRecommendation(undefined, selectedList.encoded),
+    enabled: selectedList.name !== '' && selectedList.encoded !== '',
   });
 
   return (
@@ -95,32 +98,28 @@ const Search: React.FC = () => {
             <h1>Because you liked...</h1>
           </div>
           <div>
-            <h1>
-              {selectedCategoryName === ''
-                ? 'Search By...'
-                : `Searching By -> ${selectedCategoryName}`}
-            </h1>
-            <IonSelect
-              placeholder="List"
-              interfaceOptions={{ header: 'Choose A List' }}
-              onIonChange={(e) => {
-                setSelectedCategoryEncoded(e.detail.value);
-                //setSelectedCategoryName(e);
-              }}
-              label="List"
-              multiple={false}
-              value={selectedCategoryName}
-            >
-              {availableNYTLists.map(
-                (list: { name: string; encoded: string }) => {
+            <div className={styles.sectionHeader}>
+              <h2 className={styles.sectionTitle}>Bestsellers</h2>
+            </div>
+
+            <div className={styles.chipsContainer}>
+              <>
+                {availableNYTLists.map((list) => {
+                  const isSelected = selectedList.encoded === list.encoded;
                   return (
-                    <IonSelectOption value={list.encoded}>
+                    <button
+                      key={list.encoded}
+                      className={`${styles.chip} ${
+                        isSelected ? styles.chipActive : ''
+                      }`}
+                      onClick={() => setSelectedList(list)}
+                    >
                       {list.name}
-                    </IonSelectOption>
+                    </button>
                   );
-                },
-              )}
-            </IonSelect>
+                })}
+              </>
+            </div>
 
             {trendingListBookQuery.isLoading ? (
               <LoadSpinner message="Fetching Books..." fullScreen={false} />
