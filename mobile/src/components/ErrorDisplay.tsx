@@ -10,23 +10,44 @@ const ErrorDisplay: React.FC<{
   icon?: string;
   onRetry?: () => void;
   retryText?: string;
+  compact?: boolean;
 }> = ({
   title,
   subtitle = `There was a problem loading the information`,
   icon = alertCircleOutline,
   onRetry,
   retryText = 'Try Again',
+  compact = false,
 }) => {
   return (
-    <div className={styles.emptyContainer}>
-      <IonIcon icon={icon} className={styles.errorIcon} />
-      <h3 className={styles.emptyTitle}>{title}</h3>
-      <p className={styles.emptySubtitle}>{subtitle}</p>
+    <div
+      className={`${styles.emptyContainer} ${
+        compact ? styles.compactContainer : ''
+      }`}
+    >
+      <IonIcon
+        icon={icon}
+        className={`${styles.errorIcon} ${compact ? styles.compactIcon : ''}`}
+      />
+      <h3
+        className={`${styles.emptyTitle} ${compact ? styles.compactTitle : ''}`}
+      >
+        {title}
+      </h3>
+      <p
+        className={`${styles.emptySubtitle} ${
+          compact ? styles.compactSubtitle : ''
+        }`}
+      >
+        {subtitle}
+      </p>
       {onRetry && (
         <IonButton
           fill="outline"
           shape="round"
-          className={styles.retryBtn}
+          className={`${styles.retryBtn} ${
+            compact ? styles.compactRetryBtn : ''
+          }`}
           onClick={onRetry}
         >
           {retryText}

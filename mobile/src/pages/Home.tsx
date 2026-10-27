@@ -6,7 +6,6 @@ import {
   IonToolbar,
   IonGrid,
   useIonViewWillLeave,
-  IonButton,
 } from '@ionic/react';
 import { sunny, partlySunny, moon, refreshCircle } from 'ionicons/icons';
 
@@ -30,6 +29,8 @@ import { bookInfo } from '@shelflogr/shared';
 
 import Toast from '../components/Toast';
 
+import ErrorDisplay from '../components/ErrorDisplay';
+
 const Home: React.FC = () => {
   const username = useAuthStore((state) => state.username);
   const userID = useAuthStore((state) => state.userID);
@@ -38,8 +39,6 @@ const Home: React.FC = () => {
   const history = useHistory();
 
   const timeoutRef = useRef(0);
-
-  const [buttonDisabled, setButtonDisabled] = useState<boolean>(false);
 
   const [displayToast, setDisplayToast] = useState(false);
 
@@ -213,33 +212,39 @@ const Home: React.FC = () => {
         <IonGrid className={styles.grid}>
           {activeBookQuery.isLoading ? (
             <LoadSpinner message={'Getting Active Book'} fullScreen={false} />
-          ) : (
-            activeBookQuery.isSuccess &&
+          ) : activeBookQuery.isSuccess &&
             activeBookQuery.data.book &&
-            Object.keys(activeBookQuery.data.book).length > 0 && (
-              <div>
-                <h3 className={styles.statusMessage}>
-                  This book is in your{' '}
-                  {activeBookQuery.data.shelf
-                    ? activeBookQuery.data.shelf.charAt(0).toUpperCase() +
-                      activeBookQuery.data.shelf.slice(1)
-                    : ''}{' '}
-                  Shelf
-                </h3>
-                <div
-                  onClick={() => {
-                    history.push(`/app/book/${activeBookQuery.data.book?.id}`, {
-                      information: activeBookQuery.data,
-                    });
-                  }}
-                  style={{ cursor: 'pointer' }}
-                >
-                  <BookCard
-                    bookInfo={activeBookQuery.data.book}
-                    detailed={false}
-                  />
-                </div>
+            Object.keys(activeBookQuery.data.book).length > 0 ? (
+            <div>
+              <h3 className={styles.statusMessage}>
+                This book is in your{' '}
+                {activeBookQuery.data.shelf
+                  ? activeBookQuery.data.shelf.charAt(0).toUpperCase() +
+                    activeBookQuery.data.shelf.slice(1)
+                  : ''}{' '}
+                Shelf
+              </h3>
+              <div
+                onClick={() => {
+                  history.push(`/app/book/${activeBookQuery.data.book?.id}`, {
+                    information: activeBookQuery.data,
+                  });
+                }}
+                style={{ cursor: 'pointer' }}
+              >
+                <BookCard
+                  bookInfo={activeBookQuery.data.book}
+                  detailed={false}
+                />
               </div>
+            </div>
+          ) : (
+            activeBookQuery.isError && (
+              <ErrorDisplay
+                title="Error loading suggestion"
+                onRetry={() => activeBookQuery.refetch()}
+                compact={true}
+              />
             )
           )}
 
@@ -252,7 +257,7 @@ const Home: React.FC = () => {
                 }`}
                 fullScreen={false}
               />
-            ) : trendingCategoryBookQuery.status === 'success' &&
+            ) : trendingCategoryBookQuery.isSuccess &&
               trendingCategoryBookQuery.data.trendingBooksInfo.length > 0 ? (
               <div>
                 <h3 className={styles.trendingMessage}>
@@ -265,34 +270,13 @@ const Home: React.FC = () => {
                 }
               </div>
             ) : (
-              <div>
-                <h3 className={styles.failedMessage}>
-                  {`Couldn't Get Recommendations About ${
-                    activeBookQuery.data?.category || 'Your Favorite Book'
-                  }`}
-                </h3>
-                <IonButton
-                  expand="block"
-                  shape="round"
-                  size="default"
-                  onClick={() => {
-                    setButtonDisabled(true);
-                    trendingCategoryBookQuery.refetch();
-
-                    const timeoutID = setTimeout(() => {
-                      setButtonDisabled(false);
-                    }, 5000);
-
-                    timeoutRef.current = timeoutID;
-                  }}
-                  className="ion-margin-top"
-                  color="primary"
-                  disabled={buttonDisabled}
-                >
-                  {buttonDisabled ? 'Wait...' : 'Try Again'}
-                  <IonIcon slot="end" icon={refreshCircle}></IonIcon>
-                </IonButton>
-              </div>
+              <ErrorDisplay
+                title={`Couldn't Get Recommendations About ${
+                  activeBookQuery.data?.category || 'Your Favorite Book'
+                }`}
+                onRetry={() => trendingCategoryBookQuery.refetch()}
+                compact={true}
+              />
             ))}
 
           {trendingBookQuery.isFetching ? (
@@ -301,7 +285,7 @@ const Home: React.FC = () => {
               fullScreen={false}
             />
           ) : activeBookQuery.isSuccess &&
-            trendingBookQuery.status === 'success' &&
+            trendingBookQuery.isSuccess &&
             trendingBookQuery.data.trendingBooksInfo &&
             trendingBookQuery.data.trendingBooksInfo.length > 0 ? (
             <div>
@@ -312,32 +296,11 @@ const Home: React.FC = () => {
             </div>
           ) : (
             trendingBookQuery.isError && (
-              <div>
-                <h3 className={styles.failedMessage}>
-                  {`Couldn't Get Trending Books`}
-                </h3>
-                <IonButton
-                  expand="block"
-                  shape="round"
-                  size="default"
-                  onClick={() => {
-                    setButtonDisabled(true);
-                    trendingBookQuery.refetch();
-
-                    const timeoutID = setTimeout(() => {
-                      setButtonDisabled(false);
-                    }, 5000);
-
-                    timeoutRef.current = timeoutID;
-                  }}
-                  className="ion-margin-top"
-                  color="primary"
-                  disabled={buttonDisabled}
-                >
-                  {buttonDisabled ? 'Wait...' : 'Try Again'}
-                  <IonIcon slot="end" icon={refreshCircle}></IonIcon>
-                </IonButton>
-              </div>
+              <ErrorDisplay
+                title={`Couldn't Get Trending Books`}
+                onRetry={() => trendingBookQuery.refetch()}
+                compact={true}
+              />
             )
           )}
         </IonGrid>

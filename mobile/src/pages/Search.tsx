@@ -23,6 +23,8 @@ import fetchSuggestedBooks from '../queryOptions/searchPageQueries';
 
 import useAuthStore from '../store/useAuthStore';
 
+import ErrorDisplay from '../components/ErrorDisplay';
+
 const availableNYTLists: Array<{ name: string; encoded: string }> = [
   {
     name: 'Combined Print & E-Book Fiction',
@@ -106,21 +108,27 @@ const Search: React.FC = () => {
                 message="Fetching Suggested Books..."
                 fullScreen={false}
               />
-            ) : (
-              suggestedBooksQuery.isSuccess &&
+            ) : suggestedBooksQuery.isSuccess &&
               suggestedBooksQuery.data &&
               Object.keys(suggestedBooksQuery.data).length > 0 &&
-              suggestedBooksQuery.data.suggestedBooks.length > 0 && (
-                <>
-                  <h1>Because you liked '{suggestedBooksQuery.data.title}'</h1>
-                  <div>
-                    {
-                      <BookSwiper
-                        books={suggestedBooksQuery.data.suggestedBooks}
-                      />
-                    }
-                  </div>
-                </>
+              suggestedBooksQuery.data.suggestedBooks.length > 0 ? (
+              <>
+                <h1>Because you liked '{suggestedBooksQuery.data.title}'</h1>
+                <div>
+                  {
+                    <BookSwiper
+                      books={suggestedBooksQuery.data.suggestedBooks}
+                    />
+                  }
+                </div>
+              </>
+            ) : (
+              suggestedBooksQuery.isError && (
+                <ErrorDisplay
+                  title={'Error loading suggested books'}
+                  onRetry={() => suggestedBooksQuery.refetch()}
+                  compact={true}
+                />
               )
             )}
           </div>
@@ -162,7 +170,13 @@ const Search: React.FC = () => {
                 </div>
               </>
             ) : (
-              trendingListBookQuery.isStale && <p>Olá</p>
+              trendingListBookQuery.isError && (
+                <ErrorDisplay
+                  title={`Error loading trending books from ${selectedList.name}`}
+                  onRetry={() => trendingListBookQuery.refetch()}
+                  compact={true}
+                />
+              )
             )}
           </div>
           <div>Your most liked author...</div>
