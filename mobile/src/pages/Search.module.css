@@ -4,6 +4,7 @@
   overflow-x: auto;
   padding: 4px 16px 16px 16px;
   scrollbar-width: none;
+  align-items: center;
 }
 
 .chipsContainer::-webkit-scrollbar {

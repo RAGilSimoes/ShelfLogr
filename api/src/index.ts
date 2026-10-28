@@ -825,28 +825,9 @@ app.get(
       const text: string = req.query.text as string;
       const type: string = req.query.type as string;
 
-      let keyword: string = '';
-
-      switch (type) {
-        case 'Category':
-          keyword = 'subject';
-          break;
-
-        case 'Title':
-          keyword = 'intitle';
-          break;
-
-        case 'Author':
-          keyword = 'inauthor';
-          break;
-
-        default:
-          break;
-      }
-
-      const url: string = `https://www.googleapis.com/books/v1/volumes?q=${keyword}:"${encodeURIComponent(
+      const url: string = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(
         text,
-      )}"&key=${process.env.BOOKS_API_KEY}`;
+      )}&maxResults=40&key=${process.env.BOOKS_API_KEY}`;
 
       const responseID = await fetch(url);
 
@@ -854,7 +835,9 @@ app.get(
 
       const data = await responseID.json();
 
-      return res.status(200).json({ data });
+      const items: Array<any> = data.items || [];
+
+      return res.status(200).json({ items });
     } catch (error) {
       console.error('Database query failed:', error);
       return res

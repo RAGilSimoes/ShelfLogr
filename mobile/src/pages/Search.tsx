@@ -5,6 +5,7 @@ import {
   IonToolbar,
   IonSearchbar,
   IonGrid,
+  useIonViewWillLeave,
 } from '@ionic/react';
 
 import styles from './Search.module.css';
@@ -69,12 +70,7 @@ const availableNYTLists: Array<{ name: string; encoded: string }> = [
   },
 ];
 
-const availableSearchFilters: Array<string> = [
-  'All',
-  'Title',
-  'Category',
-  'Author',
-];
+const availableSearchFilters: Array<string> = ['All', 'Title', 'Author'];
 
 const defaultTrendingListIndex = 0;
 const defaultSearchIndex = 0;
@@ -101,6 +97,15 @@ const Search: React.FC = () => {
     success: 'success',
     error: 'error',
   };
+
+  useIonViewWillLeave(() => {
+    setToastMessage('');
+    setDisplayToast(false);
+
+    setSearchText('');
+    setSelectedList(availableNYTLists[defaultTrendingListIndex]);
+    setSelectedSearchFilter(availableSearchFilters[defaultSearchIndex]);
+  });
 
   const handleSearch = async (filter?: string) => {
     if (searchText.trim().length > 0) {
@@ -159,6 +164,7 @@ const Search: React.FC = () => {
           ></IonSearchbar>
           <div className={styles.chipsContainer}>
             <>
+              <strong>Filters:</strong>
               {availableSearchFilters.map((filter: string) => {
                 const isSelected = selectedSearchFilter === filter;
                 return (
