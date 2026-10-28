@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type {
+import {
   AxiosRequestConfig,
   AxiosResponse,
   AxiosError,
@@ -9,12 +9,25 @@ import type {
 
 import { checkToken, removeToken, setToken } from './auth.service';
 
+import useNetworkStore from '../store/useNetworkStore';
+
+import { Network } from '@capacitor/network';
+
 const api: AxiosInstance = axios.create({
   baseURL: import.meta.env.VITE_BACKEND_URL,
   timeout: 15000,
 });
 
 api.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
+  const status = await Network.getStatus();
+
+  if (!status.connected) {
+    useNetworkStore.getState().updateOnline(false);
+    return Promise.reject(
+      new AxiosError('No internet connection', 'ERR_NETWORK', config),
+    );
+  }
+
   const token = await checkToken();
 
   if (token) {
