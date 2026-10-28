@@ -166,7 +166,7 @@ const Add: React.FC = () => {
       } | null;
       optionalShelves: Array<string> | null;
     }) => {
-      return api.post('/add-book-to-shelf', content);
+      return api.post('/user/add-book', content);
     },
     onSuccess: () => {
       const queryKeys = getQueryKeys(userID);

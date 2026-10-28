@@ -234,134 +234,6 @@ app.delete(
 );
 
 app.get(
-  '/api/get-book-info/:isbn',
-  verifyAuthorization(false),
-  async (req: Request, res: Response) => {
-    const isbn: string = req.params.isbn as string;
-
-    const { id } = req.token;
-    const result = await fetchEntireBookInfo(isbn, id);
-
-    if (typeof result === 'string') {
-      res.status(500).json({ error: result });
-    } else {
-      res.status(200).json({ result });
-    }
-  },
-);
-
-app.post(
-  '/api/add-book-to-shelf',
-  verifyAuthorization(false),
-  async (req: Request, res: Response) => {
-    if (!req.body || !req.body.book) {
-      return res.status(400).json({ error: 'Invalid request data' });
-    }
-    const client = await pool.connect();
-    try {
-      const { id } = req.token;
-      const { book, requiredShelf, reviewData, optionalShelves } = req.body;
-
-      const bookID = book.id;
-
-      const userID = id;
-
-      await client.query('BEGIN');
-
-      const deleteRequiredShelfRelation =
-        'DELETE FROM shelf_books WHERE shelf_books.book_id=$1 AND shelf_books.shelf_id IN (SELECT id FROM user_shelf WHERE user_shelf.user_id=$2 AND user_shelf.is_system = true)';
-
-      await client.query(deleteRequiredShelfRelation, [bookID, userID]);
-
-      const insertBookShelf =
-        'INSERT INTO shelf_books(shelf_id, book_id) VALUES($1,$2) ON CONFLICT DO NOTHING;';
-
-      await client.query(insertBookShelf, [requiredShelf, bookID]);
-
-      if (optionalShelves && optionalShelves.length > 0) {
-        for (const optionalShelf of optionalShelves) {
-          await client.query(insertBookShelf, [optionalShelf, bookID]);
-        }
-      }
-
-      const getCategoryID = 'SELECT id FROM categories WHERE name=$1';
-
-      const insertUserCategoryRelation =
-        'INSERT INTO "user_category"(user_id, category_id) VALUES($1,$2) ON CONFLICT DO NOTHING';
-
-      if (book.mainCategory) {
-        const { rows: mainCategory } = await client.query(getCategoryID, [
-          book.mainCategory,
-        ]);
-
-        if (mainCategory.length > 0) {
-          const mainCategoryID = mainCategory[0].id;
-          await client.query(insertUserCategoryRelation, [
-            userID,
-            mainCategoryID,
-          ]);
-        }
-      }
-
-      if (book.categories && book.categories.length !== 0) {
-        for (const category of book.categories) {
-          const { rows: categoryResponse } = await client.query(getCategoryID, [
-            category,
-          ]);
-
-          if (categoryResponse.length > 0) {
-            const categoryID = categoryResponse[0].id;
-            await client.query(insertUserCategoryRelation, [
-              userID,
-              categoryID,
-            ]);
-          }
-        }
-      }
-
-      const insertUserReview =
-        'INSERT INTO "user_reviews"(user_id, book_id, rating, review, display, liked) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT (user_id, book_id) DO UPDATE SET rating = EXCLUDED.rating, review = EXCLUDED.review, display = EXCLUDED.display, liked = EXCLUDED.liked, updated_at = CURRENT_TIMESTAMP;';
-
-      if (reviewData) {
-        const parsedReviewData: {
-          rating: number;
-          display: string;
-          liked: boolean;
-          review: string | null;
-        } = reviewData;
-
-        const displayInsert =
-          parsedReviewData.display === 'public' ? true : false;
-
-        await client.query(insertUserReview, [
-          userID,
-          bookID,
-          parsedReviewData.rating,
-          parsedReviewData.review || null,
-          displayInsert,
-          parsedReviewData.liked,
-        ]);
-      }
-
-      await client.query('COMMIT');
-      return res.status(200).json({
-        message: 'Book added successfully',
-        requiredShelf,
-        optionalShelves,
-      });
-    } catch (error) {
-      console.log(error);
-      await client.query('ROLLBACK');
-      return res.status(500).json({
-        error: `Error Adding Book to Shelves.`,
-      });
-    } finally {
-      client.release();
-    }
-  },
-);
-
-app.get(
   '/api/user/shelves-names',
   verifyAuthorization(false),
   async (req: Request, res: Response) => {
@@ -808,6 +680,186 @@ app.get(
     } catch (error) {
       console.log(error);
       return res.status(500).json({ error: 'Error getting suggested books' });
+    }
+  },
+);
+
+app.post(
+  '/api/user/add-book',
+  verifyAuthorization(false),
+  async (req: Request, res: Response) => {
+    if (!req.body || !req.body.book) {
+      return res.status(400).json({ error: 'Invalid request data' });
+    }
+    const client = await pool.connect();
+    try {
+      const { id } = req.token;
+      const { book, requiredShelf, reviewData, optionalShelves } = req.body;
+
+      const bookID = book.id;
+
+      const userID = id;
+
+      await client.query('BEGIN');
+
+      const deleteRequiredShelfRelation =
+        'DELETE FROM shelf_books WHERE shelf_books.book_id=$1 AND shelf_books.shelf_id IN (SELECT id FROM user_shelf WHERE user_shelf.user_id=$2 AND user_shelf.is_system = true)';
+
+      await client.query(deleteRequiredShelfRelation, [bookID, userID]);
+
+      const insertBookShelf =
+        'INSERT INTO shelf_books(shelf_id, book_id) VALUES($1,$2) ON CONFLICT DO NOTHING;';
+
+      await client.query(insertBookShelf, [requiredShelf, bookID]);
+
+      if (optionalShelves && optionalShelves.length > 0) {
+        for (const optionalShelf of optionalShelves) {
+          await client.query(insertBookShelf, [optionalShelf, bookID]);
+        }
+      }
+
+      const getCategoryID = 'SELECT id FROM categories WHERE name=$1';
+
+      const insertUserCategoryRelation =
+        'INSERT INTO "user_category"(user_id, category_id) VALUES($1,$2) ON CONFLICT DO NOTHING';
+
+      if (book.mainCategory) {
+        const { rows: mainCategory } = await client.query(getCategoryID, [
+          book.mainCategory,
+        ]);
+
+        if (mainCategory.length > 0) {
+          const mainCategoryID = mainCategory[0].id;
+          await client.query(insertUserCategoryRelation, [
+            userID,
+            mainCategoryID,
+          ]);
+        }
+      }
+
+      if (book.categories && book.categories.length !== 0) {
+        for (const category of book.categories) {
+          const { rows: categoryResponse } = await client.query(getCategoryID, [
+            category,
+          ]);
+
+          if (categoryResponse.length > 0) {
+            const categoryID = categoryResponse[0].id;
+            await client.query(insertUserCategoryRelation, [
+              userID,
+              categoryID,
+            ]);
+          }
+        }
+      }
+
+      const insertUserReview =
+        'INSERT INTO "user_reviews"(user_id, book_id, rating, review, display, liked) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT (user_id, book_id) DO UPDATE SET rating = EXCLUDED.rating, review = EXCLUDED.review, display = EXCLUDED.display, liked = EXCLUDED.liked, updated_at = CURRENT_TIMESTAMP;';
+
+      if (reviewData) {
+        const parsedReviewData: {
+          rating: number;
+          display: string;
+          liked: boolean;
+          review: string | null;
+        } = reviewData;
+
+        const displayInsert =
+          parsedReviewData.display === 'public' ? true : false;
+
+        await client.query(insertUserReview, [
+          userID,
+          bookID,
+          parsedReviewData.rating,
+          parsedReviewData.review || null,
+          displayInsert,
+          parsedReviewData.liked,
+        ]);
+      }
+
+      await client.query('COMMIT');
+      return res.status(200).json({
+        message: 'Book added successfully',
+        requiredShelf,
+        optionalShelves,
+      });
+    } catch (error) {
+      console.log(error);
+      await client.query('ROLLBACK');
+      return res.status(500).json({
+        error: `Error Adding Book to Shelves.`,
+      });
+    } finally {
+      client.release();
+    }
+  },
+);
+
+app.get(
+  '/api/book/info/:isbn',
+  verifyAuthorization(false),
+  async (req: Request, res: Response) => {
+    try {
+      const isbn: string = req.params.isbn as string;
+
+      const { id } = req.token;
+      const result = await fetchEntireBookInfo(isbn, id);
+
+      if (result) {
+        return res.status(200).json({ result });
+      }
+    } catch (error) {
+      console.error('Database query failed:', error);
+      return res.status(500).json({ error: 'Error getting book information.' });
+    }
+  },
+);
+
+app.get(
+  '/api/book/search/',
+  verifyAuthorization(false),
+  async (req: Request, res: Response) => {
+    try {
+      const { id } = req.token;
+
+      const text: string = req.query.text as string;
+      const type: string = req.query.type as string;
+
+      let keyword: string = '';
+
+      switch (type) {
+        case 'Category':
+          keyword = 'subject';
+          break;
+
+        case 'Title':
+          keyword = 'intitle';
+          break;
+
+        case 'Author':
+          keyword = 'inauthor';
+          break;
+
+        default:
+          break;
+      }
+
+      const url: string = `https://www.googleapis.com/books/v1/volumes?q=${keyword}:"${encodeURIComponent(
+        text,
+      )}"&key=${process.env.BOOKS_API_KEY}`;
+
+      const responseID = await fetch(url);
+
+      if (!responseID.ok) return null;
+
+      const data = await responseID.json();
+
+      return res.status(200).json({ data });
+    } catch (error) {
+      console.error('Database query failed:', error);
+      return res
+        .status(500)
+        .json({ error: 'Error getting books from the query.' });
     }
   },
 );

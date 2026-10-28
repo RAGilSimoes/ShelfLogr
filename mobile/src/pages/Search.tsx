@@ -2,13 +2,9 @@ import {
   IonContent,
   IonHeader,
   IonPage,
-  IonTitle,
   IonToolbar,
   IonSearchbar,
   IonGrid,
-  IonButton,
-  IonSelect,
-  IonSelectOption,
 } from '@ionic/react';
 
 import styles from './Search.module.css';
@@ -24,6 +20,11 @@ import fetchSuggestedBooks from '../queryOptions/searchPageQueries';
 import useAuthStore from '../store/useAuthStore';
 
 import ErrorDisplay from '../components/ErrorDisplay';
+
+import api from '../services/api.service';
+import axios from 'axios';
+
+import Toast from '../components/Toast';
 
 const availableNYTLists: Array<{ name: string; encoded: string }> = [
   {
@@ -68,7 +69,15 @@ const availableNYTLists: Array<{ name: string; encoded: string }> = [
   },
 ];
 
+const availableSearchFilters: Array<string> = [
+  'All',
+  'Title',
+  'Category',
+  'Author',
+];
+
 const defaultTrendingListIndex = 0;
+const defaultSearchIndex = 0;
 
 const Search: React.FC = () => {
   const userID = useAuthStore((state) => state.userID);
@@ -76,6 +85,51 @@ const Search: React.FC = () => {
   const [selectedList, setSelectedList] = useState(
     availableNYTLists[defaultTrendingListIndex],
   );
+
+  const [selectedSearchFilter, setSelectedSearchFilter] = useState<string>(
+    availableSearchFilters[defaultSearchIndex],
+  );
+
+  const [searchText, setSearchText] = useState<string>('');
+
+  const [displayToast, setDisplayToast] = useState<boolean>(false);
+  const [toastMessage, setToastMessage] = useState<string>('');
+
+  const [toastType, setToastType] = useState<string>('');
+
+  const availableToastTypes = {
+    success: 'success',
+    error: 'error',
+  };
+
+  const handleSearch = async (filter?: string) => {
+    if (searchText.trim().length > 0) {
+      try {
+        const response = await api.get(
+          `/book/search?type=${
+            filter ? filter : selectedSearchFilter
+          }&text=${searchText}`,
+        );
+
+        const status = response.status;
+
+        if (status == 200) {
+          console.log(response.data);
+        }
+      } catch (error) {
+        setDisplayToast(true);
+
+        if (axios.isAxiosError(error)) {
+          const serverMessage =
+            error.response?.data?.error || 'Server communication error.';
+          setToastMessage(serverMessage);
+        } else {
+          setToastMessage('Unexpected error occurred.');
+        }
+        setToastType(availableToastTypes.error);
+      }
+    }
+  };
 
   const trendingListBookQuery = useQuery({
     queryKey: ['trendingListBooks', userID, selectedList.name],
@@ -96,8 +150,34 @@ const Search: React.FC = () => {
           <IonSearchbar
             animated={true}
             placeholder="Search"
-            showClearButton="focus"
+            showCancelButton="focus"
+            value={searchText}
+            onIonInput={(e) => {
+              setSearchText(e.detail.value!);
+            }}
+            onIonChange={() => handleSearch()}
           ></IonSearchbar>
+          <div className={styles.chipsContainer}>
+            <>
+              {availableSearchFilters.map((filter: string) => {
+                const isSelected = selectedSearchFilter === filter;
+                return (
+                  <button
+                    key={filter}
+                    className={`${styles.chip} ${
+                      isSelected ? styles.chipActive : ''
+                    }`}
+                    onClick={() => {
+                      setSelectedSearchFilter(filter);
+                      if (searchText.trim().length > 0) handleSearch(filter);
+                    }}
+                  >
+                    {filter}
+                  </button>
+                );
+              })}
+            </>
+          </div>
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
@@ -179,8 +259,13 @@ const Search: React.FC = () => {
               )
             )}
           </div>
-          <div>Your most liked author...</div>
         </IonGrid>
+        <Toast
+          message={toastMessage}
+          onDismiss={() => setDisplayToast(false)}
+          type={toastType}
+          open={displayToast}
+        />
       </IonContent>
     </IonPage>
   );

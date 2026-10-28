@@ -195,10 +195,11 @@ export async function fetchNYTTrendingBooks(
   for (const book of top10ReadyBooks) {
     if (books.length === 5) break;
 
-    const result: string | { book: Partial<bookInfo>; shelf: string | null } =
-      await fetchEntireBookInfo(book.isbns[0]?.isbn13, id);
+    const result:
+      | { book: Partial<bookInfo>; shelf: string | null }
+      | undefined = await fetchEntireBookInfo(book.isbns[0]?.isbn13, id);
 
-    if (typeof result !== 'string') {
+    if (result) {
       books.push(result);
     }
   }
@@ -255,9 +256,9 @@ export async function fetchGoogleTrendingBooks(
               bookShelves?: Array<string> | null;
               shelf?: string | null;
             }
-          | string = await fetchEntireBookInfo(isbn, id);
+          | undefined = await fetchEntireBookInfo(isbn, id);
 
-        if (typeof formatted !== 'string') {
+        if (formatted) {
           validBooks.push(formatted);
         } else {
           continue;
@@ -349,7 +350,7 @@ export async function fetchEntireBookInfo(
       bookShelves: Array<string> | null;
       shelf: string | null;
     }
-  | string
+  | undefined
 > {
   try {
     const bookInfoDatabase = await fetchDatabaseBook(isbn, id);
@@ -368,7 +369,7 @@ export async function fetchEntireBookInfo(
       const fallbackBook = await fetchOpenLibraryBook(isbn);
 
       if (!fallbackBook) {
-        return 'Book Not Found.';
+        return undefined;
       }
       await addBookToDB(fallbackBook);
 
@@ -398,6 +399,6 @@ export async function fetchEntireBookInfo(
     };
   } catch (error) {
     console.error('Error getting Book Information:', error);
-    return 'Error getting book information.';
+    return undefined;
   }
 }
