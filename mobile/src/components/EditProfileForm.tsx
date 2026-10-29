@@ -25,6 +25,11 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import LoadSpinner from './LoadSpinner';
 
+import {
+  MIN_USERNAME_SIZE,
+  MAX_USERNAME_SIZE,
+} from '../constants/app.constant';
+
 const EditProfileForm: React.FC<{
   onClose: () => void;
   profile: { name: string; email: string };
@@ -84,7 +89,10 @@ const EditProfileForm: React.FC<{
   };
 
   const validateUsername = () => {
-    setIsValidUsername(inputUsername.trim().length >= 2);
+    setIsValidUsername(
+      inputUsername.length >= MIN_USERNAME_SIZE &&
+        inputUsername.length <= MAX_USERNAME_SIZE,
+    );
   };
 
   useEffect(() => {

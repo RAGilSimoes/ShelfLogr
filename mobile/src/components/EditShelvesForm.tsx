@@ -28,6 +28,11 @@ import Toast from '../components/Toast';
 import { useUserShelves } from '../queryOptions/useUserShelves';
 import { pencilOutline, trashBinOutline, addOutline } from 'ionicons/icons';
 
+import {
+  MIN_SHELF_NAME_SIZE,
+  MAX_SHELF_NAME_SIZE,
+} from '../constants/app.constant';
+
 const EditShelvesForm: React.FC<{
   onClose: () => void;
   onSuccess: (message: string) => void;
@@ -203,7 +208,8 @@ const EditShelvesForm: React.FC<{
                   placeholder: `${selectedShelfName}`,
                   cssClass: 'alert-isbn-input',
                   attributes: {
-                    minLength: 1,
+                    minLength: MIN_SHELF_NAME_SIZE,
+                    maxLength: MAX_SHELF_NAME_SIZE,
                   },
                 },
               ]
@@ -215,7 +221,8 @@ const EditShelvesForm: React.FC<{
                   placeholder: 'Favorites',
                   cssClass: 'alert-isbn-input',
                   attributes: {
-                    minLength: 1,
+                    minLength: MIN_SHELF_NAME_SIZE,
+                    maxLength: MAX_SHELF_NAME_SIZE,
                   },
                 },
               ]

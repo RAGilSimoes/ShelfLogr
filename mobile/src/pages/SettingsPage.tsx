@@ -41,6 +41,7 @@ import api from '../services/api.service';
 import ErrorDisplay from '../components/ErrorDisplay';
 
 import Toast from '../components/Toast';
+import Footer from '../components/Footer';
 
 import {
   closeCircleOutline,
@@ -365,20 +366,7 @@ const Settings: React.FC = () => {
               </IonCardContent>
             </IonCard>
 
-            <div className={`ion-text-center ${styles.footer}`}>
-              <IonText color="medium">v0.0.1</IonText>
-              {' - '}
-              <IonText color="medium">
-                Developed by{' '}
-                <a
-                  href="https://www.linkedin.com/in/ricardo-andré-simões-0716b4280"
-                  rel="noopener noreferrer"
-                  target="_blank"
-                >
-                  Ricardo André Simões
-                </a>
-              </IonText>
-            </div>
+            <Footer realFooter={false} />
           </IonGrid>
         ) : (
           <ErrorDisplay

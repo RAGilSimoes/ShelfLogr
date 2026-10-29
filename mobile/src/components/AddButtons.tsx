@@ -27,6 +27,11 @@ import LoadSpinner from './LoadSpinner';
 
 import Toast from '../components/Toast';
 
+import {
+  MIN_SHELF_NAME_SIZE,
+  MAX_SHELF_NAME_SIZE,
+} from '../constants/app.constant';
+
 const AddButtons: React.FC<{
   onAddBook: (
     requiredShelf: string,
@@ -175,7 +180,8 @@ const AddButtons: React.FC<{
                     placeholder: 'Favorites',
                     cssClass: 'alert-isbn-input',
                     attributes: {
-                      minLength: 1,
+                      minLength: MIN_SHELF_NAME_SIZE,
+                      maxLength: MAX_SHELF_NAME_SIZE,
                     },
                   },
                 ]
