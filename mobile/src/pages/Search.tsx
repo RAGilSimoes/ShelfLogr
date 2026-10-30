@@ -16,16 +16,13 @@ import BookSwiper from '../components/BookSwiper';
 
 import { useQuery } from '@tanstack/react-query';
 import fetchTrendingBooksRecommendation from '../queryOptions/homeQueries';
-import fetchSuggestedBooks from '../queryOptions/searchPageQueries';
+import { fetchSuggestedBooks } from '../queryOptions/searchPageQueries';
 
 import useAuthStore from '../store/useAuthStore';
 
 import ErrorDisplay from '../components/ErrorDisplay';
 
-import api from '../services/api.service';
-import axios from 'axios';
-
-import Toast from '../components/Toast';
+import { useHistory } from 'react-router';
 
 const availableNYTLists: Array<{ name: string; encoded: string }> = [
   {
@@ -76,6 +73,7 @@ const defaultTrendingListIndex = 0;
 const defaultSearchIndex = 0;
 
 const Search: React.FC = () => {
+  const history = useHistory();
   const userID = useAuthStore((state) => state.userID);
 
   const [selectedList, setSelectedList] = useState(
@@ -88,20 +86,7 @@ const Search: React.FC = () => {
 
   const [searchText, setSearchText] = useState<string>('');
 
-  const [displayToast, setDisplayToast] = useState<boolean>(false);
-  const [toastMessage, setToastMessage] = useState<string>('');
-
-  const [toastType, setToastType] = useState<string>('');
-
-  const availableToastTypes = {
-    success: 'success',
-    error: 'error',
-  };
-
   useIonViewWillLeave(() => {
-    setToastMessage('');
-    setDisplayToast(false);
-
     setSearchText('');
     setSelectedList(availableNYTLists[defaultTrendingListIndex]);
     setSelectedSearchFilter(availableSearchFilters[defaultSearchIndex]);
@@ -109,30 +94,10 @@ const Search: React.FC = () => {
 
   const handleSearch = async (filter?: string) => {
     if (searchText.trim().length > 0) {
-      try {
-        const response = await api.get(
-          `/book/search?type=${
-            filter ? filter : selectedSearchFilter
-          }&text=${searchText}`,
-        );
-
-        const status = response.status;
-
-        if (status == 200) {
-          console.log(response.data);
-        }
-      } catch (error) {
-        setDisplayToast(true);
-
-        if (axios.isAxiosError(error)) {
-          const serverMessage =
-            error.response?.data?.error || 'Server communication error.';
-          setToastMessage(serverMessage);
-        } else {
-          setToastMessage('Unexpected error occurred.');
-        }
-        setToastType(availableToastTypes.error);
-      }
+      history.push('/app/search/results', {
+        type: filter ? filter : selectedSearchFilter,
+        query: searchText,
+      });
     }
   };
 
@@ -266,12 +231,6 @@ const Search: React.FC = () => {
             )}
           </div>
         </IonGrid>
-        <Toast
-          message={toastMessage}
-          onDismiss={() => setDisplayToast(false)}
-          type={toastType}
-          open={displayToast}
-        />
       </IonContent>
     </IonPage>
   );
