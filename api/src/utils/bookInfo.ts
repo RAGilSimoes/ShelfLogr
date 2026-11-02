@@ -333,6 +333,7 @@ export async function addBookToDB(info: Partial<bookInfo>) {
     }
 
     await client.query('COMMIT');
+    return bookID;
   } catch (e) {
     await client.query('ROLLBACK');
     throw e;

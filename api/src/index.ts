@@ -15,6 +15,7 @@ import {
   fetchNYTTrendingBooks,
   fetchEntireBookInfo,
   fetchGoogleTrendingBooks,
+  addBookToDB,
 } from './utils/bookInfo.js';
 import { formatGoogleBook } from './utils/book.mapper.js';
 
@@ -692,15 +693,25 @@ app.post(
     if (!req.body || !req.body.book) {
       return res.status(400).json({ error: 'Invalid request data' });
     }
-    const client = await pool.connect();
+
+    let bookID: string | undefined = undefined;
+    const { id: userID } = req.token;
+    const { book, requiredShelf, reviewData, optionalShelves } = req.body;
     try {
-      const { id } = req.token;
-      const { book, requiredShelf, reviewData, optionalShelves } = req.body;
+      bookID = book.id ? book.id : undefined;
 
-      const bookID = book.id;
+      if (!bookID) {
+        bookID = await addBookToDB(book);
+      }
+    } catch (error) {
+      return res.status(500).json({
+        error: `Error Adding Book to Database.`,
+      });
+    }
 
-      const userID = id;
+    const client = await pool.connect();
 
+    try {
       await client.query('BEGIN');
 
       const deleteRequiredShelfRelation =
