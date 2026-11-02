@@ -16,6 +16,7 @@ import {
   fetchEntireBookInfo,
   fetchGoogleTrendingBooks,
 } from './utils/bookInfo.js';
+import { formatGoogleBook } from './utils/book.mapper.js';
 
 dotenv.config();
 
@@ -820,14 +821,13 @@ app.get(
   verifyAuthorization(false),
   async (req: Request, res: Response) => {
     try {
-      const { id } = req.token;
-
       const text: string = req.query.text as string;
       const type: string = req.query.type as string;
+      const index: string = (req.query.index as string) || '0';
 
       const url: string = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(
         text,
-      )}&maxResults=40&key=${process.env.BOOKS_API_KEY}`;
+      )}&maxResults=10&startIndex=${index}&key=${process.env.BOOKS_API_KEY}`;
 
       const responseID = await fetch(url);
 
@@ -835,9 +835,65 @@ app.get(
 
       const data = await responseID.json();
 
-      const items: Array<any> = data.items || [];
+      const items: Array<{
+        volumeInfo: any;
+      }> = data.items || [];
 
-      return res.status(200).json({ items });
+      let filteredItems: Array<any> = [];
+
+      switch (type) {
+        case 'Title': {
+          filteredItems = items.filter((item) => {
+            return item.volumeInfo?.title
+              ?.toLowerCase()
+              .includes(text.toLowerCase());
+          });
+          break;
+        }
+
+        case 'Author': {
+          filteredItems = items.filter((item) => {
+            return item.volumeInfo?.authors?.some((author: string) =>
+              author.toLowerCase().includes(text.toLowerCase()),
+            );
+          });
+          break;
+        }
+
+        default: {
+          filteredItems = items;
+          break;
+        }
+      }
+
+      let validBooks: Array<any> = [];
+
+      for (const item of filteredItems) {
+        const volumeInfo = item.volumeInfo;
+        let isbn = null;
+
+        if (volumeInfo.industryIdentifiers) {
+          const isbn13 = volumeInfo.industryIdentifiers.find(
+            (id: any) => id.type === 'ISBN_13',
+          );
+          const isbn10 = volumeInfo.industryIdentifiers.find(
+            (id: any) => id.type === 'ISBN_10',
+          );
+
+          if (isbn13) isbn = isbn13.identifier;
+          else if (isbn10) isbn = isbn10.identifier;
+        }
+
+        if (isbn) validBooks.push({ info: volumeInfo, isbn });
+      }
+
+      const formattedFilteredBooks = validBooks.map(
+        (item: { info: any; isbn: string }) => {
+          return formatGoogleBook(item.info, item.isbn);
+        },
+      );
+
+      return res.status(200).json({ results: formattedFilteredBooks });
     } catch (error) {
       console.error('Database query failed:', error);
       return res

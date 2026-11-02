@@ -6,12 +6,16 @@ async function fetchSuggestedBooks() {
   return response.data;
 }
 
-async function fetchSearchedBooks(filter: string, searchText: string) {
+async function fetchSearchedBooks(
+  filter: string,
+  searchText: string,
+  index: number,
+) {
   const response = await api.get(
-    `/book/search?type=${filter}&text=${searchText}`,
+    `/book/search?type=${filter}&text=${searchText}&index=${index}`,
   );
 
-  return response.data;
+  return response.data.results;
 }
 
 export { fetchSuggestedBooks, fetchSearchedBooks };
