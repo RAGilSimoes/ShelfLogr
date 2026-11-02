@@ -827,11 +827,11 @@ app.get(
 
       const url: string = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(
         text,
-      )}&maxResults=10&startIndex=${index}&key=${process.env.BOOKS_API_KEY}`;
+      )}&maxResults=40&startIndex=${index}&key=${process.env.BOOKS_API_KEY}`;
 
       const responseID = await fetch(url);
 
-      if (!responseID.ok) return null;
+      if (!responseID.ok) return res.status(500).json();
 
       const data = await responseID.json();
 
@@ -893,7 +893,14 @@ app.get(
         },
       );
 
-      return res.status(200).json({ results: formattedFilteredBooks });
+      const hasMore =
+        items.length > 0 && Number(index) + items.length < data.totalItems;
+
+      return res.status(200).json({
+        results: formattedFilteredBooks,
+        nextIndex: Number(index) + items.length,
+        hasMore,
+      });
     } catch (error) {
       console.error('Database query failed:', error);
       return res

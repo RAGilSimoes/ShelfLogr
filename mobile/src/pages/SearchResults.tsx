@@ -21,14 +21,11 @@ import LoadSpinner from '../components/LoadSpinner';
 import BookCard from '../components/BookCard';
 import ErrorDisplay from '../components/ErrorDisplay';
 
-import { bookOutline, libraryOutline } from 'ionicons/icons';
+import { useHistory, useLocation } from 'react-router';
 
-import { useHistory, useParams, useLocation } from 'react-router';
-
-import { useEffect, useState } from 'react';
-
-import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import { fetchSearchedBooks } from '../queryOptions/searchPageQueries';
+import { bookInfo } from '@shelflogr/shared';
 
 const SearchResults: React.FC = () => {
   const userID = useAuthStore((state) => state.userID);
@@ -55,10 +52,7 @@ const SearchResults: React.FC = () => {
       location.state.query !== undefined,
     initialPageParam: 0,
     getNextPageParam: (lastPage, allPages, lastPageParam) => {
-      if (!lastPage || lastPage.length < 10) {
-        return undefined;
-      }
-      return allPages.length * 10;
+      return lastPage.hasMore ? lastPage.nextIndex : undefined;
     },
   });
 
@@ -75,19 +69,23 @@ const SearchResults: React.FC = () => {
       <IonContent fullscreen>
         {searchedBooksQuery.isLoading ? (
           <LoadSpinner message="Loading Books..." fullScreen={true} />
-        ) : searchedBooksQuery.isSuccess &&
-          searchedBooksQuery.data?.pages &&
+        ) : searchedBooksQuery.data?.pages &&
           searchedBooksQuery.data.pages.length > 0 ? (
           <IonList>
-            {searchedBooksQuery.data.pages.map((page: Array<any>) =>
-              page.map((item) => {
+            {searchedBooksQuery.data.pages.map((page: any) =>
+              page.results.map((item: bookInfo) => {
                 return (
-                  <IonItem>
+                  <IonItem key={item.isbn}>
                     <div
                       className={styles.cardContainer}
                       onClick={() => {
-                        history.push(`/app/book/${item}`, {
-                          information: item,
+                        history.push(`/app/book/${item.isbn}`, {
+                          information: {
+                            book: item,
+                            bookShelves: [],
+                            category: '',
+                            shelf: '',
+                          },
                         });
                       }}
                       style={{ cursor: 'pointer' }}
@@ -99,9 +97,8 @@ const SearchResults: React.FC = () => {
               }),
             )}
           </IonList>
-        ) : searchedBooksQuery.isSuccess &&
-          searchedBooksQuery.data?.pages &&
-          searchedBooksQuery.data.pages.length === 0 ? (
+        ) : searchedBooksQuery.data?.pages &&
+          searchedBooksQuery.data?.pages[0]?.results.length === 0 ? (
           <p>Sem Resultados</p>
         ) : (
           searchedBooksQuery.isError && <p>Erro</p>

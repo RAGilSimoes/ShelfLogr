@@ -15,7 +15,7 @@ async function fetchSearchedBooks(
     `/book/search?type=${filter}&text=${searchText}&index=${index}`,
   );
 
-  return response.data.results;
+  return response.data;
 }
 
 export { fetchSuggestedBooks, fetchSearchedBooks };

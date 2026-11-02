@@ -140,7 +140,6 @@ const Search: React.FC = () => {
                     }`}
                     onClick={() => {
                       setSelectedSearchFilter(filter);
-                      if (searchText.trim().length > 0) handleSearch(filter);
                     }}
                   >
                     {filter}
