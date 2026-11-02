@@ -832,6 +832,7 @@ app.get(
   verifyAuthorization(false),
   async (req: Request, res: Response) => {
     try {
+      const { id } = req.token;
       const text: string = req.query.text as string;
       const type: string = req.query.type as string;
       const index: string = (req.query.index as string) || '0';
@@ -904,11 +905,59 @@ app.get(
         },
       );
 
+      const isbns = formattedFilteredBooks.map((b) => b.isbn);
+
+      let finalArrayResults: Array<{
+        book: bookInfo;
+        shelf: string | null;
+        bookShelves: Array<string>;
+      }> = [];
+
+      if (isbns.length > 0) {
+        const getBooksInfoQuery = `SELECT b.isbn,
+        (SELECT COALESCE(ARRAY_AGG(all_ul.name), '{}') FROM shelf_books all_lb JOIN user_shelf all_ul ON all_ul.id = all_lb.shelf_id WHERE all_lb.book_id = b.id AND all_ul.user_id = $1) AS "bookShelves",
+        (SELECT all_ul.name FROM shelf_books all_lb JOIN user_shelf all_ul ON all_ul.id = all_lb.shelf_id WHERE all_lb.book_id = b.id AND all_ul.user_id = $1 AND all_ul.is_system = true LIMIT 1) AS "shelf"
+        FROM book b
+        WHERE b.isbn=ANY($2)
+        GROUP BY b.isbn, b.id;`;
+
+        const { rows } = await pool.query(getBooksInfoQuery, [id, isbns]);
+
+        formattedFilteredBooks.forEach((book) => {
+          const row:
+            | {
+                isbn: string;
+                bookShelves: Array<string>;
+                shelf: string | null;
+              }
+            | undefined = rows.find(
+            (row: {
+              isbn: string;
+              bookShelves: Array<string>;
+              shelf: string | null;
+            }) => book.isbn === row.isbn,
+          );
+          if (row) {
+            finalArrayResults.push({
+              book,
+              bookShelves: row.bookShelves,
+              shelf: row.shelf,
+            });
+          } else {
+            finalArrayResults.push({
+              book,
+              bookShelves: [],
+              shelf: null,
+            });
+          }
+        });
+      }
+
       const hasMore =
         items.length > 0 && Number(index) + items.length < data.totalItems;
 
       return res.status(200).json({
-        results: formattedFilteredBooks,
+        results: finalArrayResults,
         nextIndex: Number(index) + items.length,
         hasMore,
       });

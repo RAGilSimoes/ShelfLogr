@@ -26,6 +26,7 @@ import { useHistory, useLocation } from 'react-router';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { fetchSearchedBooks } from '../queryOptions/searchPageQueries';
 import { bookInfo } from '@shelflogr/shared';
+import { libraryOutline } from 'ionicons/icons';
 
 const SearchResults: React.FC = () => {
   const userID = useAuthStore((state) => state.userID);
@@ -70,38 +71,50 @@ const SearchResults: React.FC = () => {
         {searchedBooksQuery.isLoading ? (
           <LoadSpinner message="Loading Books..." fullScreen={true} />
         ) : searchedBooksQuery.data?.pages &&
-          searchedBooksQuery.data.pages.length > 0 ? (
+          searchedBooksQuery.data?.pages[0]?.results.length > 0 ? (
           <IonList>
             {searchedBooksQuery.data.pages.map((page: any) =>
-              page.results.map((item: bookInfo) => {
-                return (
-                  <IonItem key={item.isbn}>
-                    <div
-                      className={styles.cardContainer}
-                      onClick={() => {
-                        history.push(`/app/book/${item.isbn}`, {
-                          information: {
-                            book: item,
-                            bookShelves: [],
-                            category: '',
-                            shelf: '',
-                          },
-                        });
-                      }}
-                      style={{ cursor: 'pointer' }}
-                    >
-                      <BookCard bookInfo={item} detailed={false} />
-                    </div>
-                  </IonItem>
-                );
-              }),
+              page.results.map(
+                (item: {
+                  book: bookInfo;
+                  bookShelves: Array<string>;
+                  shelf: string | null;
+                }) => {
+                  return (
+                    <IonItem key={item.book.isbn}>
+                      <div
+                        className={styles.cardContainer}
+                        onClick={() => {
+                          history.push(`/app/book/${item.book.isbn}`, {
+                            information: {
+                              book: item.book,
+                              bookShelves: item.bookShelves,
+                              category: '',
+                              shelf: item.shelf,
+                            },
+                          });
+                        }}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        <BookCard bookInfo={item.book} detailed={false} />
+                      </div>
+                    </IonItem>
+                  );
+                },
+              ),
             )}
           </IonList>
         ) : searchedBooksQuery.data?.pages &&
           searchedBooksQuery.data?.pages[0]?.results.length === 0 ? (
-          <p>Sem Resultados</p>
+          <ErrorDisplay
+            title={`No Books found for that query`}
+            subtitle="Change your query."
+            icon={libraryOutline}
+          />
         ) : (
-          searchedBooksQuery.isError && <p>Erro</p>
+          searchedBooksQuery.isError && (
+            <ErrorDisplay title="Error Getting Results" />
+          )
         )}
 
         <IonInfiniteScroll
