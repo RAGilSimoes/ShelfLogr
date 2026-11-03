@@ -115,8 +115,8 @@ const Search: React.FC = () => {
 
   return (
     <IonPage>
-      <IonHeader>
-        <IonToolbar>
+      <IonContent fullscreen>
+        <div className={styles.searchTopSection}>
           <IonSearchbar
             animated={true}
             placeholder="Search"
@@ -129,7 +129,7 @@ const Search: React.FC = () => {
           ></IonSearchbar>
           <div className={styles.chipsContainer}>
             <>
-              <strong>Filters:</strong>
+              <span className={styles.filtersLabel}>Filters:</span>
               {availableSearchFilters.map((filter: string) => {
                 const isSelected = selectedSearchFilter === filter;
                 return (
@@ -148,11 +148,9 @@ const Search: React.FC = () => {
               })}
             </>
           </div>
-        </IonToolbar>
-      </IonHeader>
-      <IonContent fullscreen>
-        <IonGrid>
-          <div>
+        </div>
+        <IonGrid className="ion-no-padding">
+          <div className={styles.sectionContainer}>
             {suggestedBooksQuery.isLoading ? (
               <LoadSpinner
                 message="Fetching Suggested Books..."
@@ -163,7 +161,14 @@ const Search: React.FC = () => {
               Object.keys(suggestedBooksQuery.data).length > 0 &&
               suggestedBooksQuery.data.suggestedBooks.length > 0 ? (
               <>
-                <h1>Because you liked '{suggestedBooksQuery.data.title}'</h1>
+                <div className={styles.sectionHeader}>
+                  <span className={styles.sectionEyebrow}>
+                    Because you liked
+                  </span>
+                  <h2 className={styles.sectionTitle}>
+                    '{suggestedBooksQuery.data.title}'
+                  </h2>
+                </div>
                 <div>
                   {
                     <BookSwiper
@@ -182,7 +187,7 @@ const Search: React.FC = () => {
               )
             )}
           </div>
-          <div>
+          <div className={styles.sectionContainer}>
             <div className={styles.sectionHeader}>
               <h2 className={styles.sectionTitle}>Bestsellers</h2>
             </div>
@@ -210,15 +215,13 @@ const Search: React.FC = () => {
               <LoadSpinner message="Fetching Books..." fullScreen={false} />
             ) : trendingListBookQuery.isSuccess &&
               trendingListBookQuery.data ? (
-              <>
-                <div>
-                  {
-                    <BookSwiper
-                      books={trendingListBookQuery.data.trendingBooksInfo}
-                    />
-                  }
-                </div>
-              </>
+              <div>
+                {
+                  <BookSwiper
+                    books={trendingListBookQuery.data.trendingBooksInfo}
+                  />
+                }
+              </div>
             ) : (
               trendingListBookQuery.isError && (
                 <ErrorDisplay
