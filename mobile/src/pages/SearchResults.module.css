@@ -1,0 +1,18 @@
+.cardContainer {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  margin: 16px;
+  padding: 12px 14px;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.cardContainer ion-card {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}

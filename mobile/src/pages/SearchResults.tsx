@@ -72,7 +72,7 @@ const SearchResults: React.FC = () => {
           <LoadSpinner message="Loading Books..." fullScreen={true} />
         ) : searchedBooksQuery.data?.pages &&
           searchedBooksQuery.data?.pages[0]?.results.length > 0 ? (
-          <IonList>
+          <div className={styles.resultsContainer}>
             {searchedBooksQuery.data.pages.map((page: any) =>
               page.results.map(
                 (item: {
@@ -81,29 +81,28 @@ const SearchResults: React.FC = () => {
                   shelf: string | null;
                 }) => {
                   return (
-                    <IonItem key={item.book.isbn}>
-                      <div
-                        className={styles.cardContainer}
-                        onClick={() => {
-                          history.push(`/app/book/${item.book.isbn}`, {
-                            information: {
-                              book: item.book,
-                              bookShelves: item.bookShelves,
-                              category: '',
-                              shelf: item.shelf,
-                            },
-                          });
-                        }}
-                        style={{ cursor: 'pointer' }}
-                      >
-                        <BookCard bookInfo={item.book} detailed={false} />
-                      </div>
-                    </IonItem>
+                    <div
+                      key={item.book.isbn}
+                      className={styles.cardContainer}
+                      onClick={() => {
+                        history.push(`/app/book/${item.book.isbn}`, {
+                          information: {
+                            book: item.book,
+                            bookShelves: item.bookShelves,
+                            category: '',
+                            shelf: item.shelf,
+                          },
+                        });
+                      }}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      <BookCard bookInfo={item.book} detailed={false} />
+                    </div>
                   );
                 },
               ),
             )}
-          </IonList>
+          </div>
         ) : searchedBooksQuery.data?.pages &&
           searchedBooksQuery.data?.pages[0]?.results.length === 0 ? (
           <ErrorDisplay
