@@ -23,6 +23,8 @@ import ErrorDisplay from '../components/ErrorDisplay';
 
 import { useHistory, useLocation } from 'react-router';
 
+import { useEffect, useState } from 'react';
+
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { fetchSearchedBooks } from '../queryOptions/searchPageQueries';
 import { bookInfo } from '@shelflogr/shared';
@@ -36,26 +38,30 @@ const SearchResults: React.FC = () => {
     query: string;
   }>();
 
+  const [information, setInformation] = useState<{
+    type: string;
+    query: string;
+  }>({ type: location.state?.type, query: location.state?.query });
+
   const history = useHistory();
 
   const searchedBooksQuery = useInfiniteQuery({
-    queryKey: [
-      'searchResults',
-      userID,
-      location.state?.type,
-      location.state?.query,
-    ],
+    queryKey: ['searchResults', userID, information.type, information.query],
     queryFn: ({ pageParam }) =>
-      fetchSearchedBooks(location.state.type, location.state.query, pageParam),
+      fetchSearchedBooks(information.type, information.query, pageParam),
     enabled:
       location.state !== undefined &&
-      location.state.type !== undefined &&
-      location.state.query !== undefined,
+      information.type !== undefined &&
+      information.query !== undefined,
     initialPageParam: 0,
     getNextPageParam: (lastPage, allPages, lastPageParam) => {
       return lastPage.hasMore ? lastPage.nextIndex : undefined;
     },
   });
+
+  useEffect(() => {
+    setInformation(location.state);
+  }, [location.state]);
 
   return (
     <IonPage>
@@ -64,7 +70,7 @@ const SearchResults: React.FC = () => {
           <IonButtons slot="start">
             <IonBackButton defaultHref="/app/search"></IonBackButton>
           </IonButtons>
-          <IonTitle>{location.state?.query}</IonTitle>
+          <IonTitle>{information.query}</IonTitle>
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
