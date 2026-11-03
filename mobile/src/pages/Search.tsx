@@ -1,8 +1,6 @@
 import {
   IonContent,
-  IonHeader,
   IonPage,
-  IonToolbar,
   IonSearchbar,
   IonGrid,
   useIonViewWillLeave,

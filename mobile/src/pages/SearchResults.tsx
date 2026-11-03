@@ -8,8 +8,6 @@ import {
   IonButtons,
   IonInfiniteScroll,
   IonInfiniteScrollContent,
-  IonList,
-  IonItem,
 } from '@ionic/react';
 
 import styles from '../pages/SearchResults.module.css';
