@@ -41,8 +41,6 @@ The main technologies used in this project are:
 
   <div align="center">
     <h4>Home Page & Recommendations</h4>
-    <img src="./media/homePage/homeScreenRetry.png" alt="Home Screen with Retry" width="200" />
-    &nbsp;&nbsp;
     <img src="./media/homePage/homeScreen.png" alt="Home Screen with Books display" width="200" />
     &nbsp;&nbsp;
     <img src="./media/homePage/bookInfoPage.png" alt="Book Page Display" width="200" />
