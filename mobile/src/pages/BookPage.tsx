@@ -117,11 +117,6 @@ const BookPage: React.FC = () => {
               <BookInfo bookInfo={bookInfo} detailed={true} />
               {bookInformation.current?.shelf || addBookToShelf.isSuccess ? (
                 <StatusFeedback
-                  successMessage={
-                    bookInformation.current?.shelf
-                      ? 'You Already Have This Book'
-                      : 'Book Added Successfully'
-                  }
                   shelf={
                     addBookToShelf.isSuccess
                       ? formattedShelfNames
