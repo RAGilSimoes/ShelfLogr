@@ -51,9 +51,7 @@ const BookCard: React.FC<{
               <strong>Main Category:</strong>
             </p>
             <IonChip color="primary">
-              {bookInfo.mainCategory
-                ? bookInfo.mainCategory
-                : 'No Main Category found.'}
+              {bookInfo.mainCategory ? bookInfo.mainCategory : 'Not Available'}
             </IonChip>
           </>
         </IonCol>
