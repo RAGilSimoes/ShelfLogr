@@ -11,7 +11,7 @@ import { addOutline, book } from 'ionicons/icons';
 
 import styles from './AddButtons.module.css';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 import { useUserShelves } from '../queryOptions/useUserShelves';
 
@@ -33,8 +33,12 @@ import {
 } from '../constants/app.constant';
 
 const AddButtons: React.FC<{
+  defaultValues?: {
+    initialRequiredShelf: { name: string; id: string };
+    initialOptionalShelves: Array<{ name: string; id: string }>;
+  };
   onAddBook: (
-    requiredShelf: string,
+    requiredShelf: { name: string; id: string },
     formattedShelvesNames: Array<string>,
     reviewData: {
       rating: number;
@@ -42,9 +46,10 @@ const AddButtons: React.FC<{
       liked: boolean;
       review: string | null;
     } | null,
-    optionalShelves: Array<string> | null,
+    optionalShelves: Array<{ name: string; id: string }>,
   ) => void;
-}> = ({ onAddBook }) => {
+  onCancel: () => void;
+}> = ({ defaultValues, onAddBook, onCancel }) => {
   const [isAddAlertOpen, setIsAddAlertOpen] = useState<boolean>(false);
   const [isCreateAlertOpen, setIsCreateAlertOpen] = useState<boolean>(false);
 
@@ -61,11 +66,6 @@ const AddButtons: React.FC<{
 
   const shelvesNamesQuery = useUserShelves();
 
-  const [requiredShelfID, setRequiredShelfID] = useState<string>('');
-  const [requiredShelfName, setRequiredShelfName] = useState<string>('');
-
-  const [optionalShelvesID, setOptionalShelvesID] = useState<string[]>([]);
-
   const queryClient = useQueryClient();
   const userID = useAuthStore((state) => state.userID);
 
@@ -75,6 +75,67 @@ const AddButtons: React.FC<{
     liked: boolean;
     review: string | null;
   }>({ rating: 0, display: '', liked: false, review: null });
+
+  const [requiredShelfID, setRequiredShelfID] = useState<string>('');
+  const [requiredShelfName, setRequiredShelfName] = useState<string>('');
+  const [requiredShelf, setRequiredShelf] = useState<{
+    name: string;
+    id: string;
+  }>({ name: '', id: '' });
+  const [optionalShelves, setOptionalShelves] = useState<
+    { name: string; id: string }[]
+  >([]);
+
+  useEffect(() => {
+    if (shelvesNamesQuery.isSuccess && defaultValues) {
+      const shelves = shelvesNamesQuery.data.shelves;
+      const systemShelves = shelves.filter(
+        (shelf: any) => shelf.is_system === true,
+      );
+      const extraShelves = shelves.filter((shelf: any) => !shelf.is_system);
+
+      const rawReq = defaultValues.initialRequiredShelf;
+      const reqName =
+        (typeof rawReq === 'object' && rawReq !== null
+          ? rawReq.name
+          : rawReq) || '';
+
+      if (reqName) {
+        const found = systemShelves.find(
+          (shelf: any) =>
+            shelf.name.toLowerCase() === reqName.toLowerCase() ||
+            (typeof rawReq === 'object' && shelf.id === rawReq.id),
+        );
+
+        if (found) {
+          const formatted =
+            found.name.charAt(0).toUpperCase() + found.name.slice(1);
+          setRequiredShelfID(found.id);
+          setRequiredShelfName(formatted);
+          setRequiredShelf({ name: formatted, id: found.id });
+        }
+      }
+
+      if (
+        defaultValues.initialOptionalShelves &&
+        defaultValues.initialOptionalShelves.length > 0
+      ) {
+        const matchingObjects = extraShelves.filter((extra: any) =>
+          defaultValues.initialOptionalShelves.some((opt: any) => {
+            const optName =
+              typeof opt === 'object' && opt !== null ? opt.name : opt;
+            const optId =
+              typeof opt === 'object' && opt !== null ? opt.id : opt;
+            return (
+              (optName && extra.name.toLowerCase() === optName.toLowerCase()) ||
+              (optId && extra.id === optId)
+            );
+          }),
+        );
+        setOptionalShelves(matchingObjects);
+      }
+    }
+  }, [shelvesNamesQuery.data, defaultValues]);
 
   if (shelvesNamesQuery.isSuccess) {
     const shelves: Array<{
@@ -88,7 +149,7 @@ const AddButtons: React.FC<{
     const extraShelves = shelves.filter((shelf) => shelf.is_system === false);
 
     const extraShelvesNames = extraShelves
-      .filter((item) => optionalShelvesID.includes(item.id))
+      .filter((item) => optionalShelves.some((opt) => opt.id === item.id))
       .map((item) => item.name);
 
     const shelvesNamesArray = [requiredShelfName, ...extraShelvesNames];
@@ -227,10 +288,10 @@ const AddButtons: React.FC<{
                   }
                 } else {
                   onAddBook(
-                    requiredShelfID,
+                    requiredShelf,
                     shelvesNamesArray,
                     requiredShelfName === 'Completed' ? reviewData : null,
-                    optionalShelvesID,
+                    optionalShelves,
                   );
                 }
               },
@@ -266,6 +327,7 @@ const AddButtons: React.FC<{
                     shelfName.charAt(0).toUpperCase() + shelfName.slice(1);
                   setRequiredShelfID(e.detail.value);
                   setRequiredShelfName(formattedName);
+                  setRequiredShelf({ name: formattedName, id: e.detail.value });
 
                   if (formattedName !== 'Completed')
                     setReviewData({
@@ -310,11 +372,15 @@ const AddButtons: React.FC<{
                   placeholder="Extra Shelves"
                   interfaceOptions={{ header: 'Choose The Shelves' }}
                   onIonChange={(e) => {
-                    setOptionalShelvesID(e.detail.value);
+                    const selectedIDs: string[] = e.detail.value;
+                    const selectedObjects = extraShelves.filter((shelf) =>
+                      selectedIDs.includes(shelf.id),
+                    );
+                    setOptionalShelves(selectedObjects);
                   }}
                   label="Optional Shelves"
                   multiple={true}
-                  value={optionalShelvesID}
+                  value={optionalShelves.map((shelf) => shelf.id)}
                 >
                   {extraShelves.map(
                     (
@@ -345,26 +411,53 @@ const AddButtons: React.FC<{
               onClick={() => {
                 setIsCreateAlertOpen(true);
               }}
-              className="ion-margin-top ion-margin-bottom"
+              className={styles.createButton}
               color="primary"
               fill="outline"
             >
               Create New Shelf <IonIcon slot="end" icon={addOutline}></IonIcon>
             </IonButton>
 
-            <IonButton
-              expand="block"
-              shape="round"
-              size="default"
-              onClick={() => {
-                setIsAddAlertOpen(true);
-              }}
-              className="ion-margin-top ion-margin-bottom"
-              color="primary"
-              disabled={disabledButton}
-            >
-              Add Book To Shelf <IonIcon slot="end" icon={book}></IonIcon>
-            </IonButton>
+            {defaultValues && defaultValues.initialRequiredShelf !== null ? (
+              <div className={styles.editActionsRow}>
+                <IonButton
+                  shape="round"
+                  size="default"
+                  fill="outline"
+                  onClick={() => onCancel()}
+                  className={styles.cancelButton}
+                >
+                  Cancel
+                </IonButton>
+
+                <IonButton
+                  shape="round"
+                  size="default"
+                  color="primary"
+                  onClick={() => {
+                    setIsAddAlertOpen(true);
+                  }}
+                  className={styles.saveButton}
+                  disabled={disabledButton}
+                >
+                  Save Changes <IonIcon slot="end" icon={book}></IonIcon>
+                </IonButton>
+              </div>
+            ) : (
+              <IonButton
+                expand="block"
+                shape="round"
+                size="default"
+                onClick={() => {
+                  setIsAddAlertOpen(true);
+                }}
+                className={styles.submitButton}
+                color="primary"
+                disabled={disabledButton}
+              >
+                Add Book To Shelf <IonIcon slot="end" icon={book}></IonIcon>
+              </IonButton>
+            )}
           </>
         )}
       </>
