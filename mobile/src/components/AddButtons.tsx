@@ -404,19 +404,6 @@ const AddButtons: React.FC<{
               </IonList>
             )}
 
-            {defaultValues && defaultValues.initialRequiredShelf !== null ? (
-              <IonButton
-                expand="block"
-                shape="round"
-                size="default"
-                onClick={() => onCancel()}
-                className="ion-margin-top ion-margin-bottom"
-                color="primary"
-              >
-                Cancel <IonIcon slot="end" icon={book}></IonIcon>
-              </IonButton>
-            ) : null}
-
             <IonButton
               expand="block"
               shape="round"
@@ -424,29 +411,53 @@ const AddButtons: React.FC<{
               onClick={() => {
                 setIsCreateAlertOpen(true);
               }}
-              className="ion-margin-top ion-margin-bottom"
+              className={styles.createButton}
               color="primary"
               fill="outline"
             >
               Create New Shelf <IonIcon slot="end" icon={addOutline}></IonIcon>
             </IonButton>
 
-            <IonButton
-              expand="block"
-              shape="round"
-              size="default"
-              onClick={() => {
-                setIsAddAlertOpen(true);
-              }}
-              className="ion-margin-top ion-margin-bottom"
-              color="primary"
-              disabled={disabledButton}
-            >
-              {defaultValues && defaultValues.initialRequiredShelf !== null
-                ? 'Save Changes'
-                : 'Add Book To Shelf'}{' '}
-              <IonIcon slot="end" icon={book}></IonIcon>
-            </IonButton>
+            {defaultValues && defaultValues.initialRequiredShelf !== null ? (
+              <div className={styles.editActionsRow}>
+                <IonButton
+                  shape="round"
+                  size="default"
+                  fill="outline"
+                  onClick={() => onCancel()}
+                  className={styles.cancelButton}
+                >
+                  Cancel
+                </IonButton>
+
+                <IonButton
+                  shape="round"
+                  size="default"
+                  color="primary"
+                  onClick={() => {
+                    setIsAddAlertOpen(true);
+                  }}
+                  className={styles.saveButton}
+                  disabled={disabledButton}
+                >
+                  Save Changes <IonIcon slot="end" icon={book}></IonIcon>
+                </IonButton>
+              </div>
+            ) : (
+              <IonButton
+                expand="block"
+                shape="round"
+                size="default"
+                onClick={() => {
+                  setIsAddAlertOpen(true);
+                }}
+                className={styles.submitButton}
+                color="primary"
+                disabled={disabledButton}
+              >
+                Add Book To Shelf <IonIcon slot="end" icon={book}></IonIcon>
+              </IonButton>
+            )}
           </>
         )}
       </>
