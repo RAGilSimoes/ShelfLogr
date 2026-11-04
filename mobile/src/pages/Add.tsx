@@ -157,14 +157,14 @@ const Add: React.FC = () => {
   const addBookToShelf = useMutation({
     mutationFn: (content: {
       book: bookInfo;
-      requiredShelf: string;
+      requiredShelf: { name: string; id: string };
       reviewData: {
         rating: number;
         display: string;
         liked: boolean;
         review: string | null;
       } | null;
-      optionalShelves: Array<string> | null;
+      optionalShelves: Array<{ name: string; id: string }> | null;
     }) => {
       return api.post('/user/add-book', content);
     },
@@ -181,7 +181,7 @@ const Add: React.FC = () => {
   });
 
   const handleBookAdd = (
-    requiredShelf: string,
+    requiredShelf: { name: string; id: string },
     formattedShelfNames: Array<string>,
     reviewData: {
       rating: number;
@@ -189,7 +189,7 @@ const Add: React.FC = () => {
       liked: boolean;
       review: string | null;
     } | null,
-    optionalShelves: Array<string> | null,
+    optionalShelves: Array<{ name: string; id: string }> | null,
   ) => {
     setFormattedShelfNames(formattedShelfNames);
     addBookToShelf.mutate({
@@ -303,9 +303,7 @@ const Add: React.FC = () => {
                 <BookInfo bookInfo={bookInfoQuery.data.book} detailed={false} />
               )}
               {(showAddToShelvesButton && (
-                <>
-                  <AddButtons onAddBook={handleBookAdd} />
-                </>
+                <AddButtons onAddBook={handleBookAdd} onCancel={() => {}} />
               )) ||
                 ((showAlreadyHasBook || addBookToShelf.isSuccess) && (
                   <StatusFeedback
@@ -317,6 +315,7 @@ const Add: React.FC = () => {
                         ? bookInfoQuery.data.bookShelves
                         : [bookInfoQuery.data.shelf]
                     }
+                    onEditShelf={() => {}}
                   />
                 ))}
               <IonButton

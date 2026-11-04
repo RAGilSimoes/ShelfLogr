@@ -29,9 +29,9 @@ const BookPage: React.FC = () => {
   const location = useLocation<{
     information: {
       book: bookInfo;
-      bookShelves: Array<string>;
+      bookShelves: Array<{ name: string; id: string }>;
       category?: string;
-      shelf?: string;
+      shelf?: { name: string; id: string };
     };
   }>();
 
@@ -43,17 +43,19 @@ const BookPage: React.FC = () => {
 
   const [formattedShelfNames, setFormattedShelfNames] = useState<string[]>([]);
 
+  const [isEditing, setIsEditing] = useState<boolean>(false);
+
   const addBookToShelf = useMutation({
     mutationFn: (content: {
       book: bookInfo;
-      requiredShelf: string;
+      requiredShelf: { name: string; id: string };
       reviewData: {
         rating: number;
         display: string;
         liked: boolean;
         review: string | null;
       } | null;
-      optionalShelves: Array<string> | null;
+      optionalShelves: Array<{ name: string; id: string }> | null;
     }) => {
       return api.post('/user/add-book', content);
     },
@@ -65,9 +67,15 @@ const BookPage: React.FC = () => {
         });
       });
 
+      setIsEditing(false);
+
       useAuthStore.getState().removeActiveBookRecommendationID();
     },
   });
+
+  const handleEdit = async () => {
+    setIsEditing((prev) => !prev);
+  };
 
   if (bookInformation.current || addBookToShelf.isSuccess) {
     const bookInfo =
@@ -76,7 +84,7 @@ const BookPage: React.FC = () => {
     const bookShelves = bookInformation.current?.bookShelves;
 
     const handleBookAdd = (
-      requiredShelf: string,
+      requiredShelf: { name: string; id: string },
       formattedShelfNames: Array<string>,
       reviewData: {
         rating: number;
@@ -84,9 +92,18 @@ const BookPage: React.FC = () => {
         liked: boolean;
         review: string | null;
       } | null,
-      optionalShelves: Array<string> | null,
+      optionalShelves: Array<{ name: string; id: string }>,
     ) => {
       setFormattedShelfNames(formattedShelfNames);
+
+      if (bookInformation.current) {
+        bookInformation.current.shelf = requiredShelf;
+        bookInformation.current.bookShelves = [
+          requiredShelf,
+          ...optionalShelves,
+        ];
+      }
+
       addBookToShelf.mutate({
         book: bookInfo,
         requiredShelf,
@@ -115,7 +132,8 @@ const BookPage: React.FC = () => {
           ) : (
             <>
               <BookInfo bookInfo={bookInfo} detailed={true} />
-              {bookInformation.current?.shelf || addBookToShelf.isSuccess ? (
+              {!isEditing &&
+              (bookInformation.current?.shelf || addBookToShelf.isSuccess) ? (
                 <StatusFeedback
                   shelf={
                     addBookToShelf.isSuccess
@@ -124,9 +142,22 @@ const BookPage: React.FC = () => {
                       ? bookShelves
                       : [bookInformation.current.shelf!]
                   }
+                  onEditShelf={() => handleEdit()}
                 />
               ) : (
-                <AddButtons onAddBook={handleBookAdd} />
+                <AddButtons
+                  onAddBook={handleBookAdd}
+                  defaultValues={
+                    bookInformation.current
+                      ? {
+                          initialRequiredShelf: bookInformation.current.shelf!,
+                          initialOptionalShelves:
+                            bookInformation.current.bookShelves!,
+                        }
+                      : undefined
+                  }
+                  onCancel={() => handleEdit()}
+                />
               )}
             </>
           )}

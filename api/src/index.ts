@@ -278,7 +278,10 @@ app.get(
             b.*, 
             COALESCE((ARRAY_AGG(c.name) FILTER (WHERE bc.main = true))[1], '') as "mainCategory",
             COALESCE(ARRAY_AGG(c.name) FILTER (WHERE bc.main = false), '{}') as categories,
-            (SELECT COALESCE(ARRAY_AGG(all_ul.name), '{}') FROM shelf_books all_lb JOIN user_shelf all_ul ON all_ul.id = all_lb.shelf_id WHERE all_lb.book_id = b.id AND all_ul.user_id = $1) AS shelves
+            (SELECT COALESCE(ARRAY_AGG(json_build_object(
+          'id', all_ul.id,
+          'name', all_ul.name
+        ) ), '{}') FROM shelf_books all_lb JOIN user_shelf all_ul ON all_ul.id = all_lb.shelf_id WHERE all_lb.book_id = b.id AND all_ul.user_id = $1) AS shelves
             FROM "shelf_books" lb 
             JOIN user_shelf ul ON ul.id = lb.shelf_id
             JOIN book b ON b.id = lb.book_id
@@ -715,18 +718,25 @@ app.post(
       await client.query('BEGIN');
 
       const deleteRequiredShelfRelation =
-        'DELETE FROM shelf_books WHERE shelf_books.book_id=$1 AND shelf_books.shelf_id IN (SELECT id FROM user_shelf WHERE user_shelf.user_id=$2 AND user_shelf.is_system = true)';
+        'DELETE FROM shelf_books WHERE shelf_books.book_id=$1 AND shelf_books.shelf_id IN (SELECT id FROM user_shelf WHERE user_shelf.user_id=$2);';
 
       await client.query(deleteRequiredShelfRelation, [bookID, userID]);
+
+      const requiredShelfID =
+        typeof requiredShelf === 'object' ? requiredShelf.id : requiredShelf;
 
       const insertBookShelf =
         'INSERT INTO shelf_books(shelf_id, book_id) VALUES($1,$2) ON CONFLICT DO NOTHING;';
 
-      await client.query(insertBookShelf, [requiredShelf, bookID]);
+      await client.query(insertBookShelf, [requiredShelfID, bookID]);
 
       if (optionalShelves && optionalShelves.length > 0) {
         for (const optionalShelf of optionalShelves) {
-          await client.query(insertBookShelf, [optionalShelf, bookID]);
+          const optId =
+            typeof optionalShelf === 'object'
+              ? optionalShelf.id
+              : optionalShelf;
+          await client.query(insertBookShelf, [optId, bookID]);
         }
       }
 
@@ -787,6 +797,11 @@ app.post(
           displayInsert,
           parsedReviewData.liked,
         ]);
+      } else {
+        const deleteUserReview =
+          'DELETE FROM user_reviews ur WHERE ur.user_id=$1 AND ur.book_id=$2;';
+
+        await client.query(deleteUserReview, [userID, bookID]);
       }
 
       await client.query('COMMIT');
