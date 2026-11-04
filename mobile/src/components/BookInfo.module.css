@@ -1,7 +1,7 @@
 .fullPageDetailed {
   display: flex;
   flex-direction: column;
-  min-height: 100%;
+  min-height: fit-content;
   padding-top: calc(env(safe-area-inset-top, 24px));
   box-sizing: border-box;
 }

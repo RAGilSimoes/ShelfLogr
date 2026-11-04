@@ -166,8 +166,9 @@ const AddButtons: React.FC<{
             isCreateAlertOpen
               ? 'Enter a name for the new shelf'
               : isAddAlertOpen
-              ? `Are you sure you want to add this book to the following shelves?\n\n
-            ${shelvesNamesArray.map((item) => '• ' + item).join('\n')}`
+              ? `Are you sure you want to add this book to:\n\n${shelvesNamesArray.join(
+                  '  •  ',
+                )}`
               : ''
           }
           cssClass="custom-isbn-alert"

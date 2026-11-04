@@ -211,13 +211,6 @@ const Add: React.FC = () => {
     bookInfoQuery.data.book &&
     bookInfoQuery.data.shelf !== null;
 
-  const successMessage =
-    bookInfoQuery.isSuccess && bookInfoQuery.data.shelf
-      ? 'You already added this book!'
-      : addBookToShelf.isSuccess
-      ? addBookToShelf.data.data.message
-      : '';
-
   return (
     <IonPage>
       <IonContent className="ion-padding">
@@ -316,7 +309,6 @@ const Add: React.FC = () => {
               )) ||
                 ((showAlreadyHasBook || addBookToShelf.isSuccess) && (
                   <StatusFeedback
-                    successMessage={successMessage}
                     shelf={
                       addBookToShelf.isSuccess
                         ? formattedShelfNames

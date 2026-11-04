@@ -215,15 +215,19 @@ const Home: React.FC = () => {
           ) : activeBookQuery.isSuccess &&
             activeBookQuery.data.book &&
             Object.keys(activeBookQuery.data.book).length > 0 ? (
-            <div>
-              <h3 className={styles.statusMessage}>
-                This book is in your{' '}
-                {activeBookQuery.data.shelf
-                  ? activeBookQuery.data.shelf.charAt(0).toUpperCase() +
-                    activeBookQuery.data.shelf.slice(1)
-                  : ''}{' '}
-                Shelf
-              </h3>
+            <div className={styles.sectionContainer}>
+              <div className={styles.sectionHeader}>
+                <span className={styles.sectionEyebrow}>
+                  This book is in your
+                </span>
+                <h2 className={styles.sectionTitle}>
+                  {activeBookQuery.data.shelf
+                    ? activeBookQuery.data.shelf.charAt(0).toUpperCase() +
+                      activeBookQuery.data.shelf.slice(1)
+                    : ''}{' '}
+                  Shelf
+                </h2>
+              </div>
               <div
                 onClick={() => {
                   history.push(`/app/book/${activeBookQuery.data.book?.id}`, {
@@ -259,10 +263,16 @@ const Home: React.FC = () => {
               />
             ) : trendingCategoryBookQuery.isSuccess &&
               trendingCategoryBookQuery.data.trendingBooksInfo.length > 0 ? (
-              <div>
-                <h3 className={styles.trendingMessage}>
-                  {`Because you liked ${activeBookQuery.data!.category}`}
-                </h3>
+              <div className={styles.sectionContainer}>
+                <div className={styles.sectionHeader}>
+                  <span className={styles.sectionEyebrow}>
+                    Because you liked
+                  </span>
+                  <h2 className={styles.sectionTitle}>
+                    {activeBookQuery.data!.category}
+                  </h2>
+                </div>
+
                 {
                   <BookSwiper
                     books={trendingCategoryBookQuery.data.trendingBooksInfo}
@@ -288,10 +298,12 @@ const Home: React.FC = () => {
             trendingBookQuery.isSuccess &&
             trendingBookQuery.data.trendingBooksInfo &&
             trendingBookQuery.data.trendingBooksInfo.length > 0 ? (
-            <div>
-              <h3 className={styles.trendingMessage}>
-                {`What's Trending This Week`}
-              </h3>
+            <div className={styles.sectionContainer}>
+              <div className={styles.sectionHeader}>
+                <h2 className={styles.sectionTitle}>
+                  What's Trending This Week
+                </h2>
+              </div>
               {<BookSwiper books={trendingBookQuery.data.trendingBooksInfo} />}
             </div>
           ) : (

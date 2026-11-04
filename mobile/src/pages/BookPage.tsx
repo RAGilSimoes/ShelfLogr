@@ -107,9 +107,9 @@ const BookPage: React.FC = () => {
         <IonContent fullscreen>
           {addBookToShelf.isPending ? (
             <LoadSpinner
-              message={`Adding Book To \n\n ${formattedShelfNames
-                .map((item) => '• ' + item)
-                .join('\n')} \n\n ...`}
+              message={`Adding Book To \n\n ${formattedShelfNames.join(
+                '  •  ',
+              )}`}
               fullScreen={true}
             />
           ) : (
@@ -117,11 +117,6 @@ const BookPage: React.FC = () => {
               <BookInfo bookInfo={bookInfo} detailed={true} />
               {bookInformation.current?.shelf || addBookToShelf.isSuccess ? (
                 <StatusFeedback
-                  successMessage={
-                    bookInformation.current?.shelf
-                      ? 'You Already Have This Book'
-                      : 'Book Added Successfully'
-                  }
                   shelf={
                     addBookToShelf.isSuccess
                       ? formattedShelfNames

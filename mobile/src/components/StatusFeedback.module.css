@@ -1,11 +1,67 @@
-.successHeader {
-  align-items: left;
-  white-space: pre-line;
+.libraryStatusCard {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  margin: 20px 16px;
+  padding: 16px 18px;
 }
 
-.successTitle {
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.statusBadge {
   display: flex;
   align-items: center;
+  gap: 6px;
+  background: rgba(46, 213, 115, 0.12);
+  border: 1px solid rgba(46, 213, 115, 0.3);
+  color: #2ed573;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.checkIcon {
+  font-size: 1rem;
+}
+
+.editButton {
+  --color: var(--ion-color-primary, #3880ff);
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.shelvesSection {
+  display: flex;
+  flex-direction: column;
   gap: 8px;
-  font-size: 1.2rem;
+}
+
+.shelvesLabel {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 600;
+}
+
+.chipsContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.shelfChip {
+  margin: 0;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  font-weight: 500;
 }
