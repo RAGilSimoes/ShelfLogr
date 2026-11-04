@@ -58,7 +58,7 @@ const SearchResults: React.FC = () => {
   });
 
   useEffect(() => {
-    setInformation(location.state);
+    if (location.state) setInformation(location.state);
   }, [location.state]);
 
   return (

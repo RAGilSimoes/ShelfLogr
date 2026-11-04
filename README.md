@@ -47,6 +47,11 @@ The main technologies used in this project are:
     &nbsp;&nbsp;
     <img src="./media/homePage/bookInfoPage.png" alt="Book Page Display" width="200" />
     &nbsp;&nbsp;&nbsp;&nbsp;
+    <h4>Search Page and Search Results</h4>
+    <img src="./media/searchPage/searchPage.png" alt="Search Page" width="200" />
+    &nbsp;&nbsp;
+    <img src="./media/searchPage/searchResults.png" alt="Search Results" width="200" />
+    &nbsp;&nbsp;&nbsp;&nbsp;
     <h4>Barcode Scanning & Book Ingestion</h4>
     <img src="./media/addPage/addPage.png" alt="Add Page Screen" width="200" />
     &nbsp;&nbsp;
@@ -82,15 +87,18 @@ The user enters the app and the system immediately checks for a valid token. If 
 The user accesses the "Add Book" page, opens the scanner, and scans a barcode. The app verifies the `valueType` property; if it isn't a book barcode, an error is displayed. Otherwise, the app fetches the book information through the Google Books API, or the OpenLibrary API if the Google Books API doesn't return all the needed information, via a dedicated backend endpoint. User gets visual feedback if book is already on one of the shelves, if not, shows buttons that allow the user to add the book to one of the shelves.
 
 **3. Home Page:**
-User enters the app and receives a suggestion from the books he is reading, or from his wish shelf (if available and they aren't currently reading any). If user has any completed and liked book, the API gets the main category if available, and fetches books from that category to recommend to the user. If not, does the same but from the NYT API and with no specific category.
+User enters the app and receives a suggestion from the books they are reading, or from his wish shelf (if available and they aren't currently reading any). If user has any completed and liked book, the API gets the main category if available, and fetches books from that category to recommend to the user. If not, does the same but from the NYT API and with no specific category.
 
-**4. Book Page:**
+**4. Search Page:**
+When the user enters the Search page, it receives a suggestion based on its last liked book, and the categories from the NYT Trending Books API, that allows the user to search for the available categories. When the user searches by Title or by Author, it displays a page with the available results for the user to check the Book's information.
+
+**5. Book Page:**
 When the user enters the page from the book, it displays the book info and the current state of the book, according to the database. If the book is already added, it displays the shelves, otherwise, allows the user to add to one or multiple shelves. If the user wants to add to the 'Completed' shelf, displays a review form.
 
-**5. Profile Page:**
+**6. Profile Page:**
 Users can view their membership details, cumulative reading statistics, and navigate through default shelves (Reading, Wish, Completed) and expandable custom shelves.
 
-**6. Settings & Support:**
+**7. Settings & Support:**
 Provides account management tools. Modals open as responsive bottom sheets:
 
 - **Edit Profile:** Updates name and email, generating a new JWT token and updating global state seamlessly.
@@ -127,6 +135,16 @@ Provides account management tools. Modals open as responsive bottom sheets:
    - **Challenge:** Creating a real-time, zero-cost support channel for bug tracking and user suggestions without the overhead of building an entire admin dashboard.
    - **Decision:** Integrated native Discord Webhooks on the backend. User tickets submitted through the settings modal are automatically dispatched into private Discord channels with rich, color-coded embeds matching the ticket type (Bug, Feature, Question).
 
+6. **Book addition to the Database:**
+
+   - **Challenge:** Allow the user to add a book from the search results page to a shelf, without having the information of the book in the database
+   - **Decision:** When the user adds the book to a shelf, verifies if the book is already in the database. If it isn't, adds the book first, before adding to the requested shelf
+
+7. **Global Offline Resilience & Proactive Reconnection:**
+
+   - **Challenge:** Blocking modal alerts or intrusive toasts degrade mobile UX during intermittent network loss, while outgoing network requests hang until timeout and leave the UI in stale or broken states once connectivity returns.
+   - **Decision:** Designed a global offline resilience system powered by `@capacitor/network` and a lightweight **Zustand** network store. An Axios request interceptor proactively short-circuits and fast-rejects outgoing HTTP calls during outages with a normalized network error (`ERR_NETWORK`). A non-blocking, fixed `<OfflineBanner />` smoothly slides down to alert the user without trapping pointer events or freezing the interface. Upon reconnection, Capacitor listeners immediately fire TanStack Query's `queryClient.refetchQueries({ type: 'active' })` to seamlessly revalidate and refresh all active screen data without requiring manual user intervention.
+
 ---
 
 ## Status
@@ -134,6 +152,8 @@ Provides account management tools. Modals open as responsive bottom sheets:
 Login and Register implemented. User can scan a Book's barcode to fetch book's info, and receives visual feedback if already in one of their shelves. If not, gives the option to add to one.
 
 Home Page Implemented. Fetches book in user's Reading or Wish Shelf, if exists. Fetches trending books from Google Books API according to user's most read category, or trending books from New York Times API if no info is available from the user
+
+Search Page Implemented. Gives suggestions based on the last liked book. Allows to search from pre-defined categories. Allows the user to search for a Title or an Author
 
 Book Page displays the info from the book and, if the user already added the book, it displays the shelves where the book is added, otherwise, it displays options on shelves where the user can add. If the user wants to add to the 'Completed' shelf, it displays a form for the review
 
@@ -152,7 +172,7 @@ Settings Page implemented. Features dynamic bottom-sheet modals allowing users t
 - [x] Add Book to one of the shelves after scanning barcode
 - [x] Display a book suggestion from the ones the user is reading on the home page
 - [x] Display book suggestions by topic on the home page
-- [ ] Search for book by the title, author or category
+- [x] Search for book by title or author
 - [ ] Create chatbot for user interaction
 - [x] Create profile page to see user's shelves
 - [x] Create settings page
@@ -162,6 +182,8 @@ Settings Page implemented. Features dynamic bottom-sheet modals allowing users t
 
 - Ability to see other people's accounts, have friends and see their shelves.
 - Contribution program, where users can add missing books that the APIs don't know that exist.
+- Ability to check author's details
+- Ability to search by category, by clicking on the chips
 
 ---
 
