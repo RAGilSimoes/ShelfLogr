@@ -8,5 +8,7 @@ export default function getQueryKeys(userID: string) {
     ['userReviews', userID],
     ['userBook', userID],
     ['userShelves', userID],
+    ['trendingListBooks', userID],
+    ['suggestedBooks', userID],
   ];
 }

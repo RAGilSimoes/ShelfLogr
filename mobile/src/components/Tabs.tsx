@@ -21,6 +21,7 @@ import Settings from '../pages/SettingsPage';
 import ShelfPage from '../pages/ShelfPage';
 import ReviewsPage from '../pages/ReviewsPage';
 import ContributePage from '../pages/ContributePage';
+import SearchResults from '../pages/SearchResults';
 
 const Tabs: React.FC = () => {
   const match = useRouteMatch();
@@ -58,6 +59,9 @@ const Tabs: React.FC = () => {
         </Route>
         <Route exact path={path + '/contribute-book'}>
           <ContributePage />
+        </Route>
+        <Route exact path={path + '/search/results'}>
+          <SearchResults />
         </Route>
         <Route exact path={path}>
           <Redirect to={path + '/home'} />

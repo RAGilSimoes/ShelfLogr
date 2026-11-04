@@ -31,6 +31,13 @@ import axios from 'axios';
 
 import LoadSpinner from './LoadSpinner';
 
+import {
+  MIN_SUPPORT_SUBJECT_SIZE,
+  MAX_SUPPORT_SUBJECT_SIZE,
+  MIN_SUPPORT_TEXT_SIZE,
+  MAX_SUPPORT_TEXT_SIZE,
+} from '../constants/app.constant';
+
 const SupportForm: React.FC<{
   onClose: () => void;
   onSuccess: (message: string) => void;
@@ -55,12 +62,6 @@ const SupportForm: React.FC<{
     error: 'error',
   };
 
-  const minLengthSubject = 10;
-  const maxLengthSubject = 50;
-
-  const minLengthText = 15;
-  const maxLengthText = 500;
-
   const inputAvailableTypes = {
     bug: 'bug',
     feature: 'feature',
@@ -75,14 +76,15 @@ const SupportForm: React.FC<{
 
   const validateSubject = () => {
     setIsValidInputSubject(
-      inputSubject.trim().length >= minLengthSubject &&
-        inputSubject.trim().length <= maxLengthSubject,
+      inputSubject.trim().length >= MIN_SUPPORT_SUBJECT_SIZE &&
+        inputSubject.trim().length <= MAX_SUPPORT_SUBJECT_SIZE,
     );
   };
 
   const validateText = () => {
     setIsValidInputText(
-      inputText.length >= minLengthText && inputText.length <= maxLengthText,
+      inputText.length >= MIN_SUPPORT_TEXT_SIZE &&
+        inputText.length <= MAX_SUPPORT_TEXT_SIZE,
     );
   };
 
@@ -173,13 +175,13 @@ const SupportForm: React.FC<{
                       }}
                     >
                       <IonSelectOption value={inputAvailableTypes.bug}>
-                        Bug
+                        {inputAvailableTypes.bug}
                       </IonSelectOption>
                       <IonSelectOption value={inputAvailableTypes.feature}>
-                        Feature
+                        {inputAvailableTypes.feature}
                       </IonSelectOption>
                       <IonSelectOption value={inputAvailableTypes.question}>
-                        Question
+                        {inputAvailableTypes.question}
                       </IonSelectOption>
                     </IonSelect>
                   </IonItem>
@@ -197,8 +199,8 @@ const SupportForm: React.FC<{
                       type="text"
                       className={''}
                       name="subject"
-                      maxlength={maxLengthSubject}
-                      minlength={minLengthSubject}
+                      maxlength={MAX_SUPPORT_SUBJECT_SIZE}
+                      minlength={MIN_SUPPORT_SUBJECT_SIZE}
                       counter={true}
                       counterFormatter={(inputLength, maxLength) =>
                         `${maxLength - inputLength} characters remaining`
@@ -226,8 +228,8 @@ const SupportForm: React.FC<{
                       className={''}
                       name="subject"
                       counter={true}
-                      maxlength={maxLengthText}
-                      minlength={minLengthText}
+                      maxlength={MAX_SUPPORT_TEXT_SIZE}
+                      minlength={MIN_SUPPORT_TEXT_SIZE}
                       counterFormatter={(inputLength, maxLength) =>
                         `${maxLength - inputLength} characters remaining`
                       }

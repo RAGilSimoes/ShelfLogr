@@ -15,7 +15,9 @@ import {
   fetchNYTTrendingBooks,
   fetchEntireBookInfo,
   fetchGoogleTrendingBooks,
+  addBookToDB,
 } from './utils/bookInfo.js';
+import { formatGoogleBook } from './utils/book.mapper.js';
 
 dotenv.config();
 
@@ -229,134 +231,6 @@ app.delete(
     } catch (error) {
       console.log(error);
       return res.status(500).json({ error: 'Error deleting account. ' });
-    }
-  },
-);
-
-app.get(
-  '/api/get-book-info/:isbn',
-  verifyAuthorization(false),
-  async (req: Request, res: Response) => {
-    const isbn: string = req.params.isbn as string;
-
-    const { id } = req.token;
-    const result = await fetchEntireBookInfo(isbn, id);
-
-    if (typeof result === 'string') {
-      res.status(500).json({ error: result });
-    } else {
-      res.status(200).json({ result });
-    }
-  },
-);
-
-app.post(
-  '/api/add-book-to-shelf',
-  verifyAuthorization(false),
-  async (req: Request, res: Response) => {
-    if (!req.body || !req.body.book) {
-      return res.status(400).json({ error: 'Invalid request data' });
-    }
-    const client = await pool.connect();
-    try {
-      const { id } = req.token;
-      const { book, requiredShelf, reviewData, optionalShelves } = req.body;
-
-      const bookID = book.id;
-
-      const userID = id;
-
-      await client.query('BEGIN');
-
-      const deleteRequiredShelfRelation =
-        'DELETE FROM shelf_books WHERE shelf_books.book_id=$1 AND shelf_books.shelf_id IN (SELECT id FROM user_shelf WHERE user_shelf.user_id=$2 AND user_shelf.is_system = true)';
-
-      await client.query(deleteRequiredShelfRelation, [bookID, userID]);
-
-      const insertBookShelf =
-        'INSERT INTO shelf_books(shelf_id, book_id) VALUES($1,$2) ON CONFLICT DO NOTHING;';
-
-      await client.query(insertBookShelf, [requiredShelf, bookID]);
-
-      if (optionalShelves && optionalShelves.length > 0) {
-        for (const optionalShelf of optionalShelves) {
-          await client.query(insertBookShelf, [optionalShelf, bookID]);
-        }
-      }
-
-      const getCategoryID = 'SELECT id FROM categories WHERE name=$1';
-
-      const insertUserCategoryRelation =
-        'INSERT INTO "user_category"(user_id, category_id) VALUES($1,$2) ON CONFLICT DO NOTHING';
-
-      if (book.mainCategory) {
-        const { rows: mainCategory } = await client.query(getCategoryID, [
-          book.mainCategory,
-        ]);
-
-        if (mainCategory.length > 0) {
-          const mainCategoryID = mainCategory[0].id;
-          await client.query(insertUserCategoryRelation, [
-            userID,
-            mainCategoryID,
-          ]);
-        }
-      }
-
-      if (book.categories && book.categories.length !== 0) {
-        for (const category of book.categories) {
-          const { rows: categoryResponse } = await client.query(getCategoryID, [
-            category,
-          ]);
-
-          if (categoryResponse.length > 0) {
-            const categoryID = categoryResponse[0].id;
-            await client.query(insertUserCategoryRelation, [
-              userID,
-              categoryID,
-            ]);
-          }
-        }
-      }
-
-      const insertUserReview =
-        'INSERT INTO "user_reviews"(user_id, book_id, rating, review, display, liked) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT (user_id, book_id) DO UPDATE SET rating = EXCLUDED.rating, review = EXCLUDED.review, display = EXCLUDED.display, liked = EXCLUDED.liked, updated_at = CURRENT_TIMESTAMP;';
-
-      if (reviewData) {
-        const parsedReviewData: {
-          rating: number;
-          display: string;
-          liked: boolean;
-          review: string | null;
-        } = reviewData;
-
-        const displayInsert =
-          parsedReviewData.display === 'public' ? true : false;
-
-        await client.query(insertUserReview, [
-          userID,
-          bookID,
-          parsedReviewData.rating,
-          parsedReviewData.review || null,
-          displayInsert,
-          parsedReviewData.liked,
-        ]);
-      }
-
-      await client.query('COMMIT');
-      return res.status(200).json({
-        message: 'Book added successfully',
-        requiredShelf,
-        optionalShelves,
-      });
-    } catch (error) {
-      console.log(error);
-      await client.query('ROLLBACK');
-      return res.status(500).json({
-        error: `Error Adding Book to Shelves.`,
-      });
-    } finally {
-      client.release();
     }
   },
 );
@@ -769,12 +643,341 @@ app.get(
 );
 
 app.get(
+  '/api/user/last-liked',
+  verifyAuthorization(false),
+  async (req: Request, res: Response) => {
+    try {
+      const { id } = req.token;
+
+      const randomLikedQuery = `SELECT 
+        b.*, 
+        COALESCE((ARRAY_AGG(c.name) FILTER (WHERE bc.main = true))[1], '') as "mainCategory",
+        COALESCE(ARRAY_AGG(c.name) FILTER (WHERE bc.main = false), '{}') as categories
+    FROM "book" b
+    LEFT JOIN book_category bc ON b.id = bc.book_id
+    LEFT JOIN categories c ON bc.category_id = c.id
+    LEFT JOIN user_reviews ur ON ur.book_id=b.id
+    WHERE ur.user_id=$1 AND ur.liked
+    GROUP BY b.id
+    HAVING COALESCE((ARRAY_AGG(c.name) FILTER (WHERE bc.main = true))[1], '') <> ''
+    ORDER BY RANDOM()
+    LIMIT 1`;
+
+      const { rows } = await pool.query(randomLikedQuery, [id]);
+
+      if (rows && rows.length > 0) {
+        const selectedBook: bookInfo = rows[0];
+
+        const suggestedBooks = await fetchGoogleTrendingBooks(
+          selectedBook.mainCategory,
+          id,
+        );
+
+        return res
+          .status(200)
+          .json({ title: selectedBook.title, suggestedBooks });
+      } else if (rows.length === 0) {
+        return res.status(200).json({});
+      }
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ error: 'Error getting suggested books' });
+    }
+  },
+);
+
+app.post(
+  '/api/user/add-book',
+  verifyAuthorization(false),
+  async (req: Request, res: Response) => {
+    if (!req.body || !req.body.book) {
+      return res.status(400).json({ error: 'Invalid request data' });
+    }
+
+    let bookID: string | undefined = undefined;
+    const { id: userID } = req.token;
+    const { book, requiredShelf, reviewData, optionalShelves } = req.body;
+    try {
+      bookID = book.id ? book.id : undefined;
+
+      if (!bookID) {
+        bookID = await addBookToDB(book);
+      }
+    } catch (error) {
+      return res.status(500).json({
+        error: `Error Adding Book to Database.`,
+      });
+    }
+
+    const client = await pool.connect();
+
+    try {
+      await client.query('BEGIN');
+
+      const deleteRequiredShelfRelation =
+        'DELETE FROM shelf_books WHERE shelf_books.book_id=$1 AND shelf_books.shelf_id IN (SELECT id FROM user_shelf WHERE user_shelf.user_id=$2 AND user_shelf.is_system = true)';
+
+      await client.query(deleteRequiredShelfRelation, [bookID, userID]);
+
+      const insertBookShelf =
+        'INSERT INTO shelf_books(shelf_id, book_id) VALUES($1,$2) ON CONFLICT DO NOTHING;';
+
+      await client.query(insertBookShelf, [requiredShelf, bookID]);
+
+      if (optionalShelves && optionalShelves.length > 0) {
+        for (const optionalShelf of optionalShelves) {
+          await client.query(insertBookShelf, [optionalShelf, bookID]);
+        }
+      }
+
+      const getCategoryID = 'SELECT id FROM categories WHERE name=$1';
+
+      const insertUserCategoryRelation =
+        'INSERT INTO "user_category"(user_id, category_id) VALUES($1,$2) ON CONFLICT DO NOTHING';
+
+      if (book.mainCategory) {
+        const { rows: mainCategory } = await client.query(getCategoryID, [
+          book.mainCategory,
+        ]);
+
+        if (mainCategory.length > 0) {
+          const mainCategoryID = mainCategory[0].id;
+          await client.query(insertUserCategoryRelation, [
+            userID,
+            mainCategoryID,
+          ]);
+        }
+      }
+
+      if (book.categories && book.categories.length !== 0) {
+        for (const category of book.categories) {
+          const { rows: categoryResponse } = await client.query(getCategoryID, [
+            category,
+          ]);
+
+          if (categoryResponse.length > 0) {
+            const categoryID = categoryResponse[0].id;
+            await client.query(insertUserCategoryRelation, [
+              userID,
+              categoryID,
+            ]);
+          }
+        }
+      }
+
+      const insertUserReview =
+        'INSERT INTO "user_reviews"(user_id, book_id, rating, review, display, liked) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT (user_id, book_id) DO UPDATE SET rating = EXCLUDED.rating, review = EXCLUDED.review, display = EXCLUDED.display, liked = EXCLUDED.liked, updated_at = CURRENT_TIMESTAMP;';
+
+      if (reviewData) {
+        const parsedReviewData: {
+          rating: number;
+          display: string;
+          liked: boolean;
+          review: string | null;
+        } = reviewData;
+
+        const displayInsert =
+          parsedReviewData.display === 'public' ? true : false;
+
+        await client.query(insertUserReview, [
+          userID,
+          bookID,
+          parsedReviewData.rating,
+          parsedReviewData.review || null,
+          displayInsert,
+          parsedReviewData.liked,
+        ]);
+      }
+
+      await client.query('COMMIT');
+      return res.status(200).json({
+        message: 'Book added successfully',
+        requiredShelf,
+        optionalShelves,
+      });
+    } catch (error) {
+      console.log(error);
+      await client.query('ROLLBACK');
+      return res.status(500).json({
+        error: `Error Adding Book to Shelves.`,
+      });
+    } finally {
+      client.release();
+    }
+  },
+);
+
+app.get(
+  '/api/book/info/:isbn',
+  verifyAuthorization(false),
+  async (req: Request, res: Response) => {
+    try {
+      const isbn: string = req.params.isbn as string;
+
+      const { id } = req.token;
+      const result = await fetchEntireBookInfo(isbn, id);
+
+      if (result) {
+        return res.status(200).json({ result });
+      }
+    } catch (error) {
+      console.error('Database query failed:', error);
+      return res.status(500).json({ error: 'Error getting book information.' });
+    }
+  },
+);
+
+app.get(
+  '/api/book/search/',
+  verifyAuthorization(false),
+  async (req: Request, res: Response) => {
+    try {
+      const { id } = req.token;
+      const text: string = req.query.text as string;
+      const type: string = req.query.type as string;
+      const index: string = (req.query.index as string) || '0';
+
+      const url: string = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(
+        text,
+      )}&maxResults=40&startIndex=${index}&key=${process.env.BOOKS_API_KEY}`;
+
+      const responseID = await fetch(url);
+
+      if (!responseID.ok) return res.status(500).json();
+
+      const data = await responseID.json();
+
+      const items: Array<{
+        volumeInfo: any;
+      }> = data.items || [];
+
+      let filteredItems: Array<any> = [];
+
+      switch (type) {
+        case 'Title': {
+          filteredItems = items.filter((item) => {
+            return item.volumeInfo?.title
+              ?.toLowerCase()
+              .includes(text.toLowerCase());
+          });
+          break;
+        }
+
+        case 'Author': {
+          filteredItems = items.filter((item) => {
+            return item.volumeInfo?.authors?.some((author: string) =>
+              author.toLowerCase().includes(text.toLowerCase()),
+            );
+          });
+          break;
+        }
+
+        default: {
+          filteredItems = items;
+          break;
+        }
+      }
+
+      let validBooks: Array<any> = [];
+
+      for (const item of filteredItems) {
+        const volumeInfo = item.volumeInfo;
+        let isbn = null;
+
+        if (volumeInfo.industryIdentifiers) {
+          const isbn13 = volumeInfo.industryIdentifiers.find(
+            (id: any) => id.type === 'ISBN_13',
+          );
+          const isbn10 = volumeInfo.industryIdentifiers.find(
+            (id: any) => id.type === 'ISBN_10',
+          );
+
+          if (isbn13) isbn = isbn13.identifier;
+          else if (isbn10) isbn = isbn10.identifier;
+        }
+
+        if (isbn) validBooks.push({ info: volumeInfo, isbn });
+      }
+
+      const formattedFilteredBooks = validBooks.map(
+        (item: { info: any; isbn: string }) => {
+          return formatGoogleBook(item.info, item.isbn);
+        },
+      );
+
+      const isbns = formattedFilteredBooks.map((b) => b.isbn);
+
+      let finalArrayResults: Array<{
+        book: bookInfo;
+        shelf: string | null;
+        bookShelves: Array<string>;
+      }> = [];
+
+      if (isbns.length > 0) {
+        const getBooksInfoQuery = `SELECT b.isbn,
+        (SELECT COALESCE(ARRAY_AGG(all_ul.name), '{}') FROM shelf_books all_lb JOIN user_shelf all_ul ON all_ul.id = all_lb.shelf_id WHERE all_lb.book_id = b.id AND all_ul.user_id = $1) AS "bookShelves",
+        (SELECT all_ul.name FROM shelf_books all_lb JOIN user_shelf all_ul ON all_ul.id = all_lb.shelf_id WHERE all_lb.book_id = b.id AND all_ul.user_id = $1 AND all_ul.is_system = true LIMIT 1) AS "shelf"
+        FROM book b
+        WHERE b.isbn=ANY($2)
+        GROUP BY b.isbn, b.id;`;
+
+        const { rows } = await pool.query(getBooksInfoQuery, [id, isbns]);
+
+        formattedFilteredBooks.forEach((book) => {
+          const row:
+            | {
+                isbn: string;
+                bookShelves: Array<string>;
+                shelf: string | null;
+              }
+            | undefined = rows.find(
+            (row: {
+              isbn: string;
+              bookShelves: Array<string>;
+              shelf: string | null;
+            }) => book.isbn === row.isbn,
+          );
+          if (row) {
+            finalArrayResults.push({
+              book,
+              bookShelves: row.bookShelves,
+              shelf: row.shelf,
+            });
+          } else {
+            finalArrayResults.push({
+              book,
+              bookShelves: [],
+              shelf: null,
+            });
+          }
+        });
+      }
+
+      const hasMore =
+        items.length > 0 && Number(index) + items.length < data.totalItems;
+
+      return res.status(200).json({
+        results: finalArrayResults,
+        nextIndex: Number(index) + items.length,
+        hasMore,
+      });
+    } catch (error) {
+      console.error('Database query failed:', error);
+      return res
+        .status(500)
+        .json({ error: 'Error getting books from the query.' });
+    }
+  },
+);
+
+app.get(
   '/api/books/trending',
   verifyAuthorization(false),
   async (req: Request, res: Response) => {
     try {
       const { id } = req.token;
       const category = req.query.category;
+      const trendingList = req.query.trending;
 
       let type;
       let trending;
@@ -788,8 +991,14 @@ app.get(
         trending = { type, category, trendingBooksInfo };
       } else {
         type = 'trending';
+        const list =
+          trendingList && typeof trendingList === 'string'
+            ? trendingList
+            : 'combined-print-and-e-book-fiction';
+
         const trendingBooksInfo: Array<bookInfo> = await fetchNYTTrendingBooks(
           id,
+          list,
         );
         trending = { type, trendingBooksInfo };
       }

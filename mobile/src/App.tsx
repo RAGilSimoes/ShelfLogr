@@ -47,10 +47,20 @@ import { useHistory, useLocation } from 'react-router-dom';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 
 import useAuthStore from './store/useAuthStore';
+import useNetworkStore from './store/useNetworkStore';
+
+import { Network } from '@capacitor/network';
+
+import OfflineBanner from './components/OfflineBanner';
+
+import { onlineManager } from '@tanstack/react-query';
+
+import { useQueryClient } from '@tanstack/react-query';
 
 setupIonicReact();
 
 const AppRouter: React.FC = () => {
+  const queryClient = useQueryClient();
   const history = useHistory();
   const location = useLocation();
 
@@ -110,6 +120,22 @@ const AppRouter: React.FC = () => {
     };
 
     verifyToken();
+
+    Network.getStatus().then((status) => {
+      useNetworkStore.getState().updateOnline(status.connected);
+      onlineManager.setOnline(status.connected);
+    });
+    const listener = Network.addListener('networkStatusChange', (status) => {
+      useNetworkStore.getState().updateOnline(status.connected);
+      onlineManager.setOnline(status.connected);
+
+      if (status.connected) {
+        queryClient.refetchQueries({ type: 'active' });
+      }
+    });
+    return () => {
+      listener.then((handler) => handler.remove());
+    };
   }, []);
 
   return (
@@ -139,6 +165,7 @@ const AppRouter: React.FC = () => {
 const App: React.FC = () => {
   return (
     <IonApp>
+      <OfflineBanner />
       <IonReactRouter>
         <AppRouter />
       </IonReactRouter>

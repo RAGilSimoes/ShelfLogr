@@ -10,8 +10,6 @@ import {
   IonInputPasswordToggle,
   IonText,
   IonRouterLink,
-  IonFooter,
-  IonToolbar,
 } from '@ionic/react';
 import { logIn } from 'ionicons/icons';
 import { useEffect, useState } from 'react';
@@ -36,6 +34,12 @@ import {
 import { jwtDecode } from 'jwt-decode';
 
 import Toast from '../components/Toast';
+import Footer from '../components/Footer';
+
+import {
+  MIN_PASSWORD_SIZE,
+  MAX_PASSWORD_SIZE,
+} from '../constants/app.constant';
 
 const Login: React.FC = () => {
   const history = useHistory();
@@ -100,7 +104,10 @@ const Login: React.FC = () => {
   };
 
   const validatePassword = () => {
-    setIsValidPassword(inputPassword.length >= 8 && inputPassword.length <= 20);
+    setIsValidPassword(
+      inputPassword.length >= MIN_PASSWORD_SIZE &&
+        inputPassword.length <= MAX_PASSWORD_SIZE,
+    );
   };
 
   useEffect(() => {
@@ -235,18 +242,7 @@ const Login: React.FC = () => {
           open={displayToast}
         />
       </IonContent>
-      <IonFooter className="ion-no-border" translucent={true} collapse="fade">
-        <IonToolbar>
-          <div className={`ion-text-center ${styles.footer}`}>
-            <IonText color="medium">v0.0.1</IonText>
-            {' - '}
-            <IonText color="medium">
-              Developed by{' '}
-              <a href="https://ragilsimoes.github.io/">Ricardo André Simões</a>
-            </IonText>
-          </div>
-        </IonToolbar>
-      </IonFooter>
+      <Footer realFooter={true} />
     </IonPage>
   );
 };

@@ -152,6 +152,7 @@ const ShelfPage: React.FC = () => {
                   title={`No Books with that Title`}
                   subtitle="Try searching with a different title."
                   icon={bookOutline}
+                  compact={true}
                 />
               )}
             </>
@@ -161,6 +162,7 @@ const ShelfPage: React.FC = () => {
                 title={`No Books Yet`}
                 subtitle="When you add a book to this shelf, it will appear here."
                 icon={libraryOutline}
+                compact={true}
               />
             )
           )
@@ -171,6 +173,7 @@ const ShelfPage: React.FC = () => {
             onRetry={() => {
               shelfBooksQuery.refetch();
             }}
+            compact={true}
           />
         )}
       </IonContent>

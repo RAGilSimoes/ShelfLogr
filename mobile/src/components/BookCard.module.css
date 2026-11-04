@@ -37,3 +37,7 @@
 .mainCategory {
   margin-bottom: 8px;
 }
+
+.grid ion-col[size='8'] {
+  padding-left: 14px;
+}

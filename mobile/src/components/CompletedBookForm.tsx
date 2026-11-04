@@ -18,6 +18,8 @@ import { star, globe, lockClosed } from 'ionicons/icons';
 
 import { useEffect, useState } from 'react';
 
+import { MAX_BOOK_REVIEW_SIZE } from '../constants/app.constant';
+
 const CompletedBookForm: React.FC<{
   onReviewChange: (
     rating: number,
@@ -26,8 +28,6 @@ const CompletedBookForm: React.FC<{
     review: string | null,
   ) => void;
 }> = ({ onReviewChange }) => {
-  const maxReviewSize = 300;
-
   const [starsRating, setStarsRating] = useState<number>(0);
 
   const displayOptions: Array<string> = ['public', 'private'];
@@ -103,7 +103,7 @@ const CompletedBookForm: React.FC<{
             autoGrow={true}
             rows={3}
             labelPlacement="floating"
-            maxlength={maxReviewSize}
+            maxlength={MAX_BOOK_REVIEW_SIZE}
             counter={true}
             onIonChange={(event) => {
               setReview(event.detail.value as string);

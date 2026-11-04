@@ -160,8 +160,10 @@ export async function getAllUserBooks(
   }
 }
 
-export async function fetchNYTTrendingBooks(id: string): Promise<any> {
-  const list = 'combined-print-and-e-book-fiction';
+export async function fetchNYTTrendingBooks(
+  id: string,
+  list: string,
+): Promise<any> {
   const response = await fetch(
     `https://api.nytimes.com/svc/books/v3/lists/current/${list}.json?api-key=${process.env.NYT_API_KEY}`,
   );
@@ -193,10 +195,11 @@ export async function fetchNYTTrendingBooks(id: string): Promise<any> {
   for (const book of top10ReadyBooks) {
     if (books.length === 5) break;
 
-    const result: string | { book: Partial<bookInfo>; shelf: string | null } =
-      await fetchEntireBookInfo(book.isbns[0]?.isbn13, id);
+    const result:
+      | { book: Partial<bookInfo>; shelf: string | null }
+      | undefined = await fetchEntireBookInfo(book.isbns[0]?.isbn13, id);
 
-    if (typeof result !== 'string') {
+    if (result) {
       books.push(result);
     }
   }
@@ -219,7 +222,7 @@ export async function fetchGoogleTrendingBooks(
   const safeCategory = encodeURIComponent(category);
 
   while (validBooks.length < TARGET_AMOUNT) {
-    const url = `https://www.googleapis.com/books/v1/volumes?q=subject:${safeCategory}&maxResults=${FETCH_CHUNK}&startIndex=${startIndex}&key=${process.env.BOOKS_API_KEY}`;
+    const url = `https://www.googleapis.com/books/v1/volumes?q=${safeCategory}&maxResults=${FETCH_CHUNK}&startIndex=${startIndex}&key=${process.env.BOOKS_API_KEY}`;
 
     const response = await fetch(url);
     const data = await response.json();
@@ -253,9 +256,9 @@ export async function fetchGoogleTrendingBooks(
               bookShelves?: Array<string> | null;
               shelf?: string | null;
             }
-          | string = await fetchEntireBookInfo(isbn, id);
+          | undefined = await fetchEntireBookInfo(isbn, id);
 
-        if (typeof formatted !== 'string') {
+        if (formatted) {
           validBooks.push(formatted);
         } else {
           continue;
@@ -330,6 +333,7 @@ export async function addBookToDB(info: Partial<bookInfo>) {
     }
 
     await client.query('COMMIT');
+    return bookID;
   } catch (e) {
     await client.query('ROLLBACK');
     throw e;
@@ -347,7 +351,7 @@ export async function fetchEntireBookInfo(
       bookShelves: Array<string> | null;
       shelf: string | null;
     }
-  | string
+  | undefined
 > {
   try {
     const bookInfoDatabase = await fetchDatabaseBook(isbn, id);
@@ -366,7 +370,7 @@ export async function fetchEntireBookInfo(
       const fallbackBook = await fetchOpenLibraryBook(isbn);
 
       if (!fallbackBook) {
-        return 'Book Not Found.';
+        return undefined;
       }
       await addBookToDB(fallbackBook);
 
@@ -396,6 +400,6 @@ export async function fetchEntireBookInfo(
     };
   } catch (error) {
     console.error('Error getting Book Information:', error);
-    return 'Error getting book information.';
+    return undefined;
   }
 }

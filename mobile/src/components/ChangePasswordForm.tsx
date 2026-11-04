@@ -27,6 +27,11 @@ import LoadSpinner from './LoadSpinner';
 
 import Toast from '../components/Toast';
 
+import {
+  MIN_PASSWORD_SIZE,
+  MAX_PASSWORD_SIZE,
+} from '../constants/app.constant';
+
 const ChangePasswordForm: React.FC<{
   onClose: () => void;
   onSuccess: (message: string) => void;
@@ -89,12 +94,16 @@ const ChangePasswordForm: React.FC<{
 
   const validateOldPassword = () => {
     setIsValidOldPassword(
-      inputOldPassword.length >= 8 && inputOldPassword.length <= 20,
+      inputOldPassword.length >= MIN_PASSWORD_SIZE &&
+        inputOldPassword.length <= MAX_PASSWORD_SIZE,
     );
   };
 
   const validatePassword = () => {
-    setIsValidPassword(inputPassword.length >= 8 && inputPassword.length <= 20);
+    setIsValidPassword(
+      inputPassword.length >= MIN_PASSWORD_SIZE &&
+        inputPassword.length <= MAX_PASSWORD_SIZE,
+    );
   };
 
   const validatePasswordInputs = () => {
