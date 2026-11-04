@@ -107,9 +107,9 @@ const BookPage: React.FC = () => {
         <IonContent fullscreen>
           {addBookToShelf.isPending ? (
             <LoadSpinner
-              message={`Adding Book To \n\n ${formattedShelfNames
-                .map((item) => '• ' + item)
-                .join('\n')} \n\n ...`}
+              message={`Adding Book To \n\n ${formattedShelfNames.join(
+                '  •  ',
+              )}`}
               fullScreen={true}
             />
           ) : (
