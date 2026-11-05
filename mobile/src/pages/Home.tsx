@@ -6,8 +6,9 @@ import {
   IonToolbar,
   IonGrid,
   useIonViewWillLeave,
+  IonSkeletonText,
 } from '@ionic/react';
-import { sunny, partlySunny, moon, refreshCircle } from 'ionicons/icons';
+import { sunny, partlySunny, moon } from 'ionicons/icons';
 
 import { ReactElement, useState, useRef, useEffect } from 'react';
 
@@ -30,6 +31,8 @@ import { bookInfo } from '@shelflogr/shared';
 import Toast from '../components/Toast';
 
 import ErrorDisplay from '../components/ErrorDisplay';
+
+import LoadCard from '../components/LoadCard';
 
 const Home: React.FC = () => {
   const username = useAuthStore((state) => state.username);
@@ -211,7 +214,7 @@ const Home: React.FC = () => {
 
         <IonGrid className={styles.grid}>
           {activeBookQuery.isLoading ? (
-            <LoadSpinner message={'Getting Active Book'} fullScreen={false} />
+            <LoadCard />
           ) : activeBookQuery.isSuccess &&
             activeBookQuery.data.book &&
             Object.keys(activeBookQuery.data.book).length > 0 ? (
@@ -252,69 +255,62 @@ const Home: React.FC = () => {
             )
           )}
 
-          {activeBookQuery.isSuccess &&
-            activeBookQuery.data?.category !== null &&
-            (trendingCategoryBookQuery.isFetching ? (
-              <LoadSpinner
-                message={`Getting Recommendations about ${
-                  activeBookQuery.data?.category || 'Your Favorite Book'
-                }`}
-                fullScreen={false}
-              />
-            ) : trendingCategoryBookQuery.isSuccess &&
-              trendingCategoryBookQuery.data.trendingBooksInfo.length > 0 ? (
-              <div className={styles.sectionContainer}>
-                <div className={styles.sectionHeader}>
-                  <span className={styles.sectionEyebrow}>
-                    Because you liked
-                  </span>
-                  <h2 className={styles.sectionTitle}>
-                    {activeBookQuery.data!.category}
-                  </h2>
-                </div>
-
-                {
-                  <BookSwiper
-                    books={trendingCategoryBookQuery.data.trendingBooksInfo}
-                  />
-                }
-              </div>
-            ) : (
-              <ErrorDisplay
-                title={`Couldn't Get Recommendations About ${
-                  activeBookQuery.data?.category || 'Your Favorite Book'
-                }`}
-                onRetry={() => trendingCategoryBookQuery.refetch()}
-                compact={true}
-              />
-            ))}
-
-          {trendingBookQuery.isFetching ? (
-            <LoadSpinner
-              message={`Getting Trending Books`}
-              fullScreen={false}
-            />
-          ) : activeBookQuery.isSuccess &&
-            trendingBookQuery.isSuccess &&
-            trendingBookQuery.data.trendingBooksInfo &&
-            trendingBookQuery.data.trendingBooksInfo.length > 0 ? (
+          {(activeBookQuery.isLoading ||
+            Boolean(activeBookQuery.data?.category)) && (
             <div className={styles.sectionContainer}>
               <div className={styles.sectionHeader}>
+                <span className={styles.sectionEyebrow}>Because you liked</span>
                 <h2 className={styles.sectionTitle}>
-                  What's Trending This Week
+                  {activeBookQuery.isSuccess ? (
+                    activeBookQuery.data!.category
+                  ) : (
+                    <IonSkeletonText animated={true}></IonSkeletonText>
+                  )}
                 </h2>
               </div>
-              {<BookSwiper books={trendingBookQuery.data.trendingBooksInfo} />}
+              {activeBookQuery.isLoading ||
+              trendingCategoryBookQuery.isLoading ? (
+                <LoadCard />
+              ) : trendingCategoryBookQuery.isSuccess &&
+                trendingCategoryBookQuery.data.trendingBooksInfo.length > 0 ? (
+                <BookSwiper
+                  books={trendingCategoryBookQuery.data.trendingBooksInfo}
+                />
+              ) : (
+                trendingCategoryBookQuery.isError && (
+                  <ErrorDisplay
+                    title={`Couldn't Get Recommendations About ${
+                      activeBookQuery.data?.category || 'Your Favorite Book'
+                    }`}
+                    onRetry={() => trendingCategoryBookQuery.refetch()}
+                    compact={true}
+                  />
+                )
+              )}
             </div>
-          ) : (
-            trendingBookQuery.isError && (
-              <ErrorDisplay
-                title={`Couldn't Get Trending Books`}
-                onRetry={() => trendingBookQuery.refetch()}
-                compact={true}
-              />
-            )
           )}
+
+          <div className={styles.sectionContainer}>
+            <div className={styles.sectionHeader}>
+              <h2 className={styles.sectionTitle}>What's Trending This Week</h2>
+            </div>
+
+            {trendingBookQuery.isLoading ? (
+              <LoadCard />
+            ) : trendingBookQuery.isSuccess &&
+              trendingBookQuery.data.trendingBooksInfo &&
+              trendingBookQuery.data.trendingBooksInfo.length > 0 ? (
+              <BookSwiper books={trendingBookQuery.data.trendingBooksInfo} />
+            ) : (
+              trendingBookQuery.isError && (
+                <ErrorDisplay
+                  title={`Couldn't Get Trending Books`}
+                  onRetry={() => trendingBookQuery.refetch()}
+                  compact={true}
+                />
+              )
+            )}
+          </div>
         </IonGrid>
       </IonContent>
     </IonPage>

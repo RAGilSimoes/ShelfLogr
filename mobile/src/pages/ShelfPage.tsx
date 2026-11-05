@@ -94,7 +94,7 @@ const ShelfPage: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
-        {shelfBooksQuery.isFetching ? (
+        {shelfBooksQuery.isLoading ? (
           <LoadSpinner
             message={'Fetching the books from this shelf'}
             fullScreen={true}

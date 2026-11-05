@@ -311,7 +311,7 @@ const EditShelvesForm: React.FC<{
           message={'Updating Shelf Information...'}
           fullScreen={false}
         />
-      ) : shelvesNamesQuery.isFetching ? (
+      ) : shelvesNamesQuery.isLoading ? (
         <LoadSpinner
           message={'Getting Shelves Information...'}
           fullScreen={false}

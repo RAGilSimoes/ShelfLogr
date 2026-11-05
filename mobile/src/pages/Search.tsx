@@ -22,6 +22,8 @@ import ErrorDisplay from '../components/ErrorDisplay';
 
 import { useHistory } from 'react-router';
 
+import LoadCard from '../components/LoadCard';
+
 const availableNYTLists: Array<{ name: string; encoded: string }> = [
   {
     name: 'Combined Print & E-Book Fiction',

@@ -277,10 +277,10 @@ const Add: React.FC = () => {
           className={styles.alert}
         ></IonAlert>
 
-        {bookInfoQuery.isFetching || addBookToShelf.isPending ? (
+        {bookInfoQuery.isLoading || addBookToShelf.isPending ? (
           <LoadSpinner
             message={
-              bookInfoQuery.isFetching
+              bookInfoQuery.isLoading
                 ? 'Getting Book Info...'
                 : addBookToShelf.isPending
                 ? `Adding Book To \n\n ${formattedShelfNames
