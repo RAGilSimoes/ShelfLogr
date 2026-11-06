@@ -1026,10 +1026,6 @@ app.get(
   },
 );
 
-app.get('/random', (req: Request, res: Response) => {
-  res.json({ message: Math.random() * 100 });
-});
-
 // Iniciar o servidor
 app.listen(PORT, () => {
   console.log(`🚀 Servidor a correr em 127.0.0.1:${PORT}`);
