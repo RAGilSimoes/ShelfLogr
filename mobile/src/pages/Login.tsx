@@ -210,6 +210,16 @@ const Login: React.FC = () => {
                 <IonInputPasswordToggle slot="end" />
               </IonInput>
             </IonItem>
+
+            <div className={styles.forgotPasswordContainer}>
+              <IonRouterLink
+                routerLink="/reset-password"
+                className={styles.forgotPasswordLink}
+              >
+                Forgot Password?
+              </IonRouterLink>
+            </div>
+
             <div className="action-group">
               <IonButton
                 disabled={!isValidForm}

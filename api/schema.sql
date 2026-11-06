@@ -62,6 +62,15 @@ CREATE TABLE "user_reviews" (
 	"liked" boolean NOT NULL,
 	CONSTRAINT "user_book" PRIMARY KEY("user_id","book_id")
 );
+CREATE TABLE "user_code" (
+	"user_id" uuid,
+	"code_hash" text NOT NULL,
+	"created_at" timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	"tries" smallint DEFAULT 0 NOT NULL,
+	"blocked_until" timestamp with time zone,
+	"expires_at" timestamp with time zone NOT NULL,
+	CONSTRAINT "unique_user" PRIMARY KEY("user_id")
+);
 CREATE INDEX "book_category_index" ON "book_category" ("category_id");
 CREATE INDEX "book_index" ON "shelf_books" ("book_id");
 CREATE INDEX "user_shelf_index" ON "user_shelf" ("user_id");
@@ -75,3 +84,4 @@ ALTER TABLE "user_category" ADD CONSTRAINT "user" FOREIGN KEY ("user_id") REFERE
 ALTER TABLE "user_shelf" ADD CONSTRAINT "user" FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE CASCADE;
 ALTER TABLE "user_reviews" ADD CONSTRAINT "book" FOREIGN KEY ("book_id") REFERENCES "book"("id") ON DELETE CASCADE;
 ALTER TABLE "user_reviews" ADD CONSTRAINT "user" FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE CASCADE;
+ALTER TABLE "user_code" ADD CONSTRAINT "code_user_id" FOREIGN KEY ("user_id") REFERENCES "user"("id") ON DELETE CASCADE;

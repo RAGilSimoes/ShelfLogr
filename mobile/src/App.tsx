@@ -6,6 +6,7 @@ import Login from './pages/Login';
 import Tabs from './components/Tabs';
 import LoadSpinner from './components/LoadSpinner';
 import Register from './pages/Register';
+import ResetPage from './pages/ResetPage';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -77,7 +78,7 @@ const AppRouter: React.FC = () => {
     const verifyToken = async () => {
       setIsLoading(true);
       const token = await checkToken();
-      const publicPaths = ['/login', '/register'];
+      const publicPaths = ['/login', '/register', '/reset-password'];
       const isPublicPath = publicPaths.includes(location.pathname);
 
       if (token) {
@@ -149,6 +150,9 @@ const AppRouter: React.FC = () => {
           </Route>
           <Route exact path="/register">
             <Register />
+          </Route>
+          <Route exact path="/reset-password">
+            <ResetPage />
           </Route>
           <Route path="/app">
             <Tabs />

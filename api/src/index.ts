@@ -4,6 +4,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import bcrypt from 'bcrypt';
 import rateLimit from 'express-rate-limit';
+import crypto from 'node:crypto';
 
 import { pool } from './db.js';
 
@@ -1021,10 +1022,98 @@ app.get(
       return res.status(200).json(trending);
     } catch (error) {
       console.error('Database query failed:', error);
-      res.status(500).json({ error: 'Error getting book recommendations.' });
+      return res
+        .status(500)
+        .json({ error: 'Error getting book recommendations.' });
     }
   },
 );
+
+app.post('/api/forgot-password', async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+
+    const getUserIDQuery = 'SELECT id FROM "user" WHERE email=$1;';
+
+    const { rows: userIDResult } = await pool.query(getUserIDQuery, [email]);
+
+    if (userIDResult && userIDResult.length > 0) {
+      const userID = userIDResult[0].id;
+
+      const verifyUserBlockedQuery =
+        'SELECT * FROM "user_code" WHERE user_id=$1 AND blocked_until IS NOT NULL AND blocked_until > NOW();';
+
+      const { rows: userBlockedResults } = await pool.query(
+        verifyUserBlockedQuery,
+        [userID],
+      );
+
+      if (userBlockedResults && userBlockedResults.length > 0) {
+        return res.status(423).json({
+          error: 'Too many tries. Try again in a few moments',
+        });
+      }
+
+      const verifyUserCodeQuery = `SELECT * FROM "user_code" WHERE user_id=$1 AND created_at > NOW() - INTERVAL '2 minutes';`;
+
+      const { rows: userCodeResults } = await pool.query(verifyUserCodeQuery, [
+        userID,
+      ]);
+
+      if (userCodeResults && userCodeResults.length > 0) {
+        return res.status(429).json({
+          error: 'Wait before requesting another code.',
+        });
+      } else {
+        const client = await pool.connect();
+
+        try {
+          await client.query('BEGIN');
+
+          const deleteCodeQuery = 'DELETE FROM "user_code" WHERE user_id=$1;';
+
+          const { rows: deletedCodeResults } = await client.query(
+            deleteCodeQuery,
+            [userID],
+          );
+
+          if (deletedCodeResults) {
+            const code = String(crypto.randomInt(100000, 1000000));
+
+            const codeHash = await bcrypt.hash(code, saltRounds);
+
+            const insertOTPCodeQuery = `INSERT INTO "user_code"(user_id, code_hash, created_at, expires_at) VALUES($1, $2, NOW(), NOW() + INTERVAL '15 minutes');`;
+
+            const { rows: insertOTPCodeResults } = await client.query(
+              insertOTPCodeQuery,
+              [userID, codeHash],
+            );
+
+            if (insertOTPCodeResults) {
+              await client.query('COMMIT');
+              return res.status(200).json({
+                message: 'The code was sent to your email',
+              });
+            }
+          }
+        } catch (error) {
+          console.log(error);
+          await client.query('ROLLBACK');
+          return res.status(500).json({
+            error: `Error creating code.`,
+          });
+        } finally {
+          client.release();
+        }
+      }
+    } else {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ error: 'Error generating OTP code.' });
+  }
+});
 
 // Iniciar o servidor
 app.listen(PORT, () => {
