@@ -263,6 +263,15 @@ const ResetPage: React.FC = () => {
                 >
                   Generate Code
                 </IonButton>
+                <IonButton
+                  disabled={!isValidEmail}
+                  type="button"
+                  expand="block"
+                  fill="outline"
+                  onClick={() => setIsCodeSent((prev) => !prev)}
+                >
+                  I have a code
+                </IonButton>
               </div>
             </form>
           ) : (

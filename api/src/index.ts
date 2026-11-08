@@ -31,6 +31,8 @@ import {
   validateBookReview,
 } from '@shelflogr/shared';
 
+import { sendEmail } from './services/mailer.service.js';
+
 dotenv.config();
 
 // const authLimiter = rateLimit({
@@ -1178,11 +1180,18 @@ app.post('/api/forgot-password', async (req: Request, res: Response) => {
               );
 
               if (insertOTPCodeResults) {
-                console.log(code);
-                await client.query('COMMIT');
-                return res.status(200).json({
-                  message: 'The code was sent to your email',
-                });
+                const result = await sendEmail(email, code);
+                if (result) {
+                  await client.query('COMMIT');
+                  return res.status(200).json({
+                    message: 'The code was sent to your email',
+                  });
+                } else {
+                  await client.query('ROLLBACK');
+                  return res.status(503).json({
+                    error: 'Error sending email',
+                  });
+                }
               }
             }
           } catch (error) {
