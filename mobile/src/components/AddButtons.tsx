@@ -27,10 +27,7 @@ import LoadSpinner from './LoadSpinner';
 
 import Toast from '../components/Toast';
 
-import {
-  MIN_SHELF_NAME_SIZE,
-  MAX_SHELF_NAME_SIZE,
-} from '../constants/app.constant';
+import { MIN_SHELF_NAME_SIZE, MAX_SHELF_NAME_SIZE } from '@shelflogr/shared';
 
 const AddButtons: React.FC<{
   defaultValues?: {

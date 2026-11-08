@@ -25,10 +25,7 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import LoadSpinner from './LoadSpinner';
 
-import {
-  MIN_USERNAME_SIZE,
-  MAX_USERNAME_SIZE,
-} from '../constants/app.constant';
+import { validateEmail, validateUserName } from '@shelflogr/shared';
 
 const EditProfileForm: React.FC<{
   onClose: () => void;
@@ -59,10 +56,6 @@ const EditProfileForm: React.FC<{
     error: 'error',
   };
 
-  const validateEmail = (email: string) => {
-    return email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
-  };
-
   const validate = (event: Event) => {
     const target = event.target as HTMLInputElement;
     const value = target.value;
@@ -88,18 +81,9 @@ const EditProfileForm: React.FC<{
     setIsTouched(true);
   };
 
-  const validateUsername = () => {
-    setIsValidUsername(
-      inputUsername.length >= MIN_USERNAME_SIZE &&
-        inputUsername.length <= MAX_USERNAME_SIZE,
-    );
-  };
-
   useEffect(() => {
-    validateEmail(inputEmail) !== null
-      ? setIsValidEmail(true)
-      : setIsValidEmail(false);
-    validateUsername();
+    setIsValidEmail(validateEmail(inputEmail));
+    setIsValidUsername(validateUserName(inputUsername));
   }, [inputEmail, inputUsername]);
 
   const isValidForm =

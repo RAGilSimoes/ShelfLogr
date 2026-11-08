@@ -32,11 +32,13 @@ import axios from 'axios';
 import LoadSpinner from './LoadSpinner';
 
 import {
+  validateInputSubject,
+  validateInputText,
   MIN_SUPPORT_SUBJECT_SIZE,
   MAX_SUPPORT_SUBJECT_SIZE,
   MIN_SUPPORT_TEXT_SIZE,
   MAX_SUPPORT_TEXT_SIZE,
-} from '../constants/app.constant';
+} from '@shelflogr/shared';
 
 const SupportForm: React.FC<{
   onClose: () => void;
@@ -74,27 +76,13 @@ const SupportForm: React.FC<{
     question: helpCircleOutline,
   };
 
-  const validateSubject = () => {
-    setIsValidInputSubject(
-      inputSubject.trim().length >= MIN_SUPPORT_SUBJECT_SIZE &&
-        inputSubject.trim().length <= MAX_SUPPORT_SUBJECT_SIZE,
-    );
-  };
-
-  const validateText = () => {
-    setIsValidInputText(
-      inputText.length >= MIN_SUPPORT_TEXT_SIZE &&
-        inputText.length <= MAX_SUPPORT_TEXT_SIZE,
-    );
-  };
-
   const validateType = () => {
     setIsValidInputType(inputType !== '');
   };
 
   useEffect(() => {
-    validateText();
-    validateSubject();
+    setIsValidInputSubject(validateInputSubject(inputSubject));
+    setIsValidInputText(validateInputText(inputText));
     validateType();
   }, [inputText, inputSubject, inputType]);
 

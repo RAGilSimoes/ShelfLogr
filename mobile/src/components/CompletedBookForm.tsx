@@ -18,7 +18,7 @@ import { star, globe, lockClosed } from 'ionicons/icons';
 
 import { useEffect, useState } from 'react';
 
-import { MAX_BOOK_REVIEW_SIZE } from '../constants/app.constant';
+import { MAX_BOOK_REVIEW_SIZE } from '@shelflogr/shared';
 
 const CompletedBookForm: React.FC<{
   onReviewChange: (

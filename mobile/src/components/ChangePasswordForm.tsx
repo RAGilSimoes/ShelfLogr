@@ -27,10 +27,7 @@ import LoadSpinner from './LoadSpinner';
 
 import Toast from '../components/Toast';
 
-import {
-  MIN_PASSWORD_SIZE,
-  MAX_PASSWORD_SIZE,
-} from '../constants/app.constant';
+import { validatePassword } from '@shelflogr/shared';
 
 const ChangePasswordForm: React.FC<{
   onClose: () => void;
@@ -92,27 +89,13 @@ const ChangePasswordForm: React.FC<{
     setIsTouched(true);
   };
 
-  const validateOldPassword = () => {
-    setIsValidOldPassword(
-      inputOldPassword.length >= MIN_PASSWORD_SIZE &&
-        inputOldPassword.length <= MAX_PASSWORD_SIZE,
-    );
-  };
-
-  const validatePassword = () => {
-    setIsValidPassword(
-      inputPassword.length >= MIN_PASSWORD_SIZE &&
-        inputPassword.length <= MAX_PASSWORD_SIZE,
-    );
-  };
-
   const validatePasswordInputs = () => {
     setIsValidVerifyPassword(inputPassword == inputVerifyPassword);
   };
 
   useEffect(() => {
-    validateOldPassword();
-    validatePassword();
+    setIsValidOldPassword(validatePassword(inputOldPassword));
+    setIsValidPassword(validatePassword(inputPassword));
     validatePasswordInputs();
   }, [inputOldPassword, inputPassword, inputVerifyPassword]);
 

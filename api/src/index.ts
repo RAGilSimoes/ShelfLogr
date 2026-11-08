@@ -4,6 +4,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import bcrypt from 'bcrypt';
 import rateLimit from 'express-rate-limit';
+import crypto from 'node:crypto';
 
 import { pool } from './db.js';
 
@@ -18,6 +19,19 @@ import {
   addBookToDB,
 } from './utils/bookInfo.js';
 import { formatGoogleBook } from './utils/book.mapper.js';
+
+import {
+  validateEmail,
+  validatePassword,
+  validateUserName,
+  validateInputSubject,
+  validateInputText,
+  validateShelfName,
+  validateCode,
+  validateBookReview,
+} from '@shelflogr/shared';
+
+import { sendEmail } from './services/mailer.service.js';
 
 dotenv.config();
 
@@ -69,28 +83,41 @@ app.post('/api/login', async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
 
-    const { rows } = await pool.query('SELECT * FROM "user" WHERE email = $1', [
-      email,
-    ]);
+    const isValidEmail = validateEmail(email);
+    const isValidPassword = validatePassword(password);
 
-    if (rows.length === 0) {
-      return res.status(401).json({ error: 'Incorrect Email or Password.' });
+    if (isValidEmail && isValidPassword) {
+      const { rows } = await pool.query(
+        'SELECT * FROM "user" WHERE email = $1',
+        [email],
+      );
+
+      if (rows.length === 0) {
+        return res.status(401).json({ error: 'Incorrect Email or Password.' });
+      }
+
+      const user = rows[0];
+
+      const deleteResetCodeQuery = 'DELETE FROM user_code WHERE user_id=$1;';
+
+      await pool.query(deleteResetCodeQuery, [user.id]);
+
+      const dbPassword = user.password;
+
+      const isPasswordValid = await bcrypt.compare(password, dbPassword);
+
+      if (!isPasswordValid) {
+        return res.status(401).json({ error: 'Incorrect Email or Password.' });
+      }
+
+      delete user.password;
+
+      const token = generateToken(user.id, user.email, user.name);
+
+      return res.status(200).json({ message: 'Sucess', token });
+    } else {
+      return res.status(400).json({ error: 'Invalid credentials' });
     }
-
-    const user = rows[0];
-    const dbPassword = user.password;
-
-    const isPasswordValid = await bcrypt.compare(password, dbPassword);
-
-    if (!isPasswordValid) {
-      return res.status(401).json({ error: 'Incorrect Email or Password.' });
-    }
-
-    delete user.password;
-
-    const token = generateToken(user.id, user.email, user.name);
-
-    return res.status(200).json({ message: 'Sucess', token });
   } catch (error) {
     return res.status(500).json({ error: 'Internal error processing login' });
   }
@@ -100,50 +127,58 @@ app.post('/api/register', async (req: Request, res: Response) => {
   try {
     const { email, username, password } = req.body;
 
-    const client = await pool.connect();
+    const isValidEmail = validateEmail(email);
+    const isValidPassword = validatePassword(password);
+    const isValidUsername = validateUserName(username);
 
-    try {
-      await client.query('BEGIN');
+    if (isValidEmail && isValidPassword && isValidUsername) {
+      const client = await pool.connect();
 
-      const encryptedPassword = await bcrypt.hash(password, saltRounds);
-      const { rows: insertResult } = await client.query(
-        'INSERT INTO "user"(name, email, password) VALUES ($1, $2, $3) RETURNING id',
-        [username, email, encryptedPassword],
-      );
+      try {
+        await client.query('BEGIN');
 
-      const userID = insertResult[0]!.id;
+        const encryptedPassword = await bcrypt.hash(password, saltRounds);
+        const { rows: insertResult } = await client.query(
+          'INSERT INTO "user"(name, email, password) VALUES ($1, $2, $3) RETURNING id',
+          [username, email, encryptedPassword],
+        );
 
-      const token = generateToken(userID, email, username);
+        const userID = insertResult[0]!.id;
 
-      const createDefaultTablesQuery =
-        "INSERT INTO user_shelf(user_id, name, is_system) VALUES ($1,'reading',true),($1,'wish',true),($1,'completed',true)";
+        const token = generateToken(userID, email, username);
 
-      await client.query(createDefaultTablesQuery, [userID]);
+        const createDefaultTablesQuery =
+          "INSERT INTO user_shelf(user_id, name, is_system) VALUES ($1,'reading',true),($1,'wish',true),($1,'completed',true)";
 
-      await client.query('COMMIT');
+        await client.query(createDefaultTablesQuery, [userID]);
 
-      return res.status(201).json({ message: 'Success', token });
-    } catch (error: any) {
-      const errorCode = error.code;
-      console.error(error);
+        await client.query('COMMIT');
 
-      await client.query('ROLLBACK').catch(() => {});
+        return res.status(201).json({ message: 'Success', token });
+      } catch (error: any) {
+        const errorCode = error.code;
+        console.error(error);
 
-      if (errorCode === '23505') {
-        const detail: string = error.detail;
-        const local = detail.includes('name');
+        await client.query('ROLLBACK').catch(() => {});
 
-        const message = local
-          ? 'Username already in use'
-          : 'Email already in use';
-        return res.status(409).json({ error: message });
-      } else {
-        return res
-          .status(500)
-          .json({ error: 'Internal error processing registration' });
+        if (errorCode === '23505') {
+          const detail: string = error.detail;
+          const local = detail.includes('name');
+
+          const message = local
+            ? 'Username already in use'
+            : 'Email already in use';
+          return res.status(409).json({ error: message });
+        } else {
+          return res
+            .status(500)
+            .json({ error: 'Internal error processing registration' });
+        }
+      } finally {
+        client.release();
       }
-    } finally {
-      client.release();
+    } else {
+      return res.status(400).json({ error: 'Invalid credentials' });
     }
   } catch (error) {
     console.error(error);
@@ -160,51 +195,64 @@ app.post(
     try {
       const { id, email } = req.token;
 
-      const { type, subject, text } = req.body;
+      const isValidEmail = validateEmail(email);
 
-      const colors: Record<string, number> = {
-        bug: 0xeb445a,
-        feature: 0x3880ff,
-        question: 0xffb800,
-      };
+      if (isValidEmail) {
+        const { type, subject, text } = req.body;
 
-      const discordPayload = {
-        embeds: [
-          {
-            title: `[${type.toUpperCase()}] ${subject}`,
-            description: text,
-            color: colors[type] || 0x3880ff,
-            fields: [
+        const isValidSubject = validateInputSubject(subject);
+        const isValidText = validateInputText(text);
+
+        if (isValidSubject && isValidText) {
+          const colors: Record<string, number> = {
+            bug: 0xeb445a,
+            feature: 0x3880ff,
+            question: 0xffb800,
+          };
+
+          const discordPayload = {
+            embeds: [
               {
-                name: 'From',
-                value: `${email} (ID: ${id})`,
-                inline: true,
-              },
-              {
-                name: 'Category',
-                value: type.charAt(0).toUpperCase() + type.slice(1),
-                inline: true,
+                title: `[${type.toUpperCase()}] ${subject}`,
+                description: text,
+                color: colors[type] || 0x3880ff,
+                fields: [
+                  {
+                    name: 'From',
+                    value: `${email} (ID: ${id})`,
+                    inline: true,
+                  },
+                  {
+                    name: 'Category',
+                    value: type.charAt(0).toUpperCase() + type.slice(1),
+                    inline: true,
+                  },
+                ],
+                timestamp: new Date().toISOString(),
+                footer: {
+                  text: 'ShelfLogr Support System',
+                },
               },
             ],
-            timestamp: new Date().toISOString(),
-            footer: {
-              text: 'ShelfLogr Support System',
-            },
-          },
-        ],
-      };
+          };
 
-      const response = await fetch(`${process.env.DISCORD_BOT_WEBHOOK}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(discordPayload),
-      });
+          const response = await fetch(`${process.env.DISCORD_BOT_WEBHOOK}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(discordPayload),
+          });
 
-      if (!response.ok) {
-        throw new Error('Failed to send Discord webhook');
+          if (!response.ok) {
+            throw new Error('Failed to send Discord webhook');
+          }
+
+          return res.status(200).json({ message: 'Message sent successfully' });
+        } else {
+          return res.status(400).json({ error: 'Invalid input' });
+        }
+      } else {
+        return res.status(400).json({ error: 'Invalid credentials' });
       }
-
-      return res.status(200).json({ message: 'Message sent successfully' });
     } catch (error) {
       console.log(error);
       return res.status(500).json({ error: 'Error sending message. ' });
@@ -458,19 +506,27 @@ app.patch(
 
       const { name, shelfID } = req.body;
 
-      const updateShelfNameQuery =
-        'UPDATE "user_shelf" SET name=$1 WHERE id=$2 AND user_id=$3 RETURNING id;';
+      const isValidShelfName = validateShelfName(name);
 
-      const { rows } = await pool.query(updateShelfNameQuery, [
-        name,
-        shelfID,
-        id,
-      ]);
+      if (isValidShelfName) {
+        const updateShelfNameQuery =
+          'UPDATE "user_shelf" SET name=$1 WHERE id=$2 AND user_id=$3 RETURNING id;';
 
-      if (rows.length > 0) {
-        return res.status(200).json({ message: 'Shelf updated successfully' });
+        const { rows } = await pool.query(updateShelfNameQuery, [
+          name,
+          shelfID,
+          id,
+        ]);
+
+        if (rows.length > 0) {
+          return res
+            .status(200)
+            .json({ message: 'Shelf updated successfully' });
+        } else {
+          return res.status(404).json({ error: 'Shelf not found.' });
+        }
       } else {
-        return res.status(404).json({ error: 'Shelf not found.' });
+        return res.status(400).json({ error: 'Invalid shelf name' });
       }
     } catch (error: any) {
       const errorCode = error.code;
@@ -496,15 +552,22 @@ app.post(
 
       const { name } = req.body;
 
-      const insertShelfQuery =
-        'INSERT INTO "user_shelf"(user_id, name, is_system, added_at) VALUES ($1, $2, false, CURRENT_TIMESTAMP) RETURNING id;';
+      const isValidShelfName = validateShelfName(name);
 
-      const { rows } = await pool.query(insertShelfQuery, [id, name]);
+      if (isValidShelfName) {
+        const insertShelfQuery =
+          'INSERT INTO "user_shelf"(user_id, name, is_system, added_at) VALUES ($1, $2, false, CURRENT_TIMESTAMP) RETURNING id;';
 
-      if (rows.length > 0) {
-        return res
-          .status(200)
-          .json({ shelfID: rows[0].id, message: 'Shelf created successfully' });
+        const { rows } = await pool.query(insertShelfQuery, [id, name]);
+
+        if (rows.length > 0) {
+          return res.status(200).json({
+            shelfID: rows[0].id,
+            message: 'Shelf created successfully',
+          });
+        }
+      } else {
+        return res.status(400).json({ error: 'Invalid shelf name' });
       }
     } catch (error: any) {
       const errorCode = error.code;
@@ -556,41 +619,53 @@ app.patch(
 
       const { oldPassword, password } = req.body;
 
-      const getProfilePasswordQuery =
-        'SELECT password FROM "user" WHERE id=$1;';
+      const isValidOldPassword = validatePassword(oldPassword);
+      const isValidPassword = validatePassword(password);
 
-      const { rows: oldPasswordResults } = await pool.query(
-        getProfilePasswordQuery,
-        [id],
-      );
+      if (isValidOldPassword && isValidPassword) {
+        const getProfilePasswordQuery =
+          'SELECT password FROM "user" WHERE id=$1;';
 
-      if (oldPasswordResults.length > 0) {
-        const oldPasswordMatch = await bcrypt.compare(
-          oldPassword,
-          oldPasswordResults[0].password,
+        const { rows: oldPasswordResults } = await pool.query(
+          getProfilePasswordQuery,
+          [id],
         );
 
-        if (oldPasswordMatch) {
-          const encryptedNewPassword = await bcrypt.hash(password, saltRounds);
-
-          const updatePasswordQuery =
-            'UPDATE "user" SET password=$1, updated_at=CURRENT_TIMESTAMP WHERE id=$2 RETURNING id;';
-
-          const { rows: insertPasswordResult } = await pool.query(
-            updatePasswordQuery,
-            [encryptedNewPassword, id],
+        if (oldPasswordResults.length > 0) {
+          const oldPasswordMatch = await bcrypt.compare(
+            oldPassword,
+            oldPasswordResults[0].password,
           );
 
-          if (insertPasswordResult.length > 0) {
+          if (oldPasswordMatch) {
+            const encryptedNewPassword = await bcrypt.hash(
+              password,
+              saltRounds,
+            );
+
+            const updatePasswordQuery =
+              'UPDATE "user" SET password=$1, updated_at=CURRENT_TIMESTAMP WHERE id=$2 RETURNING id;';
+
+            const { rows: insertPasswordResult } = await pool.query(
+              updatePasswordQuery,
+              [encryptedNewPassword, id],
+            );
+
+            if (insertPasswordResult.length > 0) {
+              return res
+                .status(200)
+                .json({ message: 'Password updated successfully' });
+            }
+          } else {
             return res
-              .status(200)
-              .json({ message: 'Password updated successfully' });
+              .status(400)
+              .json({ error: `Incorrect current password` });
           }
         } else {
-          return res.status(400).json({ error: `Incorrect current password` });
+          return res.status(404).json({ error: 'User not found' });
         }
       } else {
-        return res.status(404).json({ error: 'User not found' });
+        return res.status(400).json({ error: 'Invalid inputs.' });
       }
     } catch (error) {
       console.log(error);
@@ -700,6 +775,7 @@ app.post(
     let bookID: string | undefined = undefined;
     const { id: userID } = req.token;
     const { book, requiredShelf, reviewData, optionalShelves } = req.body;
+
     try {
       bookID = book.id ? book.id : undefined;
 
@@ -786,17 +862,28 @@ app.post(
           review: string | null;
         } = reviewData;
 
-        const displayInsert =
-          parsedReviewData.display === 'public' ? true : false;
+        const isValidBookReview = parsedReviewData.review
+          ? validateBookReview(parsedReviewData.review)
+          : true;
 
-        await client.query(insertUserReview, [
-          userID,
-          bookID,
-          parsedReviewData.rating,
-          parsedReviewData.review || null,
-          displayInsert,
-          parsedReviewData.liked,
-        ]);
+        if (isValidBookReview) {
+          const displayInsert =
+            parsedReviewData.display === 'public' ? true : false;
+
+          await client.query(insertUserReview, [
+            userID,
+            bookID,
+            parsedReviewData.rating,
+            parsedReviewData.review,
+            displayInsert,
+            parsedReviewData.liked,
+          ]);
+        } else {
+          await client.query('ROLLBACK');
+          return res
+            .status(400)
+            .json({ error: 'Review exceeds maximum allowed size' });
+        }
       } else {
         const deleteUserReview =
           'DELETE FROM user_reviews ur WHERE ur.user_id=$1 AND ur.book_id=$2;';
@@ -1021,13 +1108,234 @@ app.get(
       return res.status(200).json(trending);
     } catch (error) {
       console.error('Database query failed:', error);
-      res.status(500).json({ error: 'Error getting book recommendations.' });
+      return res
+        .status(500)
+        .json({ error: 'Error getting book recommendations.' });
     }
   },
 );
 
-app.get('/random', (req: Request, res: Response) => {
-  res.json({ message: Math.random() * 100 });
+app.post('/api/forgot-password', async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+
+    const isValidEmail = validateEmail(email);
+
+    if (isValidEmail) {
+      const getUserIDQuery = 'SELECT id FROM "user" WHERE email=$1;';
+
+      const { rows: userIDResult } = await pool.query(getUserIDQuery, [email]);
+
+      if (userIDResult && userIDResult.length > 0) {
+        const userID = userIDResult[0].id;
+
+        const verifyUserBlockedQuery =
+          'SELECT * FROM "user_code" WHERE user_id=$1 AND blocked_until IS NOT NULL AND blocked_until > NOW();';
+
+        const { rows: userBlockedResults } = await pool.query(
+          verifyUserBlockedQuery,
+          [userID],
+        );
+
+        if (userBlockedResults && userBlockedResults.length > 0) {
+          return res.status(423).json({
+            error: 'Too many tries. Try again in a few moments',
+          });
+        }
+
+        const verifyUserCodeQuery = `SELECT * FROM "user_code" WHERE user_id=$1 AND created_at > NOW() - INTERVAL '2 minutes';`;
+
+        const { rows: userCodeResults } = await pool.query(
+          verifyUserCodeQuery,
+          [userID],
+        );
+
+        if (userCodeResults && userCodeResults.length > 0) {
+          return res.status(429).json({
+            error: 'Wait before requesting another code.',
+          });
+        } else {
+          const client = await pool.connect();
+
+          try {
+            await client.query('BEGIN');
+
+            const deleteCodeQuery = 'DELETE FROM "user_code" WHERE user_id=$1;';
+
+            const { rows: deletedCodeResults } = await client.query(
+              deleteCodeQuery,
+              [userID],
+            );
+
+            if (deletedCodeResults) {
+              const code = String(crypto.randomInt(100000, 1000000));
+
+              const codeHash = await bcrypt.hash(code, saltRounds);
+
+              const insertOTPCodeQuery = `INSERT INTO "user_code"(user_id, code_hash, created_at, expires_at) VALUES($1, $2, NOW(), NOW() + INTERVAL '15 minutes');`;
+
+              const { rows: insertOTPCodeResults } = await client.query(
+                insertOTPCodeQuery,
+                [userID, codeHash],
+              );
+
+              if (insertOTPCodeResults) {
+                const result = await sendEmail(email, code);
+                if (result) {
+                  await client.query('COMMIT');
+                  return res.status(200).json({
+                    message: 'The code was sent to your email',
+                  });
+                } else {
+                  await client.query('ROLLBACK');
+                  return res.status(503).json({
+                    error: 'Error sending email',
+                  });
+                }
+              }
+            }
+          } catch (error) {
+            console.log(error);
+            await client.query('ROLLBACK');
+            return res.status(500).json({
+              error: `Error creating code.`,
+            });
+          } finally {
+            client.release();
+          }
+        }
+      } else {
+        return res
+          .status(200)
+          .json({ message: 'If the account exists, we sent an email.' });
+      }
+    } else {
+      return res.status(400).json({ error: 'Invalid credentials' });
+    }
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ error: 'Error generating OTP code.' });
+  }
+});
+
+app.post('/api/reset-password', async (req: Request, res: Response) => {
+  try {
+    const maxTries = 5;
+    const { email, code, password } = req.body;
+
+    const isValidEmail = validateEmail(email);
+    const isValidPassword = validatePassword(password);
+    const isValidCode = validateCode(code);
+
+    if (isValidEmail && isValidPassword && isValidCode) {
+      const getUserQuery = 'SELECT * FROM "user" WHERE email=$1;';
+
+      const { rows: userResult } = await pool.query(getUserQuery, [email]);
+
+      if (userResult && userResult.length > 0) {
+        const userID = userResult[0].id;
+        const username = userResult[0].name;
+
+        const verifyUserBlockedQuery =
+          'SELECT * FROM "user_code" WHERE user_id=$1 AND blocked_until IS NOT NULL AND blocked_until > NOW();';
+
+        const { rows: userBlockedResults } = await pool.query(
+          verifyUserBlockedQuery,
+          [userID],
+        );
+
+        if (userBlockedResults && userBlockedResults.length > 0) {
+          return res.status(423).json({
+            error: 'Too many tries. Try again in a few moments',
+          });
+        }
+
+        const getDBCodeQuery =
+          'SELECT * FROM user_code WHERE user_id=$1 AND expires_at > NOW();';
+
+        const { rows: dbCodeResults } = await pool.query(getDBCodeQuery, [
+          userID,
+        ]);
+
+        if (dbCodeResults && dbCodeResults.length > 0) {
+          const codeHash = dbCodeResults[0].code_hash;
+          const numberTries = dbCodeResults[0].tries;
+
+          if (numberTries >= maxTries) {
+            const updateCodeQuery = `UPDATE user_code SET blocked_until=NOW() + INTERVAL '15 minutes', tries=0 WHERE user_id=$1;`;
+            await pool.query(updateCodeQuery, [userID]);
+            return res
+              .status(429)
+              .json({ error: 'Too many tries. Try again in a few moments' });
+          } else {
+            const validCode = await bcrypt.compare(code, codeHash);
+
+            if (validCode) {
+              const encryptedNewPassword = await bcrypt.hash(
+                password,
+                saltRounds,
+              );
+
+              const client = await pool.connect();
+
+              try {
+                await client.query('BEGIN');
+
+                const updatePasswordQuery =
+                  'UPDATE "user" SET password=$1, updated_at=CURRENT_TIMESTAMP WHERE id=$2 RETURNING id;';
+
+                const { rows: insertPasswordResult } = await client.query(
+                  updatePasswordQuery,
+                  [encryptedNewPassword, userID],
+                );
+
+                if (insertPasswordResult.length > 0) {
+                  const deleteResetCodeQuery =
+                    'DELETE FROM user_code WHERE user_id=$1;';
+
+                  await client.query(deleteResetCodeQuery, [userID]);
+
+                  await client.query('COMMIT');
+
+                  const token = generateToken(userID, email, username);
+                  return res
+                    .status(200)
+                    .json({ message: 'Password reset successfully', token });
+                }
+              } catch (error) {
+                console.log(error);
+                await client.query('ROLLBACK');
+                return res
+                  .status(500)
+                  .json({ error: 'Error reseting password.' });
+              } finally {
+                client.release();
+              }
+            } else {
+              const updateNumberTriesQuery =
+                'UPDATE user_code SET tries=tries+1 WHERE user_id=$1;';
+              await pool.query(updateNumberTriesQuery, [userID]);
+
+              return res
+                .status(400)
+                .json({ error: 'Code inserted is incorrect.' });
+            }
+          }
+        } else {
+          return res
+            .status(404)
+            .json({ error: 'Code already expired. Request a new code.' });
+        }
+      } else {
+        return res.status(404).json({ error: 'Invalid identification.' });
+      }
+    } else {
+      return res.status(400).json({ error: 'Invalid input' });
+    }
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ error: 'Error reseting password.' });
+  }
 });
 
 // Iniciar o servidor

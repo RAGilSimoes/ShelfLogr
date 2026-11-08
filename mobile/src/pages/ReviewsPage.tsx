@@ -207,7 +207,7 @@ const ReviewsPage: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
-        {reviewsQuery.isFetching ? (
+        {reviewsQuery.isLoading ? (
           <LoadSpinner message={'Fetching Your Reviews...'} fullScreen={true} />
         ) : reviewsQuery.isSuccess && reviewsQuery.data ? (
           <>

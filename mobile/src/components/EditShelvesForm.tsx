@@ -28,10 +28,7 @@ import Toast from '../components/Toast';
 import { useUserShelves } from '../queryOptions/useUserShelves';
 import { pencilOutline, trashBinOutline, addOutline } from 'ionicons/icons';
 
-import {
-  MIN_SHELF_NAME_SIZE,
-  MAX_SHELF_NAME_SIZE,
-} from '../constants/app.constant';
+import { MIN_SHELF_NAME_SIZE, MAX_SHELF_NAME_SIZE } from '@shelflogr/shared';
 
 const EditShelvesForm: React.FC<{
   onClose: () => void;
@@ -311,7 +308,7 @@ const EditShelvesForm: React.FC<{
           message={'Updating Shelf Information...'}
           fullScreen={false}
         />
-      ) : shelvesNamesQuery.isFetching ? (
+      ) : shelvesNamesQuery.isLoading ? (
         <LoadSpinner
           message={'Getting Shelves Information...'}
           fullScreen={false}

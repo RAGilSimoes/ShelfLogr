@@ -4,6 +4,7 @@ import {
   IonSearchbar,
   IonGrid,
   useIonViewWillLeave,
+  IonSkeletonText,
 } from '@ionic/react';
 
 import styles from './Search.module.css';
@@ -21,6 +22,8 @@ import useAuthStore from '../store/useAuthStore';
 import ErrorDisplay from '../components/ErrorDisplay';
 
 import { useHistory } from 'react-router';
+
+import LoadCard from '../components/LoadCard';
 
 const availableNYTLists: Array<{ name: string; encoded: string }> = [
   {
@@ -147,44 +150,40 @@ const Search: React.FC = () => {
             </>
           </div>
         </div>
+
         <IonGrid className="ion-no-padding">
-          <div className={styles.sectionContainer}>
-            {suggestedBooksQuery.isLoading ? (
-              <LoadSpinner
-                message="Fetching Suggested Books..."
-                fullScreen={false}
-              />
-            ) : suggestedBooksQuery.isSuccess &&
-              suggestedBooksQuery.data &&
-              Object.keys(suggestedBooksQuery.data).length > 0 &&
-              suggestedBooksQuery.data.suggestedBooks.length > 0 ? (
-              <>
-                <div className={styles.sectionHeader}>
-                  <span className={styles.sectionEyebrow}>
-                    Because you liked
-                  </span>
-                  <h2 className={styles.sectionTitle}>
-                    '{suggestedBooksQuery.data.title}'
-                  </h2>
-                </div>
-                <div>
-                  {
-                    <BookSwiper
-                      books={suggestedBooksQuery.data.suggestedBooks}
-                    />
-                  }
-                </div>
-              </>
-            ) : (
-              suggestedBooksQuery.isError && (
-                <ErrorDisplay
-                  title={'Error loading suggested books'}
-                  onRetry={() => suggestedBooksQuery.refetch()}
-                  compact={true}
-                />
-              )
-            )}
-          </div>
+          {(suggestedBooksQuery.isLoading ||
+            Boolean(suggestedBooksQuery.data?.title)) && (
+            <div className={styles.sectionContainer}>
+              <div className={styles.sectionHeader}>
+                <span className={styles.sectionEyebrow}>Because you liked</span>
+                <h2 className={styles.sectionTitle}>
+                  {suggestedBooksQuery.isSuccess ? (
+                    `${suggestedBooksQuery.data.title}`
+                  ) : (
+                    <IonSkeletonText animated={true}></IonSkeletonText>
+                  )}
+                </h2>
+              </div>
+              {suggestedBooksQuery.isLoading ? (
+                <LoadCard />
+              ) : suggestedBooksQuery.isSuccess &&
+                suggestedBooksQuery.data &&
+                Object.keys(suggestedBooksQuery.data).length > 0 &&
+                suggestedBooksQuery.data.suggestedBooks.length > 0 ? (
+                <BookSwiper books={suggestedBooksQuery.data.suggestedBooks} />
+              ) : (
+                suggestedBooksQuery.isError && (
+                  <ErrorDisplay
+                    title={'Error loading suggested books'}
+                    onRetry={() => suggestedBooksQuery.refetch()}
+                    compact={true}
+                  />
+                )
+              )}
+            </div>
+          )}
+
           <div className={styles.sectionContainer}>
             <div className={styles.sectionHeader}>
               <h2 className={styles.sectionTitle}>Bestsellers</h2>
@@ -210,7 +209,7 @@ const Search: React.FC = () => {
             </div>
 
             {trendingListBookQuery.isLoading ? (
-              <LoadSpinner message="Fetching Books..." fullScreen={false} />
+              <LoadCard />
             ) : trendingListBookQuery.isSuccess &&
               trendingListBookQuery.data ? (
               <div>
