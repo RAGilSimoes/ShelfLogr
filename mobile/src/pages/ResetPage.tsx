@@ -2,7 +2,7 @@ import {
   IonContent,
   IonHeader,
   IonPage,
-  IonTitle,
+  IonImg,
   IonToolbar,
   IonButtons,
   IonBackButton,
@@ -226,44 +226,57 @@ const ResetPage: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
-        {!isCodeSent ? (
-          <form onSubmit={generateCode} className={styles.resetForm}>
-            <IonItem>
-              <IonInput
-                className={`${isValidEmail ? 'ion-valid' : 'ion-invalid'} ${
-                  isTouched ? 'ion-touched' : ''
-                } ${styles.input}`}
-                label="Email"
-                name="email"
-                type="email"
-                placeholder="email@domain.com"
-                labelPlacement="stacked"
-                errorText="Invalid email"
-                onIonInput={(event) => validate(event)}
-                onIonBlur={() => markTouched()}
-                value={inputEmail}
-                required
-              ></IonInput>
-            </IonItem>
+        <div className={styles.container}>
+          {!isCodeSent ? (
+            <form onSubmit={generateCode} className={styles.resetForm}>
+              <div className={styles.headerSection}>
+                <h1 className={styles.title}>Forgot Password?</h1>
+                <p className={styles.subtitle}>
+                  Enter the email associated with your account and we will send
+                  you a 6-digit verification code.
+                </p>
+              </div>
 
-            <div className="action-group">
-              <IonButton
-                disabled={!isValidRequestForm || isLoading}
-                type="submit"
-                expand="block"
-              >
-                Generate Code
-              </IonButton>
-            </div>
-          </form>
-        ) : (
-          <>
-            <form onSubmit={resetPassword} className={styles.resetForm}>
-              <h1>Insert the code sent to your e-mail</h1>
-              <h6>Check your e-mail inbox or the spam folder</h6>
               <IonItem>
                 <IonInput
-                  className={styles.codeInput}
+                  className={`${isValidEmail ? 'ion-valid' : 'ion-invalid'} ${
+                    isTouched ? 'ion-touched' : ''
+                  } ${styles.input}`}
+                  label="Email"
+                  name="email"
+                  type="email"
+                  placeholder="email@domain.com"
+                  labelPlacement="stacked"
+                  errorText="Invalid email"
+                  onIonInput={(event) => validate(event)}
+                  onIonBlur={() => markTouched()}
+                  value={inputEmail}
+                  required
+                ></IonInput>
+              </IonItem>
+
+              <div className={styles.actionGroup}>
+                <IonButton
+                  disabled={!isValidRequestForm || isLoading}
+                  type="submit"
+                  expand="block"
+                >
+                  Generate Code
+                </IonButton>
+              </div>
+            </form>
+          ) : (
+            <form onSubmit={resetPassword} className={styles.resetForm}>
+              <div className={styles.headerSection}>
+                <h1 className={styles.title}>Reset Password</h1>
+                <p className={styles.subtitle}>
+                  Check your inbox or spam folder for the 6-digit code.
+                </p>
+              </div>
+
+              <IonItem>
+                <IonInput
+                  className={`${styles.input} ${styles.codeInput}`}
                   label="Code"
                   name="code"
                   type="text"
@@ -282,7 +295,7 @@ const ResetPage: React.FC = () => {
                   className={`${
                     isValidPassword ? 'ion-valid' : 'ion-invalid'
                   } ${isTouched ? 'ion-touched' : ''} ${styles.input}`}
-                  label="Password"
+                  label="New Password"
                   name="password"
                   type="password"
                   labelPlacement="stacked"
@@ -316,7 +329,7 @@ const ResetPage: React.FC = () => {
                 </IonInput>
               </IonItem>
 
-              <div className="action-group">
+              <div className={styles.actionGroup}>
                 <IonButton
                   disabled={!isValidResetForm || isLoading}
                   type="submit"
@@ -324,21 +337,19 @@ const ResetPage: React.FC = () => {
                 >
                   Reset Password
                 </IonButton>
+                <IonButton
+                  disabled={isLoading}
+                  type="button"
+                  expand="block"
+                  fill="outline"
+                  onClick={() => setIsCodeSent((prev) => !prev)}
+                >
+                  Return
+                </IonButton>
               </div>
             </form>
-            <div className="action-group">
-              <IonButton
-                disabled={isLoading}
-                type="button"
-                expand="block"
-                fill="outline"
-                onClick={() => setIsCodeSent((prev) => !prev)}
-              >
-                Return
-              </IonButton>
-            </div>
-          </>
-        )}
+          )}
+        </div>
 
         <Toast
           message={toastMessage}
