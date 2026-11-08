@@ -20,6 +20,12 @@ import {
 } from './utils/bookInfo.js';
 import { formatGoogleBook } from './utils/book.mapper.js';
 
+import {
+  validateEmail,
+  validatePassword,
+  validateUserName,
+} from '@shelflogr/shared';
+
 dotenv.config();
 
 // const authLimiter = rateLimit({
@@ -70,28 +76,41 @@ app.post('/api/login', async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
 
-    const { rows } = await pool.query('SELECT * FROM "user" WHERE email = $1', [
-      email,
-    ]);
+    const isValidEmail = validateEmail(email);
+    const isValidPassword = validatePassword(password);
 
-    if (rows.length === 0) {
-      return res.status(401).json({ error: 'Incorrect Email or Password.' });
+    if (isValidEmail && isValidPassword) {
+      const { rows } = await pool.query(
+        'SELECT * FROM "user" WHERE email = $1',
+        [email],
+      );
+
+      if (rows.length === 0) {
+        return res.status(401).json({ error: 'Incorrect Email or Password.' });
+      }
+
+      const user = rows[0];
+
+      const deleteResetCodeQuery = 'DELETE FROM user_code WHERE user_id=$1;';
+
+      await pool.query(deleteResetCodeQuery, [user.id]);
+
+      const dbPassword = user.password;
+
+      const isPasswordValid = await bcrypt.compare(password, dbPassword);
+
+      if (!isPasswordValid) {
+        return res.status(401).json({ error: 'Incorrect Email or Password.' });
+      }
+
+      delete user.password;
+
+      const token = generateToken(user.id, user.email, user.name);
+
+      return res.status(200).json({ message: 'Sucess', token });
+    } else {
+      return res.status(400).json({ error: 'Invalid credentials' });
     }
-
-    const user = rows[0];
-    const dbPassword = user.password;
-
-    const isPasswordValid = await bcrypt.compare(password, dbPassword);
-
-    if (!isPasswordValid) {
-      return res.status(401).json({ error: 'Incorrect Email or Password.' });
-    }
-
-    delete user.password;
-
-    const token = generateToken(user.id, user.email, user.name);
-
-    return res.status(200).json({ message: 'Sucess', token });
   } catch (error) {
     return res.status(500).json({ error: 'Internal error processing login' });
   }
@@ -1090,6 +1109,7 @@ app.post('/api/forgot-password', async (req: Request, res: Response) => {
             );
 
             if (insertOTPCodeResults) {
+              console.log(code);
               await client.query('COMMIT');
               return res.status(200).json({
                 message: 'The code was sent to your email',
@@ -1107,11 +1127,125 @@ app.post('/api/forgot-password', async (req: Request, res: Response) => {
         }
       }
     } else {
-      return res.status(404).json({ error: 'User not found.' });
+      return res
+        .status(200)
+        .json({ message: 'If the account exists, we sent an email.' });
     }
   } catch (error) {
     console.log(error);
     return res.status(500).json({ error: 'Error generating OTP code.' });
+  }
+});
+
+app.post('/api/reset-password', async (req: Request, res: Response) => {
+  try {
+    const maxTries = 5;
+    const { email, code, password } = req.body;
+
+    const getUserQuery = 'SELECT * FROM "user" WHERE email=$1;';
+
+    const { rows: userResult } = await pool.query(getUserQuery, [email]);
+
+    if (userResult && userResult.length > 0) {
+      const userID = userResult[0].id;
+      const username = userResult[0].name;
+
+      const verifyUserBlockedQuery =
+        'SELECT * FROM "user_code" WHERE user_id=$1 AND blocked_until IS NOT NULL AND blocked_until > NOW();';
+
+      const { rows: userBlockedResults } = await pool.query(
+        verifyUserBlockedQuery,
+        [userID],
+      );
+
+      if (userBlockedResults && userBlockedResults.length > 0) {
+        return res.status(423).json({
+          error: 'Too many tries. Try again in a few moments',
+        });
+      }
+
+      const getDBCodeQuery =
+        'SELECT * FROM user_code WHERE user_id=$1 AND expires_at > NOW();';
+
+      const { rows: dbCodeResults } = await pool.query(getDBCodeQuery, [
+        userID,
+      ]);
+
+      if (dbCodeResults && dbCodeResults.length > 0) {
+        const codeHash = dbCodeResults[0].code_hash;
+        const numberTries = dbCodeResults[0].tries;
+
+        if (numberTries >= maxTries) {
+          const updateCodeQuery = `UPDATE user_code SET blocked_until=NOW() + INTERVAL '15 minutes', tries=0 WHERE user_id=$1;`;
+          await pool.query(updateCodeQuery, [userID]);
+          return res
+            .status(429)
+            .json({ error: 'Too many tries. Try again in a few moments' });
+        } else {
+          const validCode = await bcrypt.compare(code, codeHash);
+
+          if (validCode) {
+            const encryptedNewPassword = await bcrypt.hash(
+              password,
+              saltRounds,
+            );
+
+            const client = await pool.connect();
+
+            try {
+              await client.query('BEGIN');
+
+              const updatePasswordQuery =
+                'UPDATE "user" SET password=$1, updated_at=CURRENT_TIMESTAMP WHERE id=$2 RETURNING id;';
+
+              const { rows: insertPasswordResult } = await client.query(
+                updatePasswordQuery,
+                [encryptedNewPassword, userID],
+              );
+
+              if (insertPasswordResult.length > 0) {
+                const deleteResetCodeQuery =
+                  'DELETE FROM user_code WHERE user_id=$1;';
+
+                await client.query(deleteResetCodeQuery, [userID]);
+
+                await client.query('COMMIT');
+
+                const token = generateToken(userID, email, username);
+                return res
+                  .status(200)
+                  .json({ message: 'Password reset successfully', token });
+              }
+            } catch (error) {
+              console.log(error);
+              await client.query('ROLLBACK');
+              return res
+                .status(500)
+                .json({ error: 'Error reseting password.' });
+            } finally {
+              client.release();
+            }
+          } else {
+            const updateNumberTriesQuery =
+              'UPDATE user_code SET tries=tries+1 WHERE user_id=$1;';
+            await pool.query(updateNumberTriesQuery, [userID]);
+
+            return res
+              .status(400)
+              .json({ error: 'Code inserted is incorrect.' });
+          }
+        }
+      } else {
+        return res
+          .status(404)
+          .json({ error: 'Code already expired. Request a new code.' });
+      }
+    } else {
+      return res.status(404).json({ error: 'Invalid identification.' });
+    }
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ error: 'Error reseting password.' });
   }
 });
 

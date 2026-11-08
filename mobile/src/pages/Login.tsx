@@ -36,10 +36,7 @@ import { jwtDecode } from 'jwt-decode';
 import Toast from '../components/Toast';
 import Footer from '../components/Footer';
 
-import {
-  MIN_PASSWORD_SIZE,
-  MAX_PASSWORD_SIZE,
-} from '../constants/app.constant';
+import { validateEmail, validatePassword } from '@shelflogr/shared';
 
 const Login: React.FC = () => {
   const history = useHistory();
@@ -74,10 +71,6 @@ const Login: React.FC = () => {
     }
   }, [location.state]);
 
-  const validateEmail = (email: string) => {
-    return email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
-  };
-
   const validate = (event: Event) => {
     const target = event.target as HTMLInputElement;
     const value = target.value;
@@ -103,18 +96,13 @@ const Login: React.FC = () => {
     setIsTouched(true);
   };
 
-  const validatePassword = () => {
-    setIsValidPassword(
-      inputPassword.length >= MIN_PASSWORD_SIZE &&
-        inputPassword.length <= MAX_PASSWORD_SIZE,
-    );
+  const validateInputPassword = () => {
+    setIsValidPassword(validatePassword(inputPassword));
   };
 
   useEffect(() => {
-    validateEmail(inputEmail) !== null
-      ? setIsValidEmail(true)
-      : setIsValidEmail(false);
-    validatePassword();
+    setIsValidEmail(validateEmail(inputEmail));
+    validateInputPassword();
   }, [inputEmail, inputPassword]);
 
   const isValidForm = isValidEmail && isValidPassword;

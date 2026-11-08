@@ -28,11 +28,10 @@ import Toast from '../components/Toast';
 import Footer from '../components/Footer';
 
 import {
-  MIN_USERNAME_SIZE,
-  MAX_USERNAME_SIZE,
-  MIN_PASSWORD_SIZE,
-  MAX_PASSWORD_SIZE,
-} from '../constants/app.constant';
+  validateEmail,
+  validatePassword,
+  validateUserName,
+} from '@shelflogr/shared';
 
 const Register: React.FC = () => {
   const history = useHistory();
@@ -70,10 +69,6 @@ const Register: React.FC = () => {
     }
   }, [location.state]);
 
-  const validateEmail = (email: string) => {
-    return email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
-  };
-
   const validate = (event: Event) => {
     const target = event.target as HTMLInputElement;
     const value = target.value;
@@ -109,30 +104,14 @@ const Register: React.FC = () => {
     setIsTouched(true);
   };
 
-  const validateUsername = () => {
-    setIsValidUsername(
-      inputUsername.length >= MIN_USERNAME_SIZE &&
-        inputUsername.length <= MAX_USERNAME_SIZE,
-    );
-  };
-
-  const validatePassword = () => {
-    setIsValidPassword(
-      inputPassword.length >= MIN_PASSWORD_SIZE &&
-        inputPassword.length <= MAX_PASSWORD_SIZE,
-    );
-  };
-
   const validatePasswordInputs = () => {
     setIsValidVerifyPassword(inputPassword == inputVerifyPassword);
   };
 
   useEffect(() => {
-    validateEmail(inputEmail) !== null
-      ? setIsValidEmail(true)
-      : setIsValidEmail(false);
-    validateUsername();
-    validatePassword();
+    setIsValidEmail(validateEmail(inputEmail));
+    setIsValidUsername(validateUserName(inputUsername));
+    setIsValidPassword(validatePassword(inputPassword));
     validatePasswordInputs();
   }, [inputEmail, inputUsername, inputPassword, inputVerifyPassword]);
 
