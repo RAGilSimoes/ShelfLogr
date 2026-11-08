@@ -9,6 +9,9 @@ import {
   MAX_SUPPORT_SUBJECT_SIZE,
   MIN_SUPPORT_TEXT_SIZE,
   MAX_SUPPORT_TEXT_SIZE,
+  MIN_SHELF_NAME_SIZE,
+  MAX_SHELF_NAME_SIZE,
+  MAX_BOOK_REVIEW_SIZE,
 } from './app.constant.js';
 
 function validateEmail(email: string): boolean {
@@ -26,7 +29,8 @@ function validatePassword(password: string) {
 function validateUserName(username: string) {
   if (!username || typeof username !== 'string') return false;
   return (
-    username.length >= MIN_USERNAME_SIZE && username.length <= MAX_USERNAME_SIZE
+    username.trim().length >= MIN_USERNAME_SIZE &&
+    username.trim().length <= MAX_USERNAME_SIZE
   );
 }
 
@@ -38,16 +42,30 @@ function validateCode(code: string) {
 function validateInputSubject(subject: string) {
   if (!subject || typeof subject !== 'string') return false;
   return (
-    subject.length >= MIN_SUPPORT_SUBJECT_SIZE &&
-    subject.length <= MAX_SUPPORT_SUBJECT_SIZE
+    subject.trim().length >= MIN_SUPPORT_SUBJECT_SIZE &&
+    subject.trim().length <= MAX_SUPPORT_SUBJECT_SIZE
   );
 }
 
 function validateInputText(text: string) {
   if (!text || typeof text !== 'string') return false;
   return (
-    text.length >= MIN_SUPPORT_TEXT_SIZE && text.length <= MAX_SUPPORT_TEXT_SIZE
+    text.trim().length >= MIN_SUPPORT_TEXT_SIZE &&
+    text.trim().length <= MAX_SUPPORT_TEXT_SIZE
   );
+}
+
+function validateShelfName(name: string) {
+  if (!name || typeof name !== 'string') return false;
+  return (
+    name.trim().length >= MIN_SHELF_NAME_SIZE &&
+    name.trim().length <= MAX_SHELF_NAME_SIZE
+  );
+}
+
+function validateBookReview(review: string) {
+  if (!review || typeof review !== 'string') return false;
+  return review.trim().length <= MAX_BOOK_REVIEW_SIZE;
 }
 
 export {
@@ -57,4 +75,6 @@ export {
   validateCode,
   validateInputSubject,
   validateInputText,
+  validateShelfName,
+  validateBookReview,
 };
