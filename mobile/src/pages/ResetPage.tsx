@@ -2,7 +2,6 @@ import {
   IonContent,
   IonHeader,
   IonPage,
-  IonImg,
   IonToolbar,
   IonButtons,
   IonBackButton,
@@ -163,6 +162,7 @@ const ResetPage: React.FC = () => {
       setToastType(availableToastTypes.error);
     } finally {
       setIsLoading(false);
+      setIsTouched(false);
     }
   };
 

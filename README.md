@@ -70,6 +70,13 @@ The main technologies used in this project are:
     <img src="./media/settingsPage/editShelves.png" alt="Edit Shelves Modal" width="200" />
     &nbsp;&nbsp;
     <img src="./media/settingsPage/feedbackModal.png" alt="Send Feedback Modal" width="200" />
+    &nbsp;&nbsp;&nbsp;&nbsp;
+    <h4>Reset Password</h4>
+    <img src="./media/resetPage/insertEmail.png" alt="Insert Email" width="200" />
+    &nbsp;&nbsp;
+    <img src="./media/resetPage/insertCode.png" alt="Insert Code" width="200" />
+    &nbsp;&nbsp;
+    <img src="./media/resetPage/emailReceived.png" alt="Email Received" width="200" />
 
   </div>
 </details>
@@ -103,6 +110,9 @@ Provides account management tools. Modals open as responsive bottom sheets:
 - **Change Password:** Verifies the current password and securely updates credentials with bcrypt hashing.
 - **Manage Shelves:** Allows renaming or deleting custom shelves with protective confirmation dialogs.
 - **Support & Feedback:** Dispatches rich Discord Webhook embeds categorizing submissions as bugs, feature requests, or general inquiries.
+
+**8. Password Recovery (OTP via Email):**
+Users who forget their credentials can initiate recovery directly from the login page. Submitting their email triggers the generation of a 6-digit cryptographically secure OTP code sent to their inbox via transactional email. The app moves to a verification screen where the user enters the code and their new password. The workflow is resilient by design: users can return to correct their email address or jump directly to code entry if they already have an active code. Upon successful verification, the password is securely updated, the OTP is invalidated, and the user is automatically authenticated with a fresh JWT token and redirected to the home dashboard.
 
 ---
 
@@ -143,6 +153,11 @@ Provides account management tools. Modals open as responsive bottom sheets:
    - **Challenge:** Blocking modal alerts or intrusive toasts degrade mobile UX during intermittent network loss, while outgoing network requests hang until timeout and leave the UI in stale or broken states once connectivity returns.
    - **Decision:** Designed a global offline resilience system powered by `@capacitor/network` and a lightweight **Zustand** network store. An Axios request interceptor proactively short-circuits and fast-rejects outgoing HTTP calls during outages with a normalized network error (`ERR_NETWORK`). A non-blocking, fixed `<OfflineBanner />` smoothly slides down to alert the user without trapping pointer events or freezing the interface. Upon reconnection, Capacitor listeners immediately fire TanStack Query's `queryClient.refetchQueries({ type: 'active' })` to seamlessly revalidate and refresh all active screen data without requiring manual user intervention.
 
+8. **Cryptographic OTP Verification & Rate-Limited Password Recovery:**
+
+   - **Challenge:** Designing a password reset flow that prevents account enumeration, protects against brute-force attacks on 6-digit codes, and avoids ghost records or rate-limit lockouts if the email provider fails.
+   - **Decision:** Implemented a secure two-step recovery system backed by PostgreSQL and Resend. OTP codes are generated using `crypto.randomInt` and stored as `bcrypt` hashes with a 15-minute expiration window. The backend enforces strict multi-layered rate limits: a 2-minute cooldown between code requests and an automatic 15-minute temporary lockout after 5 consecutive failed attempts. Database operations and email dispatch are wrapped in atomic PostgreSQL transactions (`BEGIN` / `COMMIT` / `ROLLBACK`), rolling back and clearing the OTP if mail delivery fails. To protect user privacy, the API returns neutral status responses to mitigate user enumeration, and automatically returns a signed JWT on success for immediate auto-login.
+
 ---
 
 ## Status
@@ -159,7 +174,9 @@ Book Reviews implemented. Users can leave reviews about the completed books
 
 Profile Page implemented. Displays user statistics (total books read/collected, total reviews), quick access to system and custom shelves, and review overview, with native pull-to-refresh.
 
-Settings Page implemented. Features dynamic bottom-sheet modals allowing users to edit profile information, update account password, manage custom shelves (create, edit, delete), and submit feedback/bug reports integrated with Discord Webhooks. Also includes account deletion with confirmation alerts and cache clearing. _(Updated: 22/10/2026)_
+Settings Page implemented. Features dynamic bottom-sheet modals allowing users to edit profile information, update account password, manage custom shelves (create, edit, delete), and submit feedback/bug reports integrated with Discord Webhooks. Also includes account deletion with confirmation alerts and cache clearing.
+
+Password Recovery implemented. Features a secure two-step OTP reset flow with rate limiting, brute-force protection, transactional email delivery, and instant auto-login upon completion. _(Updated: 08/11/2026)_
 
 ---
 
@@ -175,6 +192,7 @@ Settings Page implemented. Features dynamic bottom-sheet modals allowing users t
 - [x] Create profile page to see user's shelves
 - [x] Create settings page
 - [x] Users can leave reviews
+- [x] Password Recovery with Email OTP verification
 
 #### Future Ideas:
 
