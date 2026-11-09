@@ -51,6 +51,7 @@ npm install
 Create the `.env` configuration files for both projects:
 
 #### **Backend (`api/.env`):**
+
 ```env
 DATABASE_URL="your-postgresql-neon-database-url"
 JWT_SECRET="your-jwt-secret-key"
@@ -58,9 +59,11 @@ BOOKS_API_KEY="your-google-books-api-key"
 NYT_API_KEY="your-new-york-times-api-key"
 DISCORD_BOT_WEBHOOK="your-discord-webhook-url"
 RESEND_API_KEY="your-resend-api-key"
+SENDER_EMAIL="your-sender-email"
 ```
 
 #### **Frontend (`mobile/.env`):**
+
 ```env
 VITE_BACKEND_URL='http://localhost:3000/api'
 ```
@@ -71,12 +74,14 @@ VITE_BACKEND_URL='http://localhost:3000/api'
 
 > 💡 **Initial Build Note for Mobile:**
 > Because the `dist` folder is excluded by `.gitignore`, you must build the web assets **once** before running any native Android commands for the very first time:
+>
 > ```bash
 > cd mobile
 > npm run build
 > npx cap sync
 > ```
-> *(After this initial sync, Workflow A below will handle live-reloading automatically in real time without needing further manual builds).*
+>
+> _(After this initial sync, Workflow A below will handle live-reloading automatically in real time without needing further manual builds)._
 
 Choose one of the development workflows below:
 
@@ -87,25 +92,31 @@ Choose one of the development workflows below:
 This is the most reliable way to test real hardware features (camera, barcode scanner, gestures) with instant **Live Reload** through your USB cable, completely independent of local Wi-Fi networks.
 
 #### Device Preparation:
+
 1. Connect your Android phone to your PC with a USB cable.
-2. Enable **Developer Options** (tap *Build Number* 7 times in *Settings > About Phone*).
-3. Enable **USB Debugging** in *Developer Options*.
+2. Enable **Developer Options** (tap _Build Number_ 7 times in _Settings > About Phone_).
+3. Enable **USB Debugging** in _Developer Options_.
 
 #### Terminal 1 — Start the Backend Server:
+
 ```bash
 cd api
 npm run dev
 ```
-*(Runs the Express API on port `3000`)*
+
+_(Runs the Express API on port `3000`)_
 
 #### Terminal 2 — Start the Vite Frontend Server:
+
 ```bash
 cd mobile
 npm run dev -- --host
 ```
-*(Runs the React/Vite development server on port `5173`)*
+
+_(Runs the React/Vite development server on port `5173`)_
 
 #### Terminal 3 — Bridge Ports via USB & Launch with Live Reload:
+
 ```powershell
 # 1. Forward ports so your phone can reach both Vite and the Backend through the USB cable:
 & "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe" reverse tcp:3000 tcp:3000
@@ -155,18 +166,21 @@ npx cap run android
 ## 🛠️ Troubleshooting & Common Fixes
 
 ### 1. `Unsupported class file major version (69 or 71)`
-* **Cause:** Gradle is picking up an unsupported Java version (Java 25 or 27).
-* **Fix:** Tell Gradle to strictly use Java 21 on your machine by adding this to your personal `~/.gradle/gradle.properties`:
+
+- **Cause:** Gradle is picking up an unsupported Java version (Java 25 or 27).
+- **Fix:** Tell Gradle to strictly use Java 21 on your machine by adding this to your personal `~/.gradle/gradle.properties`:
   ```properties
   org.gradle.java.home=C:/Users/<username>/.jdks/jbr-21.0.11
   ```
   Then stop old Gradle daemons: `cd mobile/android && ./gradlew --stop`.
 
 ### 2. `Unexpected error occurred` when logging in on the physical phone
-* **Cause 1:** The backend server (`cd api && npm run dev`) is not running.
-* **Cause 2:** The USB port `3000` was not reversed to your PC.
-* **Fix:** Run `adb reverse tcp:3000 tcp:3000` in your terminal.
+
+- **Cause 1:** The backend server (`cd api && npm run dev`) is not running.
+- **Cause 2:** The USB port `3000` was not reversed to your PC.
+- **Fix:** Run `adb reverse tcp:3000 tcp:3000` in your terminal.
 
 ### 3. VS Code showing Java / Gradle errors on startup
-* The mobile native build is handled by **Capacitor and Android Studio**.
-* In VS Code, disable the extensions **"Gradle for Java"** and **"Language Support for Java"** for this workspace (`Disable (Workspace)`) to keep VS Code fast and clean.
+
+- The mobile native build is handled by **Capacitor and Android Studio**.
+- In VS Code, disable the extensions **"Gradle for Java"** and **"Language Support for Java"** for this workspace (`Disable (Workspace)`) to keep VS Code fast and clean.
