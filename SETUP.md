@@ -20,11 +20,16 @@ Before you begin, ensure you have the following installed on your machine:
 4. **Android Studio** with:
    - Android SDK Platform (API 34 or later)
    - Android SDK Command-line Tools & Platform-tools (`adb`).
-5. **Windows Environment Variables** (Recommended):
+5. **Windows Environment Variables & Gradle Configuration**:
    - `JAVA_HOME`: Set to your JDK 21 path (e.g., `C:\Users\<username>\.jdks\jbr-21.0.11`).
    - `CAPACITOR_ANDROID_STUDIO_PATH` (if Android Studio is installed in your user directory):
      ```powershell
      [System.Environment]::SetEnvironmentVariable('CAPACITOR_ANDROID_STUDIO_PATH', "$env:LOCALAPPDATA\Programs\Android Studio\bin\studio64.exe", 'User')
+     ```
+   - 🔒 **Git Portability Rule for Gradle:**
+     Never commit absolute user paths (such as `C:/Users/<name>/...`) inside `mobile/android/gradle.properties`. Keep that setting in your machine's personal `~/.gradle/gradle.properties` file so the repository stays 100% portable across different computers and operating systems:
+     ```powershell
+     Set-Content -Path "$env:USERPROFILE\.gradle\gradle.properties" -Value "org.gradle.java.home=C:/Users/<username>/.jdks/jbr-21.0.11"
      ```
 
 ---
@@ -63,6 +68,15 @@ VITE_BACKEND_URL='http://localhost:3000/api'
 ---
 
 ## 📱 Running the Application
+
+> 💡 **Initial Build Note for Mobile:**
+> Because the `dist` folder is excluded by `.gitignore`, you must build the web assets **once** before running any native Android commands for the very first time:
+> ```bash
+> cd mobile
+> npm run build
+> npx cap sync
+> ```
+> *(After this initial sync, Workflow A below will handle live-reloading automatically in real time without needing further manual builds).*
 
 Choose one of the development workflows below:
 
