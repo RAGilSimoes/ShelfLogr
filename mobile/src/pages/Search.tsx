@@ -211,7 +211,8 @@ const Search: React.FC = () => {
             {trendingListBookQuery.isLoading ? (
               <LoadCard />
             ) : trendingListBookQuery.isSuccess &&
-              trendingListBookQuery.data ? (
+              trendingListBookQuery.data?.trendingBooksInfo &&
+              trendingListBookQuery.data.trendingBooksInfo.length > 0 ? (
               <div>
                 {
                   <BookSwiper

@@ -17,6 +17,11 @@ const BookSwiper: React.FC<{
   }>;
 }> = ({ books }) => {
   const history = useHistory();
+
+  if (!books || !Array.isArray(books) || books.length === 0) {
+    return null;
+  }
+
   return (
     <div className={styles.trending}>
       <Swiper

@@ -437,7 +437,10 @@ const AddButtons: React.FC<{
                   className={styles.saveButton}
                   disabled={disabledButton}
                 >
-                  Save Changes <IonIcon slot="end" icon={book}></IonIcon>
+                  {defaultValues && defaultValues.initialRequiredShelf !== null
+                    ? 'Save Changes'
+                    : 'Add Book To Shelf'}{' '}
+                  <IonIcon slot="end" icon={book}></IonIcon>
                 </IonButton>
               </div>
             ) : (
