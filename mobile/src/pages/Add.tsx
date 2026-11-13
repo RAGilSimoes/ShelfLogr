@@ -6,6 +6,7 @@ import {
   useIonViewWillLeave,
   IonIcon,
   IonAlert,
+  IonFooter,
 } from '@ionic/react';
 
 import {
@@ -25,7 +26,7 @@ import LoadSpinner from '../components/LoadSpinner';
 import BookInfo from '../components/BookInfo';
 import StatusFeedback from '../components/StatusFeedback';
 
-import { barcodeOutline } from 'ionicons/icons';
+import { barcodeOutline, keypadOutline } from 'ionicons/icons';
 
 import { bookInfo } from '@shelflogr/shared';
 
@@ -48,9 +49,14 @@ const Add: React.FC = () => {
     error: 'error',
   };
 
-  const [isScanAlertOpen, setIsScanAlertOpen] = useState<boolean>(false);
+  const [isEditing, setIsEditing] = useState<boolean>(false);
 
-  const [tempIsbn, setTempIsbn] = useState<number>(0);
+  const [isScanAlertOpen, setIsScanAlertOpen] = useState<boolean>(false);
+  const [isInsertAlertOpen, setIsInsertAlertOpen] = useState<boolean>(false);
+
+  const ISBNPlaceholder: string = '000-000-0-00000-0';
+
+  const [tempIsbn, setTempIsbn] = useState<string>('');
   const [finalIsbn, setFinalIsbn] = useState<string>('');
 
   const queryClient = useQueryClient();
@@ -93,7 +99,7 @@ const Add: React.FC = () => {
   const readBarcode = async () => {
     setToastMessage('');
     setDisplayToast(false);
-    setTempIsbn(0);
+    setTempIsbn('');
 
     let cameraPermission = await checkPermissions();
 
@@ -108,7 +114,7 @@ const Add: React.FC = () => {
         if (barcodes.length > 0 && barcodes[0].valueType === 'ISBN') {
           const isbn = barcodes[0].displayValue;
 
-          setTempIsbn(Number(isbn));
+          setTempIsbn(isbn);
 
           setIsScanAlertOpen(true);
         } else {
@@ -119,7 +125,9 @@ const Add: React.FC = () => {
         }
       } catch (error) {
         if (error instanceof Error) {
-          setToastMessage(error.message);
+          setToastMessage(
+            error.message.charAt(0).toUpperCase() + error.message.slice(1),
+          );
         } else {
           setToastMessage('Error scanning barcode');
         }
@@ -200,6 +208,15 @@ const Add: React.FC = () => {
     });
   };
 
+  const handleCancel = () => {
+    queryClient.removeQueries({
+      queryKey: ['bookInfoISBN', userID, finalIsbn],
+    });
+    addBookToShelf.reset();
+    setFinalIsbn('');
+    setTempIsbn('');
+  };
+
   const showAddToShelvesButton =
     bookInfoQuery.isSuccess &&
     bookInfoQuery.data.book &&
@@ -210,6 +227,12 @@ const Add: React.FC = () => {
     bookInfoQuery.isSuccess &&
     bookInfoQuery.data.book &&
     bookInfoQuery.data.shelf !== null;
+
+  const hasBook = Boolean(bookInfoQuery.isSuccess && bookInfoQuery.data?.book);
+
+  const handleEdit = async () => {
+    setIsEditing((prev) => !prev);
+  };
 
   return (
     <IonPage>
@@ -228,22 +251,36 @@ const Add: React.FC = () => {
         />
 
         <IonAlert
-          isOpen={isScanAlertOpen}
-          header={'ISBN Detected'}
-          message={'Confirm that the displayed ISBN matches your book'}
+          isOpen={isScanAlertOpen || isInsertAlertOpen}
+          header={
+            isScanAlertOpen
+              ? 'ISBN Detected'
+              : isInsertAlertOpen
+              ? 'Insert ISBN'
+              : ''
+          }
+          message={
+            isScanAlertOpen
+              ? 'Confirm that the displayed ISBN matches your book'
+              : isInsertAlertOpen
+              ? 'Insert the ISBN near the barcode of your book'
+              : ''
+          }
           cssClass="custom-isbn-alert"
           inputs={
-            isScanAlertOpen
+            isScanAlertOpen || isInsertAlertOpen
               ? [
                   {
-                    type: 'number',
+                    type: 'text',
                     name: 'isbnField',
                     value: `${tempIsbn}`,
-                    placeholder: `${tempIsbn}`,
+                    placeholder: `${ISBNPlaceholder}`,
                     cssClass: 'alert-isbn-input',
                     attributes: {
                       minLength: 13,
                       maxlength: 13,
+                      pattern: '[0-9]*',
+                      inputMode: 'numeric',
                     },
                   },
                 ]
@@ -264,15 +301,24 @@ const Add: React.FC = () => {
                   alertData.isbnField || tempIsbn,
                 ).trim();
                 if (selectedIsbn) {
-                  setIsScanAlertOpen(false);
-                  if (selectedIsbn === finalIsbn) bookInfoQuery.refetch();
-                  else setFinalIsbn(selectedIsbn);
+                  const isNumber = !isNaN(Number(selectedIsbn));
+                  if (isNumber) {
+                    setIsScanAlertOpen(false);
+                    if (selectedIsbn === finalIsbn) bookInfoQuery.refetch();
+                    else setFinalIsbn(selectedIsbn);
+                  } else {
+                    setDisplayToast(true);
+                    setToastMessage('ISBN must contain only numbers');
+                    setToastType(availableToastTypes.error);
+                    return false;
+                  }
                 }
               },
             },
           ]}
           onDidDismiss={() => {
             setIsScanAlertOpen(false);
+            setIsInsertAlertOpen(false);
           }}
           className={styles.alert}
         ></IonAlert>
@@ -290,50 +336,96 @@ const Add: React.FC = () => {
             }
             fullScreen={true}
           />
-        ) : (
-          <>
-            <IonGrid
-              className={`${styles.grid} ${
-                bookInfoQuery.isSuccess && bookInfoQuery.data.book === undefined
-                  ? styles.centerContent
-                  : ''
-              }`}
+        ) : !hasBook ? (
+          <div className={styles.emptyState}>
+            <IonButton
+              expand="block"
+              shape="round"
+              size="large"
+              fill="solid"
+              color="primary"
+              onClick={readBarcode}
             >
-              {bookInfoQuery.isSuccess && bookInfoQuery.data.book && (
-                <BookInfo bookInfo={bookInfoQuery.data.book} detailed={false} />
-              )}
-              {(showAddToShelvesButton && (
-                <AddButtons onAddBook={handleBookAdd} onCancel={() => {}} />
-              )) ||
-                ((showAlreadyHasBook || addBookToShelf.isSuccess) && (
-                  <StatusFeedback
-                    shelf={
-                      addBookToShelf.isSuccess
-                        ? formattedShelfNames
-                        : bookInfoQuery.data.bookShelves &&
-                          bookInfoQuery.data.bookShelves.length > 0
-                        ? bookInfoQuery.data.bookShelves
-                        : [bookInfoQuery.data.shelf]
-                    }
-                    onEditShelf={() => {}}
-                  />
-                ))}
-              <IonButton
-                expand="block"
-                shape="round"
-                size={showAddToShelvesButton === true ? 'default' : 'large'}
-                fill={showAddToShelvesButton === true ? 'outline' : 'solid'}
-                color={showAddToShelvesButton === true ? 'medium' : 'primary'}
-                onClick={readBarcode}
-                className="ion-margin-top"
-              >
-                <IonIcon slot="start" icon={barcodeOutline}></IonIcon>
-                Scan Barcode
-              </IonButton>
-            </IonGrid>
-          </>
+              <IonIcon slot="start" icon={barcodeOutline}></IonIcon>
+              Scan Barcode
+            </IonButton>
+            <IonButton
+              expand="block"
+              shape="round"
+              size="large"
+              fill="solid"
+              color="primary"
+              onClick={() => setIsInsertAlertOpen(true)}
+            >
+              <IonIcon slot="start" icon={keypadOutline}></IonIcon>
+              Insert ISBN
+            </IonButton>
+          </div>
+        ) : (
+          <div className={styles.bookContainer}>
+            <BookInfo bookInfo={bookInfoQuery.data.book} detailed={false} />
+
+            {!isEditing && (showAlreadyHasBook || addBookToShelf.isSuccess) ? (
+              <StatusFeedback
+                shelf={
+                  addBookToShelf.isSuccess
+                    ? formattedShelfNames
+                    : bookInfoQuery.data.bookShelves &&
+                      bookInfoQuery.data.bookShelves.length > 0
+                    ? bookInfoQuery.data.bookShelves
+                    : [bookInfoQuery.data.shelf]
+                }
+                onEditShelf={() => handleEdit()}
+              />
+            ) : (
+              <AddButtons
+                onAddBook={handleBookAdd}
+                defaultValues={
+                  bookInfoQuery.data.shelf
+                    ? {
+                        initialRequiredShelf: bookInfoQuery.data.shelf,
+                        initialOptionalShelves:
+                          bookInfoQuery.data.bookShelves || [],
+                      }
+                    : undefined
+                }
+                onCancel={isEditing ? () => setIsEditing(false) : handleCancel}
+              />
+            )}
+          </div>
         )}
       </IonContent>
+
+      {hasBook && (
+        <IonFooter className={styles.footer}>
+          <div className={styles.footerRow}>
+            <IonButton
+              expand="block"
+              shape="round"
+              size="default"
+              fill="outline"
+              color="medium"
+              onClick={readBarcode}
+              className={styles.footerButton}
+            >
+              <IonIcon slot="start" icon={barcodeOutline}></IonIcon>
+              Scan Barcode
+            </IonButton>
+            <IonButton
+              expand="block"
+              shape="round"
+              size="default"
+              fill="outline"
+              color="medium"
+              onClick={() => setIsInsertAlertOpen(true)}
+              className={styles.footerButton}
+            >
+              <IonIcon slot="start" icon={keypadOutline}></IonIcon>
+              Insert ISBN
+            </IonButton>
+          </div>
+        </IonFooter>
+      )}
     </IonPage>
   );
 };
