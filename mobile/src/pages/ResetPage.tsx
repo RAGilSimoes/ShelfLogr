@@ -240,7 +240,7 @@ const ResetPage: React.FC = () => {
               <IonItem>
                 <IonInput
                   className={`${isValidEmail ? 'ion-valid' : 'ion-invalid'} ${
-                    isTouched ? 'ion-touched' : ''
+                    isTouched && inputEmail.length > 0 ? 'ion-touched' : ''
                   } ${styles.input}`}
                   label="Email"
                   name="email"
@@ -303,7 +303,9 @@ const ResetPage: React.FC = () => {
                 <IonInput
                   className={`${
                     isValidPassword ? 'ion-valid' : 'ion-invalid'
-                  } ${isTouched ? 'ion-touched' : ''} ${styles.input}`}
+                  } ${
+                    isTouched && inputPassword.length > 0 ? 'ion-touched' : ''
+                  } ${styles.input}`}
                   label="New Password"
                   name="password"
                   type="password"
@@ -322,7 +324,11 @@ const ResetPage: React.FC = () => {
                 <IonInput
                   className={`${
                     isValidVerifyPassword ? 'ion-valid' : 'ion-invalid'
-                  } ${isTouched ? 'ion-touched' : ''} ${styles.input}`}
+                  } ${
+                    isTouched && inputVerifyPassword.length > 0
+                      ? 'ion-touched'
+                      : ''
+                  } ${styles.input}`}
                   label="Confirm Password"
                   name="verifyPassword"
                   type="password"

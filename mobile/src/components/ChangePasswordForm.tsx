@@ -171,7 +171,11 @@ const ChangePasswordForm: React.FC<{
                       value={inputOldPassword}
                       className={`${
                         isValidOldPassword ? 'ion-valid' : 'ion-invalid'
-                      } ${isTouched ? 'ion-touched' : ''} ${styles.input}`}
+                      } ${
+                        isTouched && inputOldPassword.length > 0
+                          ? 'ion-touched'
+                          : ''
+                      } ${styles.input}`}
                       name="oldPassword"
                       type="password"
                       errorText="Invalid current password"
@@ -196,7 +200,11 @@ const ChangePasswordForm: React.FC<{
                       type="password"
                       className={`${
                         isValidPassword ? 'ion-valid' : 'ion-invalid'
-                      } ${isTouched ? 'ion-touched' : ''} ${styles.input}`}
+                      } ${
+                        isTouched && inputPassword.length > 0
+                          ? 'ion-touched'
+                          : ''
+                      } ${styles.input}`}
                       name="password"
                       errorText="Invalid password"
                       placeholder="●●●●●●●●"
@@ -220,7 +228,11 @@ const ChangePasswordForm: React.FC<{
                       type="password"
                       className={`${
                         isValidVerifyPassword ? 'ion-valid' : 'ion-invalid'
-                      } ${isTouched ? 'ion-touched' : ''} ${styles.input}`}
+                      } ${
+                        isTouched && inputVerifyPassword.length > 0
+                          ? 'ion-touched'
+                          : ''
+                      } ${styles.input}`}
                       name="verifyPassword"
                       errorText="Passwords don't match"
                       placeholder="●●●●●●●●"

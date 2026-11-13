@@ -169,7 +169,7 @@ const Register: React.FC = () => {
             <IonItem>
               <IonInput
                 className={`${isValidEmail ? 'ion-valid' : 'ion-invalid'} ${
-                  isTouched ? 'ion-touched' : ''
+                  isTouched && inputEmail.length > 0 ? 'ion-touched' : ''
                 } ${styles.input}`}
                 label="Email"
                 name="email"
@@ -187,7 +187,7 @@ const Register: React.FC = () => {
             <IonItem>
               <IonInput
                 className={`${isValidUsername ? 'ion-valid' : 'ion-invalid'} ${
-                  isTouched ? 'ion-touched' : ''
+                  isTouched && inputUsername.length > 0 ? 'ion-touched' : ''
                 } ${styles.input}`}
                 label="Username"
                 name="username"
@@ -205,7 +205,7 @@ const Register: React.FC = () => {
             <IonItem>
               <IonInput
                 className={`${isValidPassword ? 'ion-valid' : 'ion-invalid'} ${
-                  isTouched ? 'ion-touched' : ''
+                  isTouched && inputPassword.length > 0 ? 'ion-touched' : ''
                 } ${styles.input}`}
                 label="Password"
                 name="password"
@@ -225,7 +225,11 @@ const Register: React.FC = () => {
               <IonInput
                 className={`${
                   isValidVerifyPassword ? 'ion-valid' : 'ion-invalid'
-                } ${isTouched ? 'ion-touched' : ''} ${styles.input}`}
+                } ${
+                  isTouched && inputVerifyPassword.length > 0
+                    ? 'ion-touched'
+                    : ''
+                } ${styles.input}`}
                 label="Confirm Password"
                 name="verifyPassword"
                 type="password"

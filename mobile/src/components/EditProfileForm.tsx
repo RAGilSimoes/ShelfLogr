@@ -168,7 +168,11 @@ const EditProfileForm: React.FC<{
                       value={inputUsername}
                       className={`${
                         isValidUsername ? 'ion-valid' : 'ion-invalid'
-                      } ${isTouched ? 'ion-touched' : ''} ${styles.input}`}
+                      } ${
+                        isTouched && inputUsername.length > 0
+                          ? 'ion-touched'
+                          : ''
+                      } ${styles.input}`}
                       name="username"
                       type="text"
                       errorText="Invalid username"
@@ -190,7 +194,9 @@ const EditProfileForm: React.FC<{
                       type="email"
                       className={`${
                         isValidEmail ? 'ion-valid' : 'ion-invalid'
-                      } ${isTouched ? 'ion-touched' : ''} ${styles.input}`}
+                      } ${
+                        isTouched && inputEmail.length > 0 ? 'ion-touched' : ''
+                      } ${styles.input}`}
                       name="email"
                       errorText="Invalid email"
                       onIonInput={(event) => validate(event)}

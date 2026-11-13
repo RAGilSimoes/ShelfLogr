@@ -164,7 +164,7 @@ const Login: React.FC = () => {
             <IonItem>
               <IonInput
                 className={`${isValidEmail ? 'ion-valid' : 'ion-invalid'} ${
-                  isTouched ? 'ion-touched' : ''
+                  isTouched && inputEmail.length > 0 ? 'ion-touched' : ''
                 } ${styles.input}`}
                 label="Email"
                 name="email"
@@ -182,7 +182,7 @@ const Login: React.FC = () => {
             <IonItem>
               <IonInput
                 className={`${isValidPassword ? 'ion-valid' : 'ion-invalid'} ${
-                  isTouched ? 'ion-touched' : ''
+                  isTouched && inputPassword.length > 0 ? 'ion-touched' : ''
                 } ${styles.input}`}
                 label="Password"
                 name="password"
@@ -209,12 +209,7 @@ const Login: React.FC = () => {
             </div>
 
             <div className="action-group">
-              <IonButton
-                disabled={!isValidForm}
-                type="submit"
-                expand="block"
-                onClick={(e) => submitForm(e as any)}
-              >
+              <IonButton disabled={!isValidForm} type="submit" expand="block">
                 Login
                 <IonIcon slot="end" icon={logIn}></IonIcon>
               </IonButton>
