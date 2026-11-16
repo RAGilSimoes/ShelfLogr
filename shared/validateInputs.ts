@@ -19,10 +19,13 @@ function validateEmail(email: string): boolean {
   return EMAIL_REGEX.test(email);
 }
 
-function validatePassword(password: string) {
+function validatePassword(password: string): boolean {
   if (!password || typeof password !== 'string') return false;
+
+  const trimmedLength = password.trim().length;
+
   return (
-    password.length >= MIN_PASSWORD_SIZE && password.length <= MAX_PASSWORD_SIZE
+    trimmedLength >= MIN_PASSWORD_SIZE && password.length <= MAX_PASSWORD_SIZE
   );
 }
 
@@ -64,7 +67,7 @@ function validateShelfName(name: string) {
 }
 
 function validateBookReview(review: string) {
-  if (!review || typeof review !== 'string') return false;
+  if (typeof review !== 'string') return false;
   return review.trim().length <= MAX_BOOK_REVIEW_SIZE;
 }
 

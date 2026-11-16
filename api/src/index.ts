@@ -1342,3 +1342,5 @@ app.post('/api/reset-password', async (req: Request, res: Response) => {
 app.listen(PORT, () => {
   console.log(`🚀 Servidor a correr em 127.0.0.1:${PORT}`);
 });
+
+export default app;
