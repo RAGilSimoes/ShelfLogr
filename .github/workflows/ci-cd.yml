@@ -7,8 +7,8 @@ on:
     branches: ['*']
 
 jobs:
-  test-and-build:
-    name: Test & Build Pipeline
+  test:
+    name: Prepare Container and run tests
     runs-on: ubuntu-latest
 
     services:
@@ -49,7 +49,24 @@ jobs:
       - name: Run API Integration Tests
         run: npm test -w api -- --run
 
-      # --- CONTINUOUS DELIVERY ---
+  build:
+    name: Build Components
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
       - name: Build API
         run: npm run build -w api
 
