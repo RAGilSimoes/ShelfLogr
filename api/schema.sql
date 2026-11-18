@@ -1,4 +1,3 @@
-CREATE SCHEMA "public";
 CREATE SCHEMA "auth";
 CREATE TABLE "book" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),

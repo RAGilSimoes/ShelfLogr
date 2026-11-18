@@ -1,0 +1,59 @@
+name: CI/CD - Tests & Build Verification
+
+on:
+  push:
+    branches: ['*']
+  pull_request:
+    branches: ['*']
+
+jobs:
+  test-and-build:
+    name: Test & Build Pipeline
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: shelflogr_test
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Apply Database Schema
+        run: PGPASSWORD=postgres psql -h localhost -p 5433 -U postgres -d shelflogr_test -f api/schema.sql
+        continue-on-error: true
+
+      - name: Run Shared Package Tests
+        run: npm test -w shared -- --run
+
+      - name: Run API Integration Tests
+        run: npm test -w api -- --run
+
+      # --- CONTINUOUS DELIVERY ---
+      - name: Build API
+        run: npm run build -w api
+
+      - name: Build Mobile App (Vite Production Bundle)
+        env:
+          VITE_BACKEND_URL: https://api.shelflogr.com/api
+        run: npm run build -w mobile
