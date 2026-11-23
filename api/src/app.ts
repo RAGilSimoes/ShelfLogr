@@ -162,13 +162,9 @@ app.post('/api/register', async (req: Request, res: Response) => {
         await client.query('ROLLBACK').catch(() => {});
 
         if (errorCode === '23505') {
-          const detail: string = error.detail;
-          const local = detail.includes('name');
-
-          const message = local
-            ? 'Username already in use'
-            : 'Email already in use';
-          return res.status(409).json({ error: message });
+          return res
+            .status(409)
+            .json({ error: 'Username or email already in use' });
         } else {
           return res
             .status(500)
