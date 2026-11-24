@@ -41,7 +41,7 @@ jobs:
 
       - name: Apply Database Schema
         run: PGPASSWORD=postgres psql -h localhost -p 5433 -U postgres -d shelflogr_test -f api/schema.sql
-        continue-on-error: true
+        continue-on-error: false
 
       - name: Run Shared Package Tests
         run: npm test -w shared -- --run
