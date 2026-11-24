@@ -71,7 +71,7 @@ app.get(
 
       const newToken = generateToken(id, email, name);
 
-      return res.status(200).json({ message: 'Sucess', token: newToken });
+      return res.status(200).json({ message: 'Success', token: newToken });
     } catch (error) {
       console.error('Erro ao fazer refresh do token:', error);
       return res.status(500).json({ error: 'Internal Server Error' });
@@ -114,7 +114,7 @@ app.post('/api/login', async (req: Request, res: Response) => {
 
       const token = generateToken(user.id, user.email, user.name);
 
-      return res.status(200).json({ message: 'Sucess', token });
+      return res.status(200).json({ message: 'Success', token });
     } else {
       return res.status(400).json({ error: 'Invalid credentials' });
     }
